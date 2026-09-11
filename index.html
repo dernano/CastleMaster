@@ -92,6 +92,24 @@
   .icon-btn:hover { border-color: var(--frame-hi); }
 
   /* ---------- Meldungszeilen ---------- */
+  .hidden { display: none !important; }
+
+  #reward {
+    position: absolute; inset: 0; z-index: 5;
+    display: grid; place-items: center;
+    background: rgba(8, 6, 5, 0.82);
+    border-radius: 4px;
+  }
+  .reward-box { padding: 16px 20px; text-align: center; max-width: 92%; }
+  .reward-box h2 { margin: 0 0 4px; font-size: 18px; color: var(--gold); letter-spacing: 0.03em; }
+  .reward-box p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  #reward-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .ghost-btn {
+    background: var(--panel-2); color: var(--muted); border: 2px solid var(--frame);
+    border-radius: 5px; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .ghost-btn:hover { color: var(--text); border-color: var(--frame-hi); }
+
   #lines { width: 100%; max-width: 960px; text-align: center; min-height: 34px; }
   #message { font-size: 14px; color: var(--gold); min-height: 18px; }
   #intent { font-size: 12.5px; color: var(--muted); min-height: 16px; }
@@ -199,17 +217,26 @@
 <div id="board">
   <canvas id="field" width="960" height="570"></canvas>
 
+  <div id="reward" class="hidden">
+    <div class="reward-box panel">
+      <h2 id="reward-title">Runde überstanden</h2>
+      <p id="reward-sub">Wähle eine Karte für dein Deck.</p>
+      <div id="reward-cards"></div>
+      <button type="button" class="ghost-btn" id="reward-skip">Überspringen</button>
+    </div>
+  </div>
+
   <div id="hud-row">
   <div class="hud hud-left panel">
     <span class="chip tatendrang"><span class="ic">⚡</span> <b id="tatendrang-val">3</b>/<span id="tatendrang-max">3</span></span>
-    <span class="chip burg"><span class="ic">🏰</span> <b id="castle-hp-val">20</b>/20</span>
+    <span class="chip burg"><span class="ic">🏰</span> <b id="castle-hp-val">35</b>/<span id="castle-hp-max">35</span></span>
     <span class="chip dim" id="pile-draw"><span class="ic">🂠</span> <b id="draw-count">0</b></span>
     <span class="chip dim" id="pile-discard"><span class="ic">🗇</span> <b id="discard-count">0</b></span>
   </div>
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
+      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="help-btn" type="button" title="Steuerung">?</button>
@@ -226,7 +253,7 @@
   <div id="minimap-panel" class="panel"><canvas id="minimap" width="122" height="92"></canvas></div>
   <div id="hand-wrap" class="panel"><div id="hand"></div></div>
   <div id="side">
-    <button class="endround" onclick="endRound()" id="endround-btn">Runde beenden</button>
+    <button class="endround" onclick="endTurn()" id="endround-btn">Zug beenden</button>
     <div id="deck-pile" class="panel"><b id="deck-total">12</b>Karten im Deck</div>
   </div>
 </div>
@@ -257,7 +284,7 @@ const CARD_POOL = [
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
 ];
 
-const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 20 };
+const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 35 };
 
 /**
  * Gegnertypen. `move` ist die Strecke pro Runde, `reach` die eigene
@@ -269,23 +296,28 @@ const ENEMY_TYPES = {
   spaeher: { id: 'spaeher', name: 'Späher', hp: 4, dmg: 1, move: 5, reach: 1,
     punkte: 2, abRunde: 1, scale: 2, pal: { r: '#a8442b', R: '#d4663a' } },
   armbrust: { id: 'armbrust', name: 'Armbrustschütze', hp: 6, dmg: 2, move: 2, reach: 4,
-    punkte: 3, abRunde: 3, scale: 2, pal: { r: '#4e5c2a', R: '#75873e' } },
+    punkte: 3, abRunde: 2, scale: 2, pal: { r: '#4e5c2a', R: '#75873e' } },
   ritter: { id: 'ritter', name: 'Ritter', hp: 14, dmg: 3, move: 3, reach: 1,
-    punkte: 5, abRunde: 5, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
+    punkte: 5, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
   ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
-    punkte: 7, abRunde: 8, scale: 3, pal: { r: '#5d4023', R: '#8a6238' } },
+    punkte: 7, abRunde: 5, scale: 3, pal: { r: '#5d4023', R: '#8a6238' } },
 };
 
-// Staerke der Welle je Runde. Hoeher heisst schwerer.
-const wellenBudget = (runde) => 3 + Math.round(runde * 1.6);
-// Tatendrang waechst langsam mit, sonst ist der Anstieg nicht zu halten.
-const maxTatendrangFuer = (runde) => Math.min(6, 3 + Math.floor((runde - 1) / 5));
-const MAX_GEGNER_AUF_DEM_FELD = 14;
+// Eine Runde ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
+// davon zaehlen Zuege: erst der Spieler, dann die Gegner.
+const rundenBudget = (runde) => 3 + Math.round(runde * 2.2); // Staerke des Aufgebots
+const einsatzProZug = (runde) => 1 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
+const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
+const MAX_GEGNER_AUF_DEM_FELD = 6;                   // wie viele gleichzeitig draussen stehen
+const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
-// Spaeter angeworbene Gegner sind zaeher. Sonst waere bei der Obergrenze
-// oben Schluss mit der Steigerung.
-const belagerungsHp = (runde) => 1 + 0.06 * (runde - 1);
-const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 8);
+// Spaetere Runden schicken zaehere Gegner.
+const belagerungsHp = (runde) => 1 + 0.1 * (runde - 1);
+const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 4);
+
+// Das geschuetzte Lager liegt rechts neben dem Spielfeld.
+const LAGER_COL = COLS;
+const LAGER_BREITE = 2;
 
 const STARTER_DECK = [
   ['palisade', 3], ['wachturm', 2], ['waldlaeufer', 3],
@@ -295,12 +327,16 @@ const HAND_SIZE = 5;
 const ATTACK_COST = 1;
 
 let state = {
-  round: 1,
+  runde: 1,          // Belagerungsrunde, also ein ganzer Kampf
+  zug: 1,            // Zug innerhalb der Runde
+  phase: 'kampf',    // 'kampf' | 'belohnung' | 'ende'
   tatendrang: 3, maxTatendrang: 3,
   castleHp: CASTLE.maxHp,
   towers: [],
-  enemies: [],
-  wellenHp: 1,      // Gesamt-LP der laufenden Welle, fuer die Anzeige
+  enemies: [],       // auf dem Feld
+  lager: [],         // im geschuetzten Lager, dort unangreifbar
+  rundenHp: 1,       // Gesamt-LP des Aufgebots, fuer die Anzeige
+  belohnung: [],     // Karten zur Auswahl nach gewonnener Runde
   draw: [], hand: [], discard: [],
   pendingCard: null,
   selectedTower: null,   // Turm, der schiessen soll
@@ -348,44 +384,66 @@ function setMessage(t) { document.getElementById('message').textContent = t; }
 function setIntent(t) { document.getElementById('intent').textContent = t; }
 
 /** Setzt einen Gegner eines Typs an den rechten Rand. */
-function spawnEnemy(typ, runde = state.round) {
+function makeEnemy(typ, runde) {
   const t = ENEMY_TYPES[typ];
   const hp = Math.max(1, Math.round(t.hp * belagerungsHp(runde)));
-  const e = {
+  return {
     id: state.nextEnemyId++, typ,
     name: t.name, hp, maxHp: hp,
     dmg: t.dmg + belagerungsSchaden(runde),
     move: t.move, reach: t.reach,
-    col: COLS - 1, row: Math.floor(Math.random() * ROWS),
+    col: COLS - 1, row: 0,
   };
-  state.enemies.push(e);
-  return e;
 }
 
 /**
- * Erzeugt die Welle einer Runde aus einem Punktebudget. Teure Typen werden
- * erst ab einer bestimmten Runde freigeschaltet, damit der Einstieg mild ist.
+ * Stellt das Aufgebot einer Runde aus einem Punktebudget zusammen. Teure
+ * Typen schalten sich erst ab einer bestimmten Runde frei. Alle warten
+ * zunaechst im Lager und treten von dort Zug um Zug aufs Feld.
  */
-function spawnWave(runde) {
-  if (state.enemies.length >= MAX_GEGNER_AUF_DEM_FELD) return;
-  let budget = wellenBudget(runde);
+function buildRoster(runde) {
+  let budget = rundenBudget(runde);
   const offen = Object.values(ENEMY_TYPES)
     .filter(t => runde >= t.abRunde)
     .sort((a, b) => b.punkte - a.punkte);
-  if (!offen.length) return;
-
-  let schutz = 20;
-  while (budget >= 2 && state.enemies.length < MAX_GEGNER_AUF_DEM_FELD && schutz-- > 0) {
-    const bezahlbar = offen.filter(t => t.punkte <= budget);
+  const lager = [];
+  const gezaehlt = {};
+  // Kein Typ soll mehr als die Haelfte des Aufgebots stellen, sonst
+  // bestehen spaete Runden nur noch aus Rammen.
+  const obergrenze = Math.max(2, Math.ceil(rundenBudget(runde) / 6));
+  let schutz = 40;
+  while (budget >= 2 && schutz-- > 0) {
+    const bezahlbar = offen.filter(t => t.punkte <= budget && (gezaehlt[t.id] || 0) < obergrenze);
     if (!bezahlbar.length) break;
-    // Bevorzugt den teuersten Typ, laesst aber Platz fuer Abwechslung.
-    const wahl = Math.random() < 0.6
-      ? bezahlbar[0]
-      : bezahlbar[Math.floor(Math.random() * bezahlbar.length)];
-    spawnEnemy(wahl.id, runde);
+    const wahl = bezahlbar[Math.floor(Math.random() * bezahlbar.length)];
+    lager.push(makeEnemy(wahl.id, runde));
+    gezaehlt[wahl.id] = (gezaehlt[wahl.id] || 0) + 1;
     budget -= wahl.punkte;
   }
-  state.wellenHp = Math.max(1, state.enemies.reduce((s, e) => s + e.maxHp, 0));
+  return lager;
+}
+
+/** Freie Zeile am rechten Feldrand, damit niemand uebereinander steht. */
+function freieStartzeile() {
+  const belegt = new Set(state.enemies.filter(e => e.col === COLS - 1).map(e => e.row));
+  const reihen = [...Array(ROWS).keys()].filter(r => !belegt.has(r));
+  const wahl = reihen.length ? reihen : [...Array(ROWS).keys()];
+  return wahl[Math.floor(Math.random() * wahl.length)];
+}
+
+/** Laesst Gegner aus dem geschuetzten Lager aufs Feld treten. */
+function deployFromLager() {
+  const frei = MAX_GEGNER_AUF_DEM_FELD - state.enemies.length;
+  let anzahl = Math.min(einsatzProZug(state.runde), frei, state.lager.length);
+  const raus = [];
+  while (anzahl-- > 0) {
+    const e = state.lager.shift();
+    e.col = COLS - 1;
+    e.row = freieStartzeile();
+    state.enemies.push(e);
+    raus.push(e);
+  }
+  return raus;
 }
 
 // ---------- Geometrie auf dem Raster ----------
@@ -476,7 +534,7 @@ function towerDamageAt(t, d) {
   return towerUnits(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + u.dmg, 0);
 }
 
-function towerHasFired(t) { return t.attackedRound === state.round; }
+function towerHasFired(t) { return t.attackedKey === state.runde + ':' + state.zug; }
 /** Abstand zwischen einem Turm und einem Gegner, wie die Bewegung gemessen. */
 function distanceTo(tower, enemy) {
   if (!enemy) return Infinity;
@@ -682,12 +740,14 @@ function drawGround() {
   for (let r = -RAND; r < ROWS + RAND; r++) {
     for (let c = -RAND; c < COLS + RAND; c++) {
       const drin = imFeld(c, r);
+      const imLager = c >= LAGER_COL && c < LAGER_COL + LAGER_BREITE && r >= 0 && r < ROWS;
       const wasser = istWasser(c, r);
       const n = noise(c, r);
       const x = isoX(c, r), y = isoY(c, r) + TH / 2;
       let farbe;
       if (wasser) farbe = n < 0.5 ? '#1f5771' : '#256380';
       else if (drin) farbe = n < 0.34 ? '#d3ae7b' : n < 0.7 ? '#cda772' : '#c69d68';
+      else if (imLager) farbe = n < 0.5 ? '#6d5233' : '#63492d';
       else farbe = n < 0.5 ? '#bb9a68' : '#b08f5e';
       fillDiamond(c, r, farbe);
 
@@ -711,6 +771,16 @@ function drawGround() {
       }
     }
   }
+
+  // Grenze des geschuetzten Lagers
+  ctx.strokeStyle = 'rgba(224,80,60,0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 5]);
+  ctx.beginPath();
+  ctx.moveTo(isoX(LAGER_COL, 0), isoY(LAGER_COL, 0));
+  ctx.lineTo(isoX(LAGER_COL, ROWS), isoY(LAGER_COL, ROWS));
+  ctx.stroke();
+  ctx.setLineDash([]);
 
   // Rasterlinien nur im Spielfeld, dezent
   ctx.strokeStyle = 'rgba(85,64,34,0.07)';
@@ -873,6 +943,32 @@ function drawEnemy(e) {
   addPick('enemy', e, cx - 7 * t.scale / 2 - 5, cy - h - 8, 7 * t.scale + 10, h + 26);
 }
 
+/**
+ * Gegner im Lager. Sie stehen ausserhalb des Feldes, sind unangreifbar und
+ * bekommen deshalb weder Ring noch Absichtsplakette, nur ihren Namen.
+ */
+function drawLager() {
+  if (!state.lager.length) return;
+
+  state.lager.forEach((e, i) => {
+    const t = ENEMY_TYPES[e.typ];
+    const col = LAGER_COL + (i % LAGER_BREITE) * 0.95 + 0.2;
+    const row = Math.floor(i / LAGER_BREITE) * 1.6 + 0.6;
+    if (row >= ROWS) return;
+    const x = isoX(col, row);
+    const y = isoY(col, row) + TH / 2;
+    ctx.globalAlpha = 0.82;
+    drawShadow(x, y, 3 + t.scale * 2);
+    drawSprite(FIG_GEGNER, x, y + 2, Math.max(2, t.scale - 1), ctx, { ...PAL, ...t.pal });
+    ctx.globalAlpha = 1;
+  });
+
+  // Beschriftung des Lagers
+  const bx = isoX(LAGER_COL + 1, 0);
+  const by = isoY(LAGER_COL + 1, 0) - 12;
+  drawBadge(bx, by, 'Lager · ' + state.lager.length, '#ffb3a7', '#8c2230');
+}
+
 /** Kleine Plakette mit einer Absicht oder einem Wert. */
 function drawBadge(x, y, text, farbe, rand) {
   ctx.font = 'bold 9px system-ui, sans-serif';
@@ -979,6 +1075,7 @@ function draw() {
   for (const e of state.enemies) objekte.push({ col: e.col, row: e.row, w: 1, h: 1, zeichne: () => drawEnemy(e) });
   for (const d of DEKO) objekte.push({ col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
   for (const o of zeichenReihenfolge(objekte)) o.zeichne();
+  drawLager();
 }
 
 // ---------- Minikarte ----------
@@ -1000,6 +1097,14 @@ function drawMinimap() {
   for (const e of state.enemies) {
     mctx.fillStyle = e.typ === 'ramme' ? '#ffb347' : '#e0503c';
     mctx.fillRect(e.col * sx - 1, e.row * sy - 1, sx + 2, sy + 2);
+  }
+  if (state.lager.length) {
+    mctx.fillStyle = 'rgba(224,80,60,0.35)';
+    mctx.fillRect(w - 6, 0, 6, h);
+    mctx.fillStyle = '#e0503c';
+    for (let i = 0; i < Math.min(state.lager.length, Math.floor(h / 5)); i++) {
+      mctx.fillRect(w - 5, 2 + i * 5, 4, 3);
+    }
   }
   mctx.strokeStyle = '#6b5535';
   mctx.lineWidth = 2;
@@ -1135,7 +1240,7 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 canvas.addEventListener('click', (evt) => {
-  if (state.castleHp <= 0) return;
+  if (state.castleHp <= 0 || state.phase !== 'kampf') return;
   const p = canvasPoint(evt);
   const treffer = pickAt(p);
   const cell = cellFromPoint(p);
@@ -1244,7 +1349,7 @@ function attackWithTower(tower, enemy) {
   }
 
   state.tatendrang -= ATTACK_COST;
-  tower.attackedRound = state.round;
+  tower.attackedKey = state.runde + ':' + state.zug;
   enemy.hp -= schaden;
 
   const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d).length;
@@ -1253,6 +1358,7 @@ function attackWithTower(tower, enemy) {
   if (enemy.hp <= 0) {
     state.enemies = state.enemies.filter(e => e !== enemy);
     setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
+    if (rundeGewonnen()) { beginneBelohnung(); return; }
   } else {
     setMessage(tower.name + ' trifft ' + enemy.name + ' für ' + schaden + ' Schaden' + salve +
       ' (' + enemy.hp + '/' + enemy.maxHp + ' LP übrig).');
@@ -1394,37 +1500,101 @@ function resolveEnemyTurn() {
     (meldungen.length > 3 ? ' · und ' + (meldungen.length - 3) + ' weitere' : ''));
 }
 
-function endRound() {
-  if (state.castleHp <= 0) return;
+/** Beginnt eine neue Belagerungsrunde mit frischem Aufgebot. */
+function startRunde(runde) {
+  state.runde = runde;
+  state.zug = 1;
+  state.phase = 'kampf';
+  state.lager = buildRoster(runde);
+  state.enemies = [];
+  state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
+  state.belohnung = [];
+  state.maxTatendrang = maxTatendrangFuer(runde);
+  state.tatendrang = state.maxTatendrang;
+  state.pendingCard = null;
+  state.selectedTower = null;
+  state.hoverCell = null;
 
-  // Zuerst leeren, damit nur die Meldung dieser Runde uebrig bleibt.
+  // Frische Hand fuer den neuen Kampf
+  state.discard.push(...state.hand);
+  state.hand = [];
+  drawCards(HAND_SIZE);
+
+  deployFromLager();
+  setMessage('Runde ' + runde + ': ' + (state.lager.length + state.enemies.length) +
+    ' Gegner im Lager. Sie treten Zug um Zug heraus.');
+  renderAll();
+}
+
+/** Ist das Aufgebot der Runde erledigt? */
+function rundeGewonnen() {
+  return state.phase === 'kampf' && state.castleHp > 0 &&
+    state.enemies.length === 0 && state.lager.length === 0;
+}
+
+/** Nach gewonnener Runde drei Karten zur Auswahl anbieten. */
+function beginneBelohnung() {
+  state.phase = 'belohnung';
+  state.pendingCard = null;
+  state.selectedTower = null;
+  const topf = [...CARD_POOL];
+  state.belohnung = [];
+  for (let i = 0; i < BELOHNUNG_AUSWAHL && topf.length; i++) {
+    state.belohnung.push(topf.splice(Math.floor(Math.random() * topf.length), 1)[0]);
+  }
+  setMessage('Runde ' + state.runde + ' überstanden. Wähle eine Karte für dein Deck.');
+  renderAll();
+}
+
+/** Die gewaehlte Karte wandert auf den Ablagestapel und damit ins Deck. */
+function nimmBelohnung(proto) {
+  if (state.phase !== 'belohnung') return;
+  if (proto) {
+    state.discard.push({ ...proto, uid: proto.id + '#r' + state.runde + '-' + Math.random().toString(36).slice(2, 6) });
+  }
+  const naechste = state.runde + 1;
+  startRunde(naechste);
+  if (proto) setMessage('Runde ' + naechste + ' beginnt. ' + proto.name + ' liegt jetzt im Deck.');
+}
+
+/** Ein Zug innerhalb der Runde: Gegner handeln, dann Nachschub und Nachziehen. */
+function endTurn() {
+  if (state.phase !== 'kampf' || state.castleHp <= 0) return;
+
+  // Zuerst leeren, damit nur die Meldung dieses Zuges uebrig bleibt.
   setMessage('');
   resolveEnemyTurn();
   const kampfMeldung = document.getElementById('message').textContent;
-  if (state.castleHp > 0) spawnWave(state.round);
+
+  if (state.castleHp <= 0) {
+    state.phase = 'ende';
+    setMessage('Die Burg ist gefallen. Du hast ' + (state.runde - 1) + ' Runden überstanden.');
+    renderAll();
+    return;
+  }
+
+  const neu = deployFromLager();
+
+  if (rundeGewonnen()) { beginneBelohnung(); return; }
 
   const abgelegt = state.hand.length;
   state.discard.push(...state.hand);
   state.hand = [];
   const { drawn, reshuffled } = drawCards(HAND_SIZE);
 
-  state.round += 1;
-  state.maxTatendrang = maxTatendrangFuer(state.round);
+  state.zug += 1;
   state.tatendrang = state.maxTatendrang;
   state.pendingCard = null;
   state.hoverCell = null;
   state.selectedTower = null;
 
-  if (state.castleHp <= 0) {
-    setMessage('Die Burg ist gefallen. Spiel vorbei.');
-  } else {
-    let text = kampfMeldung ? kampfMeldung + ' · ' : '';
-    text += 'Runde ' + state.round + ': ';
-    text += abgelegt > 0 ? abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt, ' : '';
-    text += drawn + ' nachgezogen.';
-    if (reshuffled) text += ' Ablagestapel neu gemischt.';
-    setMessage(text);
-  }
+  let text = kampfMeldung ? kampfMeldung + ' · ' : '';
+  if (neu.length) text += neu.length + ' Gegner verlassen das Lager · ';
+  text += 'Zug ' + state.zug + ': ';
+  text += abgelegt > 0 ? abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt, ' : '';
+  text += drawn + ' nachgezogen.';
+  if (reshuffled) text += ' Ablagestapel neu gemischt.';
+  setMessage(text);
   renderAll();
 }
 
@@ -1438,6 +1608,8 @@ window.addEventListener('keydown', (evt) => {
   renderAll();
 });
 
+document.getElementById('reward-skip').addEventListener('click', () => nimmBelohnung(null));
+
 document.getElementById('help-btn').addEventListener('click', () => {
   setMessage('Karte anklicken und aufs Feld setzen · Turm anklicken, dann den Gegner (1 Tatendrang, ein Schuss pro Turm und Runde) · Esc hebt auf');
 });
@@ -1445,80 +1617,105 @@ document.getElementById('help-btn').addEventListener('click', () => {
 // ============================================================
 //  Oberflaeche
 // ============================================================
+/** Baut die Darstellung einer Karte. */
+function cardElement(card, { disabled = false, selected = false, onClick = null } = {}) {
+  const el = document.createElement('div');
+  el.className = 'card' + (disabled ? ' disabled' : '') + (selected ? ' selected' : '');
+  if (onClick) el.onclick = () => { if (!disabled) onClick(); };
+
+  const head = document.createElement('div');
+  head.className = 'card-head';
+  head.innerHTML = '<span class="cost">' + card.cost + '</span><span class="card-name">' +
+    card.name + '</span><span class="card-suit">' + card.suit + '</span>';
+  el.appendChild(head);
+
+  const art = document.createElement('canvas');
+  art.className = 'card-art';
+  art.width = 108; art.height = 56;
+  paintCardArt(art, card.art);
+  el.appendChild(art);
+
+  const werte = [];
+  if (card.dmg) werte.push('⚔ ' + card.dmg);
+  if (card.range) werte.push('➤ ' + card.range);
+  if (card.hp) werte.push('♥ ' + card.hp);
+  if (card.rangeBonus) werte.push('▲ +' + card.rangeBonus);
+
+  const txt = document.createElement('div');
+  txt.className = 'card-text';
+  txt.innerHTML = (werte.length ? '<b>' + werte.join(' · ') + '</b><br>' : '') + card.text;
+  el.appendChild(txt);
+
+  const badge = document.createElement('div');
+  badge.className = 'card-badge';
+  badge.textContent = card.type;
+  el.appendChild(badge);
+  return el;
+}
+
 function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   state.hand.forEach(card => {
     const canAfford = state.tatendrang >= card.cost;
-    let disabled = !canAfford || state.castleHp <= 0;
+    let disabled = !canAfford || state.castleHp <= 0 || state.phase !== 'kampf';
     if (card.type === 'Einheit' && !anyTowerWithFreeSlot()) disabled = true;
     if (card.type === 'Fähigkeit' && !anyTowerWithUnit()) disabled = true;
     if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
 
-    const el = document.createElement('div');
-    el.className = 'card' + (disabled ? ' disabled' : '') +
-      (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
-    el.onclick = () => { if (disabled) return; state.selectedTower = null; playCard(card); };
-
-    const head = document.createElement('div');
-    head.className = 'card-head';
-    head.innerHTML = '<span class="cost">' + card.cost + '</span><span class="card-name">' +
-      card.name + '</span><span class="card-suit">' + card.suit + '</span>';
-    el.appendChild(head);
-
-    const art = document.createElement('canvas');
-    art.className = 'card-art';
-    art.width = 108; art.height = 56;
-    paintCardArt(art, card.art);
-    el.appendChild(art);
-
-    const werte = [];
-    if (card.dmg) werte.push('⚔ ' + card.dmg);
-    if (card.range) werte.push('➤ ' + card.range);
-    if (card.hp) werte.push('♥ ' + card.hp);
-    if (card.rangeBonus) werte.push('▲ +' + card.rangeBonus);
-
-    const txt = document.createElement('div');
-    txt.className = 'card-text';
-    txt.innerHTML = (werte.length ? '<b>' + werte.join(' · ') + '</b><br>' : '') + card.text;
-    el.appendChild(txt);
-
-    const badge = document.createElement('div');
-    badge.className = 'card-badge';
-    badge.textContent = card.type;
-    el.appendChild(badge);
-
-    handEl.appendChild(el);
+    handEl.appendChild(cardElement(card, {
+      disabled,
+      selected: Boolean(state.pendingCard && state.pendingCard.uid === card.uid),
+      onClick: () => { state.selectedTower = null; playCard(card); },
+    }));
   });
 }
 
+function renderReward() {
+  const box = document.getElementById('reward');
+  if (state.phase !== 'belohnung') { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  document.getElementById('reward-title').textContent = 'Runde ' + state.runde + ' überstanden';
+  document.getElementById('reward-sub').textContent =
+    'Wähle eine Karte für dein Deck. Es liegen ' +
+    (state.draw.length + state.hand.length + state.discard.length) + ' Karten darin.';
+
+  const liste = document.getElementById('reward-cards');
+  liste.innerHTML = '';
+  for (const proto of state.belohnung) {
+    liste.appendChild(cardElement(proto, { onClick: () => nimmBelohnung(proto) }));
+  }
+}
+
 function renderAll() {
-  document.getElementById('round-val').textContent = state.round;
+  document.getElementById('round-val').textContent = state.runde;
+  document.getElementById('turn-val').textContent = state.zug;
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
   document.getElementById('castle-hp-val').textContent = Math.max(0, state.castleHp);
+  document.getElementById('castle-hp-max').textContent = CASTLE.maxHp;
   document.getElementById('draw-count').textContent = state.draw.length;
   document.getElementById('discard-count').textContent = state.discard.length;
   document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
-  document.getElementById('endround-btn').disabled = state.castleHp <= 0;
+  document.getElementById('endround-btn').disabled = state.castleHp <= 0 || state.phase !== 'kampf';
 
   const bar = document.getElementById('enemy-bar');
-  const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0);
-  bar.style.width = Math.max(0, Math.min(100, (restHp / state.wellenHp) * 100)) + '%';
-  document.getElementById('enemy-count').textContent = state.enemies.length;
+  const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0) +
+    state.lager.reduce((sum, e) => sum + e.hp, 0);
+  bar.style.width = Math.max(0, Math.min(100, (restHp / state.rundenHp) * 100)) + '%';
+  document.getElementById('enemy-count').textContent = state.enemies.length + state.lager.length;
 
   setIntent(currentIntentText());
   draw();
   drawMinimap();
   renderHand();
+  renderReward();
 }
 
 // init
 state.draw = buildStarterDeck();
-drawCards(HAND_SIZE);
-spawnWave(1);
-renderAll();
-setMessage('Errichte einen Turm und besetze ihn, bevor der Gegner die Burg erreicht.');
+startRunde(1);
+setMessage('Runde 1. Errichte einen Turm und besetze ihn, bevor die Gegner das Lager verlassen haben.');
 
 </script>
 
