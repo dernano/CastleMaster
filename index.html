@@ -406,6 +406,7 @@ function render() {
     let disabled = !canAfford;
     if (card.type === 'Einheit' && !anyFreeSlot()) disabled = true;
     if (card.type === 'Fähigkeit' && !state.towers.some(t => t.slots.some(s => s))) disabled = true;
+    if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
 
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
@@ -448,6 +449,10 @@ function playCard(card) {
     state.pendingCard = card;
     setMessage('Wähle eine Einheit für ' + card.name + '.');
   } else if (card.type === 'Macht') {
+    if (state.towers.length === 0) {
+      setMessage('Kein Turm errichtet, den die Krone erhöhen könnte.');
+      return;
+    }
     state.tatendrang -= card.cost;
     state.towers.forEach(t => t.slots.push(null));
     removeFromHand(card);
