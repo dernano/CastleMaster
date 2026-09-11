@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Castle Master</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e222b'/%3E%3Cpath d='M6 24V12l4 3 3-5 3 5 3-5 3 5 4-3v12z' fill='%23f2c14e'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <main id="stage">
+        <div id="topbar">
+          <h1>Castle&nbsp;Master</h1>
+          <div class="stats">
+            <span class="stat gold"><i>Gold</i><b id="stat-gold">0</b></span>
+            <span class="stat lives"><i>Leben</i><b id="stat-lives">0</b></span>
+            <span class="stat"><i>Welle</i><b id="stat-wave">0</b></span>
+            <span class="stat"><i>Gegner</i><b id="stat-remaining">-</b></span>
+            <span class="stat"><i>Abschuesse</i><b id="stat-kills">0</b></span>
+            <span class="stat"><i>Rekord</i><b id="stat-best">0</b></span>
+          </div>
+        </div>
+
+        <div id="board">
+          <canvas id="game" width="960" height="600"></canvas>
+          <div id="overlay" class="hidden">
+            <div class="overlay-card">
+              <h2 id="overlay-title">Die Burg ist gefallen</h2>
+              <p id="overlay-text"></p>
+              <button id="restart-button" type="button" class="primary">Neue Partie (R)</button>
+            </div>
+          </div>
+        </div>
+
+        <p id="message" data-tone="info"></p>
+        <div id="legend"></div>
+      </main>
+
+      <aside id="sidebar">
+        <section class="panel">
+          <h2>Tuerme bauen</h2>
+          <div id="build-menu"></div>
+        </section>
+
+        <section class="panel hidden" id="selection">
+          <h2 id="selection-title">Turm</h2>
+          <div id="selection-stats"></div>
+          <div class="row">
+            <button id="upgrade-button" type="button" class="primary">Ausbauen</button>
+            <button id="sell-button" type="button" class="ghost">Verkaufen</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 id="wave-heading">Naechste Welle</h2>
+          <p id="wave-preview" class="muted"></p>
+          <button id="wave-button" type="button" class="primary wide">Welle starten</button>
+          <div class="row">
+            <button id="speed-button" type="button" class="ghost">1x</button>
+            <button id="pause-button" type="button" class="ghost">Pause</button>
+          </div>
+        </section>
+
+        <section class="panel help">
+          <h2>Steuerung</h2>
+          <ul>
+            <li><kbd>1</kbd>-<kbd>4</kbd> Turm waehlen, Linksklick baut</li>
+            <li><kbd>Rechtsklick</kbd> / <kbd>Esc</kbd> Auswahl aufheben</li>
+            <li><kbd>U</kbd> ausbauen, <kbd>X</kbd> verkaufen</li>
+            <li><kbd>Leertaste</kbd> Welle starten oder pausieren</li>
+            <li><kbd>F</kbd> Geschwindigkeit, <kbd>P</kbd> Pause</li>
+          </ul>
+          <p class="muted">
+            Tuerme versperren den Weg. Die Gegner suchen sich immer die kuerzeste
+            freie Route - baue ein Labyrinth, aber sperre den Bergfried nie
+            vollstaendig ab.
+          </p>
+        </section>
+      </aside>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "castle-master",
+  "version": "0.1.0",
+  "description": "Castle Master - ein Burgverteidigungsspiel im Browser (HTML5 Canvas, ohne Build-Schritt).",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "dev": "node scripts/serve.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
