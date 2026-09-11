@@ -80,6 +80,7 @@
   .wave { display: flex; flex-direction: column; gap: 3px; min-width: 148px; padding: 1px 6px; }
   .wave-top { display: flex; align-items: center; gap: 7px; font-size: 13px; }
   .wave-top .swords { color: var(--muted); }
+  .wave-top .foes { color: #e9917f; margin-left: auto; }
   .wave-bar { height: 5px; background: #3a1a1a; border-radius: 2px; overflow: hidden; }
   .wave-bar i { display: block; height: 100%; background: linear-gradient(90deg, #e0503c, #8c2230); }
 
@@ -208,7 +209,7 @@
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b></span></div>
+      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="help-btn" type="button" title="Steuerung">?</button>
@@ -242,9 +243,9 @@
 const COLS = 20, ROWS = 15;
 
 const CARD_POOL = [
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, art: 'turm',
-    text: 'Fundament deiner Burg. Ohne ihn kein Widerstand.' },
-  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, art: 'mauer',
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm',
+    text: 'Hoch genug, dass Pfeile weiter tragen.' },
+  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
   { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer',
     text: 'Braucht festen Boden unter den Füßen.' },
@@ -258,6 +259,29 @@ const CARD_POOL = [
 
 const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 20 };
 
+/**
+ * Gegnertypen. `move` ist die Strecke pro Runde, `reach` die eigene
+ * Angriffsreichweite. Ein Spaeher muss also heran, ein Armbrustschuetze
+ * beschiesst den Turm aus vier Feldern Entfernung.
+ * `punkte` ist der Preis im Wellenbudget, `abRunde` die Freischaltung.
+ */
+const ENEMY_TYPES = {
+  spaeher: { id: 'spaeher', name: 'Späher', hp: 4, dmg: 1, move: 5, reach: 1,
+    punkte: 2, abRunde: 1, scale: 2, pal: { r: '#a8442b', R: '#d4663a' } },
+  armbrust: { id: 'armbrust', name: 'Armbrustschütze', hp: 6, dmg: 2, move: 2, reach: 4,
+    punkte: 3, abRunde: 3, scale: 2, pal: { r: '#4e5c2a', R: '#75873e' } },
+  ritter: { id: 'ritter', name: 'Ritter', hp: 14, dmg: 3, move: 3, reach: 1,
+    punkte: 5, abRunde: 5, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
+  ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
+    punkte: 7, abRunde: 8, scale: 3, pal: { r: '#5d4023', R: '#8a6238' } },
+};
+
+// Staerke der Welle je Runde. Hoeher heisst schwerer.
+const wellenBudget = (runde) => 2 + runde;
+// Tatendrang waechst langsam mit, sonst ist der Anstieg nicht zu halten.
+const maxTatendrangFuer = (runde) => Math.min(6, 3 + Math.floor((runde - 1) / 5));
+const MAX_GEGNER_AUF_DEM_FELD = 10;
+
 const STARTER_DECK = [
   ['palisade', 3], ['wachturm', 2], ['waldlaeufer', 3],
   ['bogenschuetze', 2], ['sturmwind', 1], ['krone', 1],
@@ -270,12 +294,14 @@ let state = {
   tatendrang: 3, maxTatendrang: 3,
   castleHp: CASTLE.maxHp,
   towers: [],
-  enemy: null,
+  enemies: [],
+  wellenHp: 1,      // Gesamt-LP der laufenden Welle, fuer die Anzeige
   draw: [], hand: [], discard: [],
   pendingCard: null,
   selectedUnit: null,
   hoverCell: null,
   nextTowerId: 1,
+  nextEnemyId: 1,
 };
 
 // ---------- Deck ----------
@@ -316,8 +342,42 @@ function drawCards(n) {
 function setMessage(t) { document.getElementById('message').textContent = t; }
 function setIntent(t) { document.getElementById('intent').textContent = t; }
 
-function spawnEnemy() {
-  state.enemy = { col: COLS - 1, row: Math.floor(Math.random() * ROWS), range: 4, dmg: 2, hp: 5, maxHp: 5 };
+/** Setzt einen Gegner eines Typs an den rechten Rand. */
+function spawnEnemy(typ) {
+  const t = ENEMY_TYPES[typ];
+  const e = {
+    id: state.nextEnemyId++, typ,
+    name: t.name, hp: t.hp, maxHp: t.hp, dmg: t.dmg, move: t.move, reach: t.reach,
+    col: COLS - 1, row: Math.floor(Math.random() * ROWS),
+  };
+  state.enemies.push(e);
+  return e;
+}
+
+/**
+ * Erzeugt die Welle einer Runde aus einem Punktebudget. Teure Typen werden
+ * erst ab einer bestimmten Runde freigeschaltet, damit der Einstieg mild ist.
+ */
+function spawnWave(runde) {
+  if (state.enemies.length >= MAX_GEGNER_AUF_DEM_FELD) return;
+  let budget = wellenBudget(runde);
+  const offen = Object.values(ENEMY_TYPES)
+    .filter(t => runde >= t.abRunde)
+    .sort((a, b) => b.punkte - a.punkte);
+  if (!offen.length) return;
+
+  let schutz = 20;
+  while (budget >= 2 && state.enemies.length < MAX_GEGNER_AUF_DEM_FELD && schutz-- > 0) {
+    const bezahlbar = offen.filter(t => t.punkte <= budget);
+    if (!bezahlbar.length) break;
+    // Bevorzugt den teuersten Typ, laesst aber Platz fuer Abwechslung.
+    const wahl = Math.random() < 0.6
+      ? bezahlbar[0]
+      : bezahlbar[Math.floor(Math.random() * bezahlbar.length)];
+    spawnEnemy(wahl.id);
+    budget -= wahl.punkte;
+  }
+  state.wellenHp = Math.max(1, state.enemies.reduce((s, e) => s + e.maxHp, 0));
 }
 
 // ---------- Geometrie auf dem Raster ----------
@@ -356,17 +416,20 @@ function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
 
 function currentIntentText() {
   if (state.castleHp <= 0) return 'Die Belagerung ist entschieden.';
-  if (!state.enemy) return 'Kein Gegner auf dem Feld.';
-  const e = state.enemy;
-  const target = findNearestTower(e);
-  if (target) {
-    const p = closestPointOnRect(e.col, e.row, target);
-    const d = chebyshev(e.col, e.row, p.col, p.row);
-    if (d <= 1) return '⚔ Gegner bereit zum Angriff auf ' + towerLabel(target) + '!';
-    return '➤ Gegner rückt auf ' + towerLabel(target) + ' vor (Reichweite ' + e.range + ').';
+  if (!state.enemies.length) return 'Kein Gegner auf dem Feld. Nutze die Ruhe zum Bauen.';
+
+  let schlagbereit = 0;
+  const ziele = new Set();
+  for (const e of state.enemies) {
+    const ziel = findNearestTower(e);
+    const d = ziel ? distanceTo(ziel, e) : chebyshev(e.col, e.row, CASTLE.col + CASTLE.w, e.row);
+    if (d <= e.reach) { schlagbereit++; ziele.add(ziel ? ziel.name : 'die Burg'); }
   }
-  if (e.col <= CASTLE.col + CASTLE.w) return '⚔ Gegner bereit, die Burg anzugreifen!';
-  return '➤ Gegner rückt auf die Burg vor (Reichweite ' + e.range + ').';
+  const teile = [];
+  if (schlagbereit) teile.push('⚔ ' + schlagbereit + ' schlagen zu (' + [...ziele].join(', ') + ')');
+  const vorrueckend = state.enemies.length - schlagbereit;
+  if (vorrueckend) teile.push('➤ ' + vorrueckend + ' rücken vor');
+  return teile.join(' · ');
 }
 
 function findTowerById(id) { return state.towers.find(t => t.id === id) || null; }
@@ -378,12 +441,27 @@ function getSelectedUnit() {
   if (!unit) return null;
   return { tower, unit };
 }
-function distanceToEnemy(tower) {
-  if (!state.enemy) return Infinity;
-  const p = closestPointOnRect(state.enemy.col, state.enemy.row, tower);
-  return chebyshev(state.enemy.col, state.enemy.row, p.col, p.row);
+/** Abstand zwischen einem Turm und einem Gegner, wie die Bewegung gemessen. */
+function distanceTo(tower, enemy) {
+  if (!enemy) return Infinity;
+  const p = closestPointOnRect(enemy.col, enemy.row, tower);
+  return chebyshev(enemy.col, enemy.row, p.col, p.row);
 }
-function enemyInRange(tower, unit) { return Boolean(state.enemy) && distanceToEnemy(tower) <= unit.range; }
+
+/** Die Hoehe des Turms verlaengert die Reichweite seiner Besatzung. */
+function unitRange(tower, unit) { return unit.range + (tower.rangeBonus || 0); }
+
+function enemyInRange(tower, unit, enemy) { return Boolean(enemy) && distanceTo(tower, enemy) <= unitRange(tower, unit); }
+
+/** Der Gegner, der von diesem Turm aus am naechsten steht. */
+function nearestEnemyTo(tower) {
+  let best = null, bestD = Infinity;
+  for (const e of state.enemies) {
+    const d = distanceTo(tower, e);
+    if (d < bestD) { bestD = d; best = e; }
+  }
+  return best;
+}
 function anyTowerWithFreeSlot() { return state.towers.some(t => t.slots.some(s => s === null)); }
 function anyTowerWithUnit() { return state.towers.some(t => t.slots.some(s => s)); }
 
@@ -720,26 +798,28 @@ function drawTower(t) {
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 46);
 }
 
-function drawEnemy() {
-  const e = state.enemy;
-  if (!e) return;
-  const cx = isoX(e.col, e.row);
-  const cy = isoY(e.col, e.row) + TH / 2;
+function drawEnemy(e) {
+  const t = ENEMY_TYPES[e.typ];
+  // Kleiner Versatz, damit sich Gegner auf demselben Feld nicht ganz decken.
+  const jitter = ((e.id * 37) % 9) - 4;
+  const cx = isoX(e.col, e.row) + jitter;
+  const cy = isoY(e.col, e.row) + TH / 2 + ((e.id * 13) % 5) - 2;
   const sel = getSelectedUnit();
 
   if (sel) {
-    const treffbar = enemyInRange(sel.tower, sel.unit) && state.tatendrang >= ATTACK_COST;
-    ctx.strokeStyle = treffbar ? '#8fbf55' : '#c0392b';
+    const treffbar = enemyInRange(sel.tower, sel.unit, e) && state.tatendrang >= ATTACK_COST;
+    ctx.strokeStyle = treffbar ? '#8fbf55' : 'rgba(192,57,43,0.55)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, TW / 2 - 3, TH / 2 - 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, TW / 2 - 4, TH / 2 - 2, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  drawShadow(cx, cy, 8);
-  drawSprite(FIG_GEGNER, cx, cy + 2, 2);
-  drawHpBar(cx, cy - 26, 22, e.hp, e.maxHp, '#c0392b');
-  addPick('enemy', e, cx - 12, cy - 24, 24, 28);
+  drawShadow(cx, cy, 4 + t.scale * 2);
+  drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, { ...PAL, ...t.pal });
+  const h = 9 * t.scale;
+  drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
+  addPick('enemy', e, cx - 7 * t.scale / 2 - 4, cy - h - 8, 7 * t.scale + 8, h + 12);
 }
 
 function drawDeko(d) {
@@ -769,11 +849,11 @@ function draw() {
 
   // Reichweite der ausgewaehlten Einheit als Feldmarkierung
   const sel = getSelectedUnit();
-  if (sel) markRange(sel.tower, sel.unit.range, 'rgba(143,191,85,0.20)');
+  if (sel) markRange(sel.tower, unitRange(sel.tower, sel.unit), 'rgba(143,191,85,0.20)');
   else {
     for (const t of state.towers) {
       const u = t.slots.find(s => s && s.range);
-      if (u) markRange(t, u.range, 'rgba(140,34,48,0.09)');
+      if (u) markRange(t, unitRange(t, u), 'rgba(140,34,48,0.09)');
     }
   }
 
@@ -783,7 +863,7 @@ function draw() {
   const objekte = [];
   objekte.push({ tiefe: CASTLE.col + CASTLE.w + CASTLE.row + CASTLE.h, zeichne: drawCastle });
   for (const t of state.towers) objekte.push({ tiefe: t.col + t.w + t.row + t.h, zeichne: () => drawTower(t) });
-  if (state.enemy) objekte.push({ tiefe: state.enemy.col + state.enemy.row + 1, zeichne: drawEnemy });
+  for (const e of state.enemies) objekte.push({ tiefe: e.col + e.row + 1, zeichne: () => drawEnemy(e) });
   for (const d of DEKO) objekte.push({ tiefe: d.c + d.r + 1, zeichne: () => drawDeko(d) });
   objekte.sort((a, b) => a.tiefe - b.tiefe);
   for (const o of objekte) o.zeichne();
@@ -805,9 +885,9 @@ function drawMinimap() {
     mctx.fillStyle = t.slots.some(s => s) ? '#6f9ee0' : '#8a8070';
     mctx.fillRect(t.col * sx, t.row * sy, t.w * sx, t.h * sy);
   }
-  if (state.enemy) {
-    mctx.fillStyle = '#e0503c';
-    mctx.fillRect(state.enemy.col * sx - 1, state.enemy.row * sy - 1, sx + 2, sy + 2);
+  for (const e of state.enemies) {
+    mctx.fillStyle = e.typ === 'ramme' ? '#ffb347' : '#e0503c';
+    mctx.fillRect(e.col * sx - 1, e.row * sy - 1, sx + 2, sy + 2);
   }
   mctx.strokeStyle = '#6b5535';
   mctx.lineWidth = 2;
@@ -980,11 +1060,13 @@ canvas.addEventListener('click', (evt) => {
  * zur naechsten Einheit darauf.
  */
 function handleSelectionClick(treffer, cell) {
-  const gegnerGetroffen = treffer && treffer.art === 'enemy';
-  if (gegnerGetroffen || (state.enemy && cell.col === state.enemy.col && cell.row === state.enemy.row)) {
+  const gegner = treffer && treffer.art === 'enemy'
+    ? treffer.ref
+    : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
+  if (gegner) {
     const sel = getSelectedUnit();
     if (!sel) { setMessage('Wähle zuerst eine Einheit auf einem Turm, dann den Gegner.'); renderAll(); return; }
-    attackEnemy(sel.tower, sel.unit);
+    attackEnemy(sel.tower, sel.unit, gegner);
     return;
   }
 
@@ -1007,13 +1089,16 @@ function handleSelectionClick(treffer, cell) {
     state.selectedUnit = { towerId: tower.id, slotIdx: naechste };
     const unit = tower.slots[naechste];
 
-    if (!state.enemy) {
-      setMessage(unit.name + ' ausgewählt. Zurzeit ist kein Gegner auf dem Feld.');
+    const rw = unitRange(tower, unit);
+    const naechster = nearestEnemyTo(tower);
+    if (!naechster) {
+      setMessage(unit.name + ' ausgewählt (Reichweite ' + rw + '). Zurzeit ist kein Gegner auf dem Feld.');
     } else {
-      const d = distanceToEnemy(tower);
-      if (d > unit.range) setMessage(unit.name + ' ausgewählt, aber der Gegner steht ' + d + ' Felder entfernt (Reichweite ' + unit.range + ').');
+      const d = distanceTo(tower, naechster);
+      const inReichweite = state.enemies.filter(e => distanceTo(tower, e) <= rw).length;
+      if (d > rw) setMessage(unit.name + ' ausgewählt. Reichweite ' + rw + ', der nächste Gegner steht ' + d + ' Felder entfernt.');
       else if (state.tatendrang < ATTACK_COST) setMessage(unit.name + ' ausgewählt, aber der Tatendrang reicht nicht für einen Angriff.');
-      else setMessage(unit.name + ' ausgewählt. Klicke den Gegner an, um für ' + unit.dmg + ' Schaden anzugreifen (' + ATTACK_COST + ' Tatendrang).');
+      else setMessage(unit.name + ' ausgewählt: Reichweite ' + rw + ', ' + unit.dmg + ' Schaden, ' + inReichweite + ' Ziel' + (inReichweite === 1 ? '' : 'e') + ' erreichbar. Gegner anklicken.');
     }
     renderAll();
     return;
@@ -1027,26 +1112,26 @@ function handleSelectionClick(treffer, cell) {
 }
 
 /** Eine ausgewaehlte Einheit greift den Gegner an. Kostet Tatendrang. */
-function attackEnemy(tower, unit) {
-  if (!state.enemy) { setMessage('Kein Gegner auf dem Feld.'); renderAll(); return; }
+function attackEnemy(tower, unit, enemy) {
+  if (!enemy || !state.enemies.includes(enemy)) { setMessage('Dieses Ziel gibt es nicht mehr.'); renderAll(); return; }
   if (state.tatendrang < ATTACK_COST) { setMessage('Nicht genug Tatendrang für einen Angriff.'); renderAll(); return; }
 
-  const d = distanceToEnemy(tower);
-  if (d > unit.range) {
-    setMessage(unit.name + ' reicht nicht so weit: ' + d + ' Felder entfernt, Reichweite ' + unit.range + '.');
+  const rw = unitRange(tower, unit);
+  const d = distanceTo(tower, enemy);
+  if (d > rw) {
+    setMessage(unit.name + ' reicht nicht so weit: ' + enemy.name + ' steht ' + d + ' Felder entfernt, Reichweite ' + rw + '.');
     renderAll();
     return;
   }
 
   state.tatendrang -= ATTACK_COST;
-  state.enemy.hp -= unit.dmg;
+  enemy.hp -= unit.dmg;
 
-  if (state.enemy.hp <= 0) {
-    setMessage(unit.name + ' streckt den Gegner nieder!');
-    state.enemy = null;
-    state.selectedUnit = null;
+  if (enemy.hp <= 0) {
+    state.enemies = state.enemies.filter(e => e !== enemy);
+    setMessage(unit.name + ' streckt ' + enemy.name + ' nieder!');
   } else {
-    setMessage(unit.name + ' trifft für ' + unit.dmg + ' Schaden (' + state.enemy.hp + '/' + state.enemy.maxHp + ' LP übrig).');
+    setMessage(unit.name + ' trifft ' + enemy.name + ' für ' + unit.dmg + ' Schaden (' + enemy.hp + '/' + enemy.maxHp + ' LP übrig).');
   }
   renderAll();
 }
@@ -1121,49 +1206,72 @@ function removeFromHand(card) {
 }
 
 // ---------- Gegnerzug ----------
+
+/** Steht auf diesem Feld Mauerwerk? Dort laeuft niemand hindurch. */
+function blockiert(col, row) {
+  if (col < 0 || row < 0 || col >= COLS || row >= ROWS) return true;
+  if (cellInsideRect(col, row, CASTLE)) return true;
+  return state.towers.some(t => cellInsideRect(col, row, t));
+}
+
+/** Ein Schritt Richtung Ziel, mit Ausweichen an Mauern vorbei. */
+function schrittRichtung(e, ziel) {
+  const dx = Math.sign(ziel.col - e.col);
+  const dy = Math.sign(ziel.row - e.row);
+  const versuche = [[dx, dy], [dx, 0], [0, dy]];
+  for (const [sx, sy] of versuche) {
+    if (!sx && !sy) continue;
+    if (!blockiert(e.col + sx, e.row + sy)) { e.col += sx; e.row += sy; return true; }
+  }
+  return false;
+}
+
+/**
+ * Jeder Gegner sucht sich den naechsten Turm, sonst die Burg, rueckt bis auf
+ * seine eigene Angriffsreichweite heran und schlaegt dann zu. Zurueckgeschlagen
+ * wird nicht mehr: Schaden richten nur Angriffe an, die du selbst ansetzt.
+ */
 function resolveEnemyTurn() {
-  const e = state.enemy;
-  if (!e) return;
+  const meldungen = [];
 
-  const target = findNearestTower(e);
-  let targetPoint, isCastle = false;
-  if (target) {
-    targetPoint = closestPointOnRect(e.col, e.row, target);
-  } else {
-    targetPoint = { col: CASTLE.col + CASTLE.w, row: Math.max(CASTLE.row, Math.min(e.row, CASTLE.row + CASTLE.h - 1)) };
-    isCastle = true;
-  }
+  for (const e of [...state.enemies]) {
+    const turm = findNearestTower(e);
+    let zielPunkt, istBurg = false;
+    if (turm) {
+      zielPunkt = closestPointOnRect(e.col, e.row, turm);
+    } else {
+      zielPunkt = closestPointOnRect(e.col, e.row, CASTLE);
+      istBurg = true;
+    }
 
-  let remaining = e.range;
-  while (remaining > 0) {
-    const dist = chebyshev(e.col, e.row, targetPoint.col, targetPoint.row);
-    if (dist <= 1) break;
-    e.col += Math.sign(targetPoint.col - e.col);
-    e.row += Math.sign(targetPoint.row - e.row);
-    remaining--;
-  }
+    let rest = e.move;
+    while (rest > 0 && chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row) > e.reach) {
+      if (!schrittRichtung(e, zielPunkt)) break;
+      rest--;
+      if (turm) zielPunkt = closestPointOnRect(e.col, e.row, turm);
+      else zielPunkt = closestPointOnRect(e.col, e.row, CASTLE);
+    }
 
-  if (chebyshev(e.col, e.row, targetPoint.col, targetPoint.row) <= 1) {
-    if (target) {
-      target.hp -= e.dmg;
-      const defender = target.slots.find(s => s);
-      if (defender) e.hp -= defender.dmg;
-      if (target.hp <= 0) {
-        state.towers = state.towers.filter(t => t.id !== target.id);
-        setMessage((defender ? defender.name + ' fällt, ' : '') + target.name + ' wurde zerstört!');
+    if (chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row) > e.reach) continue;
+
+    if (turm) {
+      turm.hp -= e.dmg;
+      if (turm.hp <= 0) {
+        const besatzung = turm.slots.filter(x => x).length;
+        state.towers = state.towers.filter(t => t.id !== turm.id);
+        if (state.selectedUnit && state.selectedUnit.towerId === turm.id) state.selectedUnit = null;
+        meldungen.push(turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!');
       } else {
-        setMessage('Gegner greift ' + target.name + ' an (' + target.hp + '/' + target.maxHp + ' LP übrig).');
+        meldungen.push(e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')');
       }
-    } else if (isCastle) {
+    } else if (istBurg) {
       state.castleHp -= e.dmg;
-      setMessage('Die Burg wird direkt angegriffen! (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ' LP übrig)');
+      meldungen.push(e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')');
     }
   }
 
-  if (e.hp <= 0) {
-    setMessage('Gegner besiegt!');
-    state.enemy = null;
-  }
+  if (meldungen.length) setMessage(meldungen.slice(0, 3).join(' · ') +
+    (meldungen.length > 3 ? ' · und ' + (meldungen.length - 3) + ' weitere' : ''));
 }
 
 function endRound() {
@@ -1173,7 +1281,7 @@ function endRound() {
   setMessage('');
   resolveEnemyTurn();
   const kampfMeldung = document.getElementById('message').textContent;
-  if (!state.enemy && state.castleHp > 0) spawnEnemy();
+  if (state.castleHp > 0) spawnWave(state.round);
 
   const abgelegt = state.hand.length;
   state.discard.push(...state.hand);
@@ -1181,6 +1289,7 @@ function endRound() {
   const { drawn, reshuffled } = drawCards(HAND_SIZE);
 
   state.round += 1;
+  state.maxTatendrang = maxTatendrangFuer(state.round);
   state.tatendrang = state.maxTatendrang;
   state.pendingCard = null;
   state.hoverCell = null;
@@ -1247,6 +1356,7 @@ function renderHand() {
     if (card.dmg) werte.push('⚔ ' + card.dmg);
     if (card.range) werte.push('➤ ' + card.range);
     if (card.hp) werte.push('♥ ' + card.hp);
+    if (card.rangeBonus) werte.push('▲ +' + card.rangeBonus);
 
     const txt = document.createElement('div');
     txt.className = 'card-text';
@@ -1273,7 +1383,9 @@ function renderAll() {
   document.getElementById('endround-btn').disabled = state.castleHp <= 0;
 
   const bar = document.getElementById('enemy-bar');
-  bar.style.width = state.enemy ? Math.max(0, (state.enemy.hp / state.enemy.maxHp) * 100) + '%' : '0%';
+  const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0);
+  bar.style.width = Math.max(0, Math.min(100, (restHp / state.wellenHp) * 100)) + '%';
+  document.getElementById('enemy-count').textContent = state.enemies.length;
 
   setIntent(currentIntentText());
   draw();
@@ -1284,7 +1396,7 @@ function renderAll() {
 // init
 state.draw = buildStarterDeck();
 drawCards(HAND_SIZE);
-spawnEnemy();
+spawnWave(1);
 renderAll();
 setMessage('Errichte einen Turm und besetze ihn, bevor der Gegner die Burg erreicht.');
 

@@ -53,12 +53,34 @@ erscheinen deshalb als markierte Felder, nicht als Kreis.
 
 | Karte | Typ | Kosten | Werte |
 | --- | --- | --- | --- |
-| Wachturm | Gebäude | 2 | 6 Turm-LP |
-| Palisade | Gebäude | 1 | 3 Turm-LP |
+| Wachturm | Gebäude | 2 | 6 Turm-LP, +2 Reichweite |
+| Palisade | Gebäude | 1 | 3 Turm-LP, +1 Reichweite |
 | Waldläufer | Einheit | 1 | 2 Schaden, Reichweite 3 |
 | Bogenschütze | Einheit | 2 | 3 Schaden, Reichweite 5 |
 | Sturmwind | Fähigkeit | 1 | +1 Schaden auf eine Einheit |
 | Krone der Belagerung | Macht | 3 | ein Platz für jeden Turm |
+
+Die Höhe des Gebäudes verlängert die Reichweite seiner Besatzung. Ein
+Bogenschütze auf einem Wachturm kommt damit auf 7, derselbe Bogenschütze auf
+einer Palisade nur auf 6. Wo eine Einheit steht, ist deshalb genauso wichtig
+wie welche Einheit es ist.
+
+## Gegner
+
+| Gegner | LP | Schaden | Bewegung | Reichweite | Ab Runde |
+| --- | --- | --- | --- | --- | --- |
+| Späher | 4 | 1 | 5 | 1 | 1 |
+| Armbrustschütze | 6 | 2 | 2 | 4 | 3 |
+| Ritter | 14 | 3 | 3 | 1 | 5 |
+| Ramme | 20 | 5 | 2 | 1 | 8 |
+
+Jeder Gegner hat eine eigene Angriffsreichweite. Ein Späher muss bis auf ein
+Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern
+Entfernung und rückt gar nicht erst weiter vor. Gegen ihn hilft nur, ihn zu
+überreichen, und dafür brauchst du Höhe.
+
+Gegner laufen nicht durch Mauerwerk. Sie weichen an Türmen und an der Burg
+vorbei.
 
 ## Rundenablauf
 
@@ -66,13 +88,18 @@ erscheinen deshalb als markierte Felder, nicht als Kreis.
 und Angriffe ebenfalls.
 
 Der eigene Zug läuft wie in Slay the Spire: Du gibst Tatendrang aus, solange
-du willst, und beendest dann die Runde. Erst danach handelt der Gegner.
+du willst, und beendest dann die Runde. Erst danach handeln die Gegner.
 
-`Runde beenden` löst zuerst den Gegnerzug aus: Der Gegner rückt bis zu vier
-Felder auf das nächstgelegene Ziel vor, sonst auf die Burg, und greift an,
-sobald er daneben steht. Eine Einheit auf dem angegriffenen Turm schlägt zurück.
-Fällt ein Turm, verschwindet er samt Besatzung. Fällt die Burg auf null, ist die
-Partie vorbei.
+Der Vorrat wächst langsam mit, alle fünf Runden um einen Punkt bis höchstens
+sechs. Ohne das wäre der Anstieg der Gegner nicht zu halten.
+
+`Runde beenden` löst zuerst den Gegnerzug aus. Jeder Gegner sucht sich den
+nächstgelegenen Turm, sonst die Burg, rückt bis auf seine eigene Reichweite
+heran und schlägt dann zu. Schaden an Gegnern entsteht ausschließlich durch
+Angriffe, die du selbst ansetzt. Fällt ein Turm, verschwindet er samt
+Besatzung. Fällt die Burg auf null, ist die Partie vorbei.
+
+Danach erscheint die Welle der neuen Runde am rechten Rand.
 
 Danach wandert die restliche Hand auf den Ablagestapel, der Tatendrang wird
 aufgefüllt und fünf Karten werden nachgezogen. Die Absichtszeile über dem Feld
@@ -96,8 +123,16 @@ oder schießen.
 Steht auf einem Turm mehr als eine Einheit, wechselt ein zweiter Klick auf
 denselben Turm zur nächsten. `Esc` hebt jede Auswahl auf.
 
-Zusätzlich schlägt eine Einheit weiterhin automatisch zurück, wenn der Gegner
-ihren Turm angreift. Das stammt aus v2 und ist unangetastet geblieben.
+## Schwierigkeit
+
+Jede Runde bringt eine neue Welle, deren Stärke als Punktebudget vergeben wird:
+`2 + Rundennummer`. Teure Gegnertypen schalten sich erst später frei, damit der
+Einstieg mild bleibt. Mehr als zehn Gegner stehen nie gleichzeitig auf dem
+Feld, es lohnt sich also, aufzuräumen statt nur zu mauern.
+
+Zum Justieren stehen oben im Skript `wellenBudget`, `maxTatendrangFuer` und
+`MAX_GEGNER_AUF_DEM_FELD`. Ein Testlauf mit einfacher Spielweise verliert die
+Burg derzeit um Runde 15.
 
 ## Deck
 
@@ -123,19 +158,20 @@ Skript.
 
 - **Kein Deckbuilding.** Das Deck zirkuliert, lässt sich während einer Partie
   aber nicht verändern. Es fehlt eine Möglichkeit, Karten zu erwerben.
-- **Kein Sieg.** Gegner erscheinen endlos, einer nach dem anderen. Verlieren
-  kann man, gewinnen nicht.
-- **Nur ein Gegnertyp** mit festen Werten, ohne Wellen oder Steigerung.
-- **Keine Meldung beim Vorrücken.** Zieht der Gegner nur, bleibt die
-  Meldungszeile leer. Die Absichtszeile deckt das ab.
+- **Kein Sieg.** Die Wellen hören nie auf. Verlieren kann man, gewinnen nicht.
+- **Keine Meldung beim reinen Vorrücken.** Zieht ein Gegner nur, steht nichts
+  in der Meldungszeile. Die Absichtszeile über dem Feld deckt das ab.
+- **Gegner weichen Mauern nur einfach aus.** Sie prüfen das nächste Feld, sie
+  suchen keinen Weg um eine lange Mauer herum.
 
 ## Aufbau
 
 Alles steckt in `index.html`: Stil, Aufbau und Logik. Wichtige Stellen im
 Skript sind `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 `state` für den Spielzustand mit den Stapeln `draw`, `hand` und `discard`,
-`handleSelectionClick` und `attackEnemy` für das Angreifen und
-`resolveEnemyTurn` für den Gegnerzug.
+`ENEMY_TYPES` für die Gegner, `spawnWave` für die Welle einer Runde,
+`handleSelectionClick` und `attackEnemy` für das Angreifen, `unitRange` für
+die Reichweite samt Turmbonus und `resolveEnemyTurn` für den Gegnerzug.
 
 Für die Darstellung sind `isoX` und `isoY` die Umrechnung aufs Raster,
 `cellFromPoint` die Umkehrung für Klicks, `drawBlock` und `drawMerlons` die
