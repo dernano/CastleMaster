@@ -77,6 +77,40 @@
     font-size: 1.2rem;
   }
 
+  .piles {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.82rem;
+    color: var(--eichel);
+  }
+
+  .pile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid var(--parchment-dark);
+    border-radius: 3px;
+    padding: 6px 10px;
+  }
+
+  .pile b {
+    font-size: 1rem;
+    color: var(--walnut-dark);
+    min-width: 14px;
+    text-align: right;
+  }
+
+  .pile.empty { opacity: 0.5; }
+
+  .round-label {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--eichel);
+  }
+
   button.endround {
     background: var(--herz);
     color: var(--parchment);
@@ -300,7 +334,12 @@
 <div class="subtitle">Prototyp – Kern-Loop: Turm bauen → Einheit platzieren</div>
 
 <div class="topbar">
+  <div class="round-label">Runde <span id="round-val">1</span></div>
   <div class="tatendrang"><span class="flame">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
+  <div class="piles">
+    <span class="pile" id="pile-draw" title="Nachziehstapel">🂠 <b id="draw-count">0</b> Nachziehstapel</span>
+    <span class="pile" id="pile-discard" title="Ablagestapel">🗇 <b id="discard-count">0</b> Ablage</span>
+  </div>
   <button class="endround" onclick="endRound()">Runde beenden</button>
 </div>
 
@@ -308,7 +347,7 @@
 
 <div class="battlefield" id="battlefield"></div>
 
-<div class="hand-label">Deine Hand</div>
+<div class="hand-label">Deine Hand <span id="hand-count"></span></div>
 <div class="hand" id="hand"></div>
 
 <footer>Doppeldeutsche Symbolik: 🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht</footer>
@@ -329,26 +368,70 @@ const CARD_POOL = [
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
 ];
 
+// Startdeck: wie oft jede Karte zu Beginn im Nachziehstapel liegt.
+const STARTER_DECK = [
+  ['palisade', 3],
+  ['wachturm', 2],
+  ['waldlaeufer', 3],
+  ['bogenschuetze', 2],
+  ['sturmwind', 1],
+  ['krone', 1],
+];
+
+const HAND_SIZE = 5;
+
 let state = {
+  round: 1,
   tatendrang: 3,
   maxTatendrang: 3,
   towers: [], // { name, slots: [null | {name, dmg, boosted}] }
+  draw: [],    // Nachziehstapel, oberste Karte am Ende des Arrays
   hand: [],
+  discard: [], // Ablagestapel
   pendingCard: null, // card awaiting a target click
 };
 
-function drawHand() {
-  const hand = [];
-  const pool = CARD_POOL;
-  for (let i = 0; i < 6; i++) {
-    hand.push({ ...pool[i % pool.length], uid: 'c' + Date.now() + '_' + i });
-  }
-  // shuffle a little so it doesn't feel too fixed
-  for (let i = hand.length - 1; i > 0; i--) {
+// Fisher-Yates, mischt an Ort und Stelle.
+function shuffle(cards) {
+  for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [hand[i], hand[j]] = [hand[j], hand[i]];
+    [cards[i], cards[j]] = [cards[j], cards[i]];
   }
-  return hand;
+  return cards;
+}
+
+function buildStarterDeck() {
+  const deck = [];
+  let serial = 0;
+  for (const [id, count] of STARTER_DECK) {
+    const proto = CARD_POOL.find(c => c.id === id);
+    if (!proto) continue;
+    for (let i = 0; i < count; i++) {
+      deck.push({ ...proto, uid: id + '#' + (++serial) });
+    }
+  }
+  return shuffle(deck);
+}
+
+/**
+ * Zieht bis zu n Karten auf die Hand. Ist der Nachziehstapel leer, wandert
+ * der Ablagestapel gemischt zurueck. Sind beide leer, wird weniger gezogen.
+ * Gibt zurueck, wie viele Karten kamen und ob dabei gemischt wurde.
+ */
+function drawCards(n) {
+  let drawn = 0;
+  let reshuffled = false;
+  for (let i = 0; i < n; i++) {
+    if (state.draw.length === 0) {
+      if (state.discard.length === 0) break;
+      state.draw = shuffle(state.discard);
+      state.discard = [];
+      reshuffled = true;
+    }
+    state.hand.push(state.draw.pop());
+    drawn++;
+  }
+  return { drawn, reshuffled };
 }
 
 function setMessage(text) {
@@ -360,8 +443,15 @@ function anyFreeSlot() {
 }
 
 function render() {
+  document.getElementById('round-val').textContent = state.round;
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
+  document.getElementById('draw-count').textContent = state.draw.length;
+  document.getElementById('discard-count').textContent = state.discard.length;
+  document.getElementById('pile-draw').classList.toggle('empty', state.draw.length === 0);
+  document.getElementById('pile-discard').classList.toggle('empty', state.discard.length === 0);
+  document.getElementById('hand-count').textContent =
+    state.hand.length ? '(' + state.hand.length + ')' : '(leer)';
 
   const bf = document.getElementById('battlefield');
   bf.innerHTML = '';
@@ -487,20 +577,36 @@ function applyAbilityTo(tIdx, sIdx) {
   render();
 }
 
+// Gespielte Karten verschwinden nicht, sie kommen auf den Ablagestapel
+// und damit spaeter wieder ins Deck.
 function removeFromHand(card) {
   state.hand = state.hand.filter(c => c.uid !== card.uid);
+  state.discard.push(card);
 }
 
 function endRound() {
+  // Nicht gespielte Karten wandern auf den Ablagestapel.
+  const abgelegt = state.hand.length;
+  state.discard.push(...state.hand);
+  state.hand = [];
+
+  state.round += 1;
   state.tatendrang = state.maxTatendrang;
-  state.hand = drawHand();
   state.pendingCard = null;
-  setMessage('Neue Runde. Tatendrang aufgefrischt, Hand neu gezogen.');
+
+  const { drawn, reshuffled } = drawCards(HAND_SIZE);
+
+  let text = 'Runde ' + state.round + '. Tatendrang aufgefrischt';
+  text += abgelegt > 0 ? ', ' + abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt' : '';
+  text += ', ' + drawn + ' nachgezogen.';
+  if (reshuffled) text += ' Der Ablagestapel wurde neu gemischt.';
+  setMessage(text);
   render();
 }
 
 // init
-state.hand = drawHand();
+state.draw = buildStarterDeck();
+drawCards(HAND_SIZE);
 render();
 </script>
 
