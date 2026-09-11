@@ -79,8 +79,19 @@ Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern
 Entfernung und rückt gar nicht erst weiter vor. Gegen ihn hilft nur, ihn zu
 überreichen, und dafür brauchst du Höhe.
 
+**Bewegen und Angreifen schließen sich aus.** Wer erst heranrücken muss, kommt
+in derselben Runde nicht mehr zum Schlag. Ein Gegner, der neu am Turm ankommt,
+schlägt also frühestens in der Runde darauf zu. Das gibt dir immer eine Runde
+Zeit zum Reagieren.
+
+Unter jedem Gegner steht, was er als Nächstes vorhat: `⚔` mit seinem Schaden,
+wenn er zuschlägt, `➤` mit seiner Schrittzahl, wenn er vorrückt.
+
 Gegner laufen nicht durch Mauerwerk. Sie weichen an Türmen und an der Burg
 vorbei.
+
+Später angeworbene Gegner sind zäher und schlagen härter, sonst wäre bei der
+Obergrenze von vierzehn Gegnern auf dem Feld Schluss mit der Steigerung.
 
 ## Rundenablauf
 
@@ -107,32 +118,42 @@ kündigt an, was der Gegner als Nächstes vorhat.
 
 ## Angreifen
 
-Einheiten schießen nicht von selbst. Du setzt sie im eigenen Zug gezielt auf
-den Gegner an:
+Türme schießen nicht von selbst. Du setzt sie im eigenen Zug gezielt auf einen
+Gegner an:
 
-1. Eine Einheit auf einem Turm anklicken. Ihre Reichweite wird auf dem Boden
-   markiert, der Gegner bekommt einen Ring: grün heißt in Reichweite, rot heißt
-   zu weit weg oder zu wenig Tatendrang.
-2. Den Gegner anklicken. Er nimmt den Schaden der Einheit.
+1. Einen Turm anklicken. Seine Reichweite wird auf dem Boden markiert, Gegner
+   bekommen einen Ring: grün heißt in Reichweite, rot heißt zu weit weg,
+   bereits geschossen oder zu wenig Tatendrang.
+2. Den Gegner anklicken. Er nimmt den Schaden der Salve.
 
-Ein Angriff kostet 1 Tatendrang, festgelegt als `ATTACK_COST`. Der Tatendrang
-ist die einzige Grenze, eine Einheit kann in derselben Runde also mehrfach
-angreifen, solange du bezahlst. Damit steht jede Runde dieselbe Frage: bauen
-oder schießen.
+**Ein Schuss pro Turm und Runde**, unabhängig von der Besatzung. Er kostet
+1 Tatendrang, festgelegt als `ATTACK_COST`. Nicht der Tatendrang begrenzt dich
+also zuerst, sondern die Zahl deiner besetzten Türme.
 
-Steht auf einem Turm mehr als eine Einheit, wechselt ein zweiter Klick auf
-denselben Turm zur nächsten. `Esc` hebt jede Auswahl auf.
+**Der Schaden aller Einheiten auf dem Turm summiert sich.** Zwei Bogenschützen
+schießen eine Salve über 6 statt über 3. Genau dafür ist die Krone der
+Belagerung da, die jedem Turm einen zusätzlichen Platz gibt.
+
+Es zählen dabei nur Einheiten, die selbst weit genug reichen. Stehen ein
+Bogenschütze und ein Waldläufer auf einem Wachturm, schießen auf sieben Felder
+nur die 3 Schaden des Bogenschützen, auf kurze Entfernung die vollen 5.
+
+Unter jedem Turm steht, wie stark seine Salve ist. Ein ausgegrautes `⚔ –`
+heißt, dass er in dieser Runde schon geschossen hat. `Esc` hebt jede Auswahl
+auf.
 
 ## Schwierigkeit
 
-Jede Runde bringt eine neue Welle, deren Stärke als Punktebudget vergeben wird:
-`2 + Rundennummer`. Teure Gegnertypen schalten sich erst später frei, damit der
-Einstieg mild bleibt. Mehr als zehn Gegner stehen nie gleichzeitig auf dem
-Feld, es lohnt sich also, aufzuräumen statt nur zu mauern.
+Jede Runde bringt eine neue Welle, deren Stärke als Punktebudget vergeben wird.
+Teure Gegnertypen schalten sich erst später frei, damit der Einstieg mild
+bleibt. Mehr als vierzehn Gegner stehen nie gleichzeitig auf dem Feld, es lohnt
+sich also, aufzuräumen statt nur zu mauern. Weil diese Obergrenze die
+Steigerung sonst deckeln würde, werden die Gegner mit der Rundennummer
+zusätzlich zäher und stärker.
 
-Zum Justieren stehen oben im Skript `wellenBudget`, `maxTatendrangFuer` und
-`MAX_GEGNER_AUF_DEM_FELD`. Ein Testlauf mit einfacher Spielweise verliert die
-Burg derzeit um Runde 15.
+Zum Justieren stehen oben im Skript `wellenBudget`, `maxTatendrangFuer`,
+`MAX_GEGNER_AUF_DEM_FELD`, `belagerungsHp` und `belagerungsSchaden`. Ein
+Testlauf mit einfacher Spielweise verliert die Burg derzeit in Runde 17.
 
 ## Deck
 
@@ -171,11 +192,14 @@ Skript sind `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 `state` für den Spielzustand mit den Stapeln `draw`, `hand` und `discard`,
 `ENEMY_TYPES` für die Gegner, `spawnWave` für die Welle einer Runde,
 `handleSelectionClick` und `attackEnemy` für das Angreifen, `unitRange` für
-die Reichweite samt Turmbonus und `resolveEnemyTurn` für den Gegnerzug.
+die Reichweite samt Turmbonus und `enemyPlan` für die Absicht eines Gegners und `resolveEnemyTurn` für den
+Gegnerzug. `towerReach` und `towerDamageAt` bestimmen Reichweite und Salve
+eines Turms.
 
 Für die Darstellung sind `isoX` und `isoY` die Umrechnung aufs Raster,
-`cellFromPoint` die Umkehrung für Klicks, `drawBlock` und `drawMerlons` die
-Bausteine für Mauerwerk, `drawSprite` die Pixelfiguren und `paintCardArt` die
-Bilder auf den Karten.
+`cellFromPoint` die Umkehrung für Klicks, `zeichenReihenfolge` die
+Verdeckungsreihenfolge, `drawBlock` und `drawMerlons` die Bausteine für
+Mauerwerk, `drawSprite` die Pixelfiguren, `drawBadge` die Plaketten und
+`paintCardArt` die Bilder auf den Karten.
 
 `scripts/serve.js` ist ein statischer Dev-Server ohne Abhängigkeiten.

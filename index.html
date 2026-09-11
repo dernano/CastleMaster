@@ -233,7 +233,7 @@
 
 <footer>
   🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)<br>
-  Angreifen: Einheit auf einem Turm anklicken, dann den Gegner. Kostet 1 Tatendrang. <kbd>Esc</kbd> hebt die Auswahl auf.
+  Angreifen: Turm anklicken, dann den Gegner. Kostet 1 Tatendrang, ein Schuss pro Turm und Runde. <kbd>Esc</kbd> hebt die Auswahl auf.
 </footer>
 
 <script>
@@ -277,10 +277,15 @@ const ENEMY_TYPES = {
 };
 
 // Staerke der Welle je Runde. Hoeher heisst schwerer.
-const wellenBudget = (runde) => 2 + runde;
+const wellenBudget = (runde) => 3 + Math.round(runde * 1.6);
 // Tatendrang waechst langsam mit, sonst ist der Anstieg nicht zu halten.
 const maxTatendrangFuer = (runde) => Math.min(6, 3 + Math.floor((runde - 1) / 5));
-const MAX_GEGNER_AUF_DEM_FELD = 10;
+const MAX_GEGNER_AUF_DEM_FELD = 14;
+
+// Spaeter angeworbene Gegner sind zaeher. Sonst waere bei der Obergrenze
+// oben Schluss mit der Steigerung.
+const belagerungsHp = (runde) => 1 + 0.06 * (runde - 1);
+const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 8);
 
 const STARTER_DECK = [
   ['palisade', 3], ['wachturm', 2], ['waldlaeufer', 3],
@@ -298,7 +303,7 @@ let state = {
   wellenHp: 1,      // Gesamt-LP der laufenden Welle, fuer die Anzeige
   draw: [], hand: [], discard: [],
   pendingCard: null,
-  selectedUnit: null,
+  selectedTower: null,   // Turm, der schiessen soll
   hoverCell: null,
   nextTowerId: 1,
   nextEnemyId: 1,
@@ -343,11 +348,14 @@ function setMessage(t) { document.getElementById('message').textContent = t; }
 function setIntent(t) { document.getElementById('intent').textContent = t; }
 
 /** Setzt einen Gegner eines Typs an den rechten Rand. */
-function spawnEnemy(typ) {
+function spawnEnemy(typ, runde = state.round) {
   const t = ENEMY_TYPES[typ];
+  const hp = Math.max(1, Math.round(t.hp * belagerungsHp(runde)));
   const e = {
     id: state.nextEnemyId++, typ,
-    name: t.name, hp: t.hp, maxHp: t.hp, dmg: t.dmg, move: t.move, reach: t.reach,
+    name: t.name, hp, maxHp: hp,
+    dmg: t.dmg + belagerungsSchaden(runde),
+    move: t.move, reach: t.reach,
     col: COLS - 1, row: Math.floor(Math.random() * ROWS),
   };
   state.enemies.push(e);
@@ -374,7 +382,7 @@ function spawnWave(runde) {
     const wahl = Math.random() < 0.6
       ? bezahlbar[0]
       : bezahlbar[Math.floor(Math.random() * bezahlbar.length)];
-    spawnEnemy(wahl.id);
+    spawnEnemy(wahl.id, runde);
     budget -= wahl.punkte;
   }
   state.wellenHp = Math.max(1, state.enemies.reduce((s, e) => s + e.maxHp, 0));
@@ -414,6 +422,23 @@ function findNearestTower(enemy) {
 
 function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
 
+/**
+ * Was ein Gegner als Naechstes tut. Bewegen und Angreifen schliessen sich
+ * aus: Wer erst heranrücken muss, kommt in derselben Runde nicht mehr zum
+ * Schlag. Dieselbe Auskunft speist die Anzeige und den tatsaechlichen Zug.
+ */
+function enemyPlan(e) {
+  const turm = findNearestTower(e);
+  const ziel = turm || CASTLE;
+  const zielPunkt = closestPointOnRect(e.col, e.row, ziel);
+  const abstand = chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row);
+  return {
+    turm, ziel, zielPunkt, abstand,
+    istBurg: !turm,
+    aktion: abstand <= e.reach ? 'angriff' : 'vorruecken',
+  };
+}
+
 function currentIntentText() {
   if (state.castleHp <= 0) return 'Die Belagerung ist entschieden.';
   if (!state.enemies.length) return 'Kein Gegner auf dem Feld. Nutze die Ruhe zum Bauen.';
@@ -421,9 +446,8 @@ function currentIntentText() {
   let schlagbereit = 0;
   const ziele = new Set();
   for (const e of state.enemies) {
-    const ziel = findNearestTower(e);
-    const d = ziel ? distanceTo(ziel, e) : chebyshev(e.col, e.row, CASTLE.col + CASTLE.w, e.row);
-    if (d <= e.reach) { schlagbereit++; ziele.add(ziel ? ziel.name : 'die Burg'); }
+    const plan = enemyPlan(e);
+    if (plan.aktion === 'angriff') { schlagbereit++; ziele.add(plan.istBurg ? 'die Burg' : plan.turm.name); }
   }
   const teile = [];
   if (schlagbereit) teile.push('⚔ ' + schlagbereit + ' schlagen zu (' + [...ziele].join(', ') + ')');
@@ -433,14 +457,26 @@ function currentIntentText() {
 }
 
 function findTowerById(id) { return state.towers.find(t => t.id === id) || null; }
-function getSelectedUnit() {
-  if (!state.selectedUnit) return null;
-  const tower = findTowerById(state.selectedUnit.towerId);
-  if (!tower) return null;
-  const unit = tower.slots[state.selectedUnit.slotIdx];
-  if (!unit) return null;
-  return { tower, unit };
+function getSelectedTower() { return state.selectedTower ? findTowerById(state.selectedTower) : null; }
+
+function towerUnits(t) { return t.slots.filter(s => s); }
+
+/** Weiteste Reichweite, die dieser Turm mit seiner Besatzung erreicht. */
+function towerReach(t) {
+  const us = towerUnits(t);
+  return us.length ? Math.max(...us.map(u => unitRange(t, u))) : 0;
 }
+
+/**
+ * Schaden einer Salve auf ein Ziel im Abstand d. Es zaehlen nur Einheiten,
+ * die selbst so weit reichen. Zwei Bogenschuetzen auf einem Turm schiessen
+ * also gemeinsam, ein Waldlaeufer bleibt auf grosse Entfernung aussen vor.
+ */
+function towerDamageAt(t, d) {
+  return towerUnits(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + u.dmg, 0);
+}
+
+function towerHasFired(t) { return t.attackedRound === state.round; }
 /** Abstand zwischen einem Turm und einem Gegner, wie die Bewegung gemessen. */
 function distanceTo(tower, enemy) {
   if (!enemy) return Infinity;
@@ -451,7 +487,7 @@ function distanceTo(tower, enemy) {
 /** Die Hoehe des Turms verlaengert die Reichweite seiner Besatzung. */
 function unitRange(tower, unit) { return unit.range + (tower.rangeBonus || 0); }
 
-function enemyInRange(tower, unit, enemy) { return Boolean(enemy) && distanceTo(tower, enemy) <= unitRange(tower, unit); }
+function enemyInRange(tower, enemy) { return Boolean(enemy) && distanceTo(tower, enemy) <= towerReach(tower); }
 
 /** Der Gegner, der von diesem Turm aus am naechsten steht. */
 function nearestEnemyTo(tower) {
@@ -761,8 +797,8 @@ function drawCastle() {
 
 function drawTower(t) {
   const H = 34;
-  const sel = getSelectedUnit();
-  const ausgewaehlt = sel && sel.tower.id === t.id;
+  const sel = getSelectedTower();
+  const ausgewaehlt = sel && sel.id === t.id;
   const zielbar = state.pendingCard && (
     (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
     (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
@@ -795,19 +831,29 @@ function drawTower(t) {
   if (einheiten.length) drawBanner(cx + 14, cy + 2, '#2f5fa8');
 
   if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
-  addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 46);
+
+  const salve = towerDamageAt(t, 0);
+  if (salve > 0) {
+    const bx = isoX(t.col + t.w / 2, t.row + t.h / 2);
+    const by = isoY(t.col + t.w / 2, t.row + t.h / 2) + TH / 2 - 2;
+    if (towerHasFired(t)) drawBadge(bx, by, '⚔ –', '#7d7466', '#4a4438');
+    else drawBadge(bx, by, '⚔ ' + salve, '#bfe39a', '#5c7a30');
+  }
+
+  addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
 }
 
 function drawEnemy(e) {
   const t = ENEMY_TYPES[e.typ];
+  const plan = enemyPlan(e);
   // Kleiner Versatz, damit sich Gegner auf demselben Feld nicht ganz decken.
   const jitter = ((e.id * 37) % 9) - 4;
   const cx = isoX(e.col, e.row) + jitter;
   const cy = isoY(e.col, e.row) + TH / 2 + ((e.id * 13) % 5) - 2;
-  const sel = getSelectedUnit();
+  const sel = getSelectedTower();
 
   if (sel) {
-    const treffbar = enemyInRange(sel.tower, sel.unit, e) && state.tatendrang >= ATTACK_COST;
+    const treffbar = enemyInRange(sel, e) && !towerHasFired(sel) && state.tatendrang >= ATTACK_COST;
     ctx.strokeStyle = treffbar ? '#8fbf55' : 'rgba(192,57,43,0.55)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -819,7 +865,30 @@ function drawEnemy(e) {
   drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, { ...PAL, ...t.pal });
   const h = 9 * t.scale;
   drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
-  addPick('enemy', e, cx - 7 * t.scale / 2 - 4, cy - h - 8, 7 * t.scale + 8, h + 12);
+
+  // Was der Gegner im naechsten Zug vorhat
+  if (plan.aktion === 'angriff') drawBadge(cx, cy + 5, '⚔ ' + e.dmg, '#ffb3a7', '#8c2230');
+  else drawBadge(cx, cy + 5, '➤ ' + e.move, '#cfc0a0', '#6b5535');
+
+  addPick('enemy', e, cx - 7 * t.scale / 2 - 5, cy - h - 8, 7 * t.scale + 10, h + 26);
+}
+
+/** Kleine Plakette mit einer Absicht oder einem Wert. */
+function drawBadge(x, y, text, farbe, rand) {
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  const w = Math.max(20, ctx.measureText(text).width + 9);
+  const hh = 12;
+  ctx.fillStyle = 'rgba(10,8,6,0.85)';
+  ctx.fillRect(Math.round(x - w / 2), y, w, hh);
+  ctx.strokeStyle = rand;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(x - w / 2) + 0.5, y + 0.5, w - 1, hh - 1);
+  ctx.fillStyle = farbe;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, Math.round(x), y + hh / 2 + 0.5);
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
 }
 
 function drawDeko(d) {
@@ -840,6 +909,51 @@ function drawPlacementPreview() {
   }
 }
 
+/**
+ * Malerreihenfolge fuer die Isometrie.
+ *
+ * Die blosse Summe aus Spalte und Zeile reicht nicht: Ein Gegner, der seitlich
+ * vor einem zwei Felder grossen Turm steht, hat dieselbe Summe wie dessen
+ * hintere Haelfte und verschwand deshalb hinter dem hohen Turmkoerper.
+ *
+ * Massgeblich ist stattdessen die Lage der Grundflaechen zueinander: A liegt
+ * hinter B, wenn A vollstaendig vor B's erster Spalte oder Zeile endet. Daraus
+ * entsteht eine Reihenfolge, die sich topologisch aufloesen laesst.
+ */
+function zeichenReihenfolge(objekte) {
+  const n = objekte.length;
+  const nachfolger = Array.from({ length: n }, () => []);
+  const grad = new Array(n).fill(0);
+  const liegtHinter = (a, b) => a.col + a.w <= b.col || a.row + a.h <= b.row;
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      let erst;
+      if (liegtHinter(objekte[i], objekte[j])) erst = i;
+      else if (liegtHinter(objekte[j], objekte[i])) erst = j;
+      else continue;
+      const spaeter = erst === i ? j : i;
+      nachfolger[erst].push(spaeter);
+      grad[spaeter]++;
+    }
+  }
+
+  const tiefe = objekte.map(o => o.col + o.row + (o.w + o.h) / 2);
+  const bereit = [];
+  for (let i = 0; i < n; i++) if (grad[i] === 0) bereit.push(i);
+
+  const raus = [];
+  while (bereit.length) {
+    bereit.sort((a, b) => tiefe[a] - tiefe[b]);
+    const i = bereit.shift();
+    raus.push(objekte[i]);
+    for (const j of nachfolger[i]) if (--grad[j] === 0) bereit.push(j);
+  }
+  // Sollte nie eintreten; falls doch, lieber grob sortiert als gar nicht.
+  if (raus.length < n) return [...objekte].sort((a, b) => (a.col + a.row) - (b.col + b.row));
+  return raus;
+}
+
 function draw() {
   pickables = [];
   ctx.fillStyle = '#0b0908';
@@ -847,26 +961,24 @@ function draw() {
 
   drawGround();
 
-  // Reichweite der ausgewaehlten Einheit als Feldmarkierung
-  const sel = getSelectedUnit();
-  if (sel) markRange(sel.tower, unitRange(sel.tower, sel.unit), 'rgba(143,191,85,0.20)');
+  // Reichweite des ausgewaehlten Turms als Feldmarkierung
+  const sel = getSelectedTower();
+  if (sel) markRange(sel, towerReach(sel), 'rgba(143,191,85,0.20)');
   else {
     for (const t of state.towers) {
-      const u = t.slots.find(s => s && s.range);
-      if (u) markRange(t, unitRange(t, u), 'rgba(140,34,48,0.09)');
+      const rw = towerReach(t);
+      if (rw) markRange(t, rw, 'rgba(140,34,48,0.09)');
     }
   }
 
   drawPlacementPreview();
 
-  // Malerreihenfolge: was weiter vorn liegt, kommt spaeter
   const objekte = [];
-  objekte.push({ tiefe: CASTLE.col + CASTLE.w + CASTLE.row + CASTLE.h, zeichne: drawCastle });
-  for (const t of state.towers) objekte.push({ tiefe: t.col + t.w + t.row + t.h, zeichne: () => drawTower(t) });
-  for (const e of state.enemies) objekte.push({ tiefe: e.col + e.row + 1, zeichne: () => drawEnemy(e) });
-  for (const d of DEKO) objekte.push({ tiefe: d.c + d.r + 1, zeichne: () => drawDeko(d) });
-  objekte.sort((a, b) => a.tiefe - b.tiefe);
-  for (const o of objekte) o.zeichne();
+  objekte.push({ col: CASTLE.col, row: CASTLE.row, w: CASTLE.w, h: CASTLE.h, zeichne: drawCastle });
+  for (const t of state.towers) objekte.push({ col: t.col, row: t.row, w: t.w, h: t.h, zeichne: () => drawTower(t) });
+  for (const e of state.enemies) objekte.push({ col: e.col, row: e.row, w: 1, h: 1, zeichne: () => drawEnemy(e) });
+  for (const d of DEKO) objekte.push({ col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
+  for (const o of zeichenReihenfolge(objekte)) o.zeichne();
 }
 
 // ---------- Minikarte ----------
@@ -1030,7 +1142,7 @@ canvas.addEventListener('click', (evt) => {
 
   if (!state.pendingCard) { handleSelectionClick(treffer, cell); return; }
 
-  state.selectedUnit = null;
+  state.selectedTower = null;
 
   if (state.pendingCard.type === 'Gebäude') {
     if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) placeTower(cell.col, cell.row);
@@ -1064,9 +1176,9 @@ function handleSelectionClick(treffer, cell) {
     ? treffer.ref
     : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
   if (gegner) {
-    const sel = getSelectedUnit();
-    if (!sel) { setMessage('Wähle zuerst eine Einheit auf einem Turm, dann den Gegner.'); renderAll(); return; }
-    attackEnemy(sel.tower, sel.unit, gegner);
+    const turm = getSelectedTower();
+    if (!turm) { setMessage('Wähle zuerst einen Turm, dann den Gegner.'); renderAll(); return; }
+    attackWithTower(turm, gegner);
     return;
   }
 
@@ -1074,64 +1186,76 @@ function handleSelectionClick(treffer, cell) {
     : state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
 
   if (tower) {
-    const besetzt = tower.slots.map((slot, i) => (slot ? i : -1)).filter(i => i >= 0);
-    if (besetzt.length === 0) {
-      state.selectedUnit = null;
-      setMessage('Auf diesem Turm steht keine Einheit.');
+    const einheiten = towerUnits(tower);
+    if (einheiten.length === 0) {
+      state.selectedTower = null;
+      setMessage(tower.name + ' ist unbesetzt. Erst eine Einheit daraufstellen.');
       renderAll();
       return;
     }
-    let naechste = besetzt[0];
-    if (state.selectedUnit && state.selectedUnit.towerId === tower.id) {
-      const pos = besetzt.indexOf(state.selectedUnit.slotIdx);
-      naechste = besetzt[(pos + 1) % besetzt.length];
-    }
-    state.selectedUnit = { towerId: tower.id, slotIdx: naechste };
-    const unit = tower.slots[naechste];
+    state.selectedTower = tower.id;
 
-    const rw = unitRange(tower, unit);
-    const naechster = nearestEnemyTo(tower);
-    if (!naechster) {
-      setMessage(unit.name + ' ausgewählt (Reichweite ' + rw + '). Zurzeit ist kein Gegner auf dem Feld.');
+    const rw = towerReach(tower);
+    const salve = towerDamageAt(tower, 0);
+    const besetzung = einheiten.length === 1 ? '1 Einheit' : einheiten.length + ' Einheiten';
+
+    if (towerHasFired(tower)) {
+      setMessage(tower.name + ' hat in dieser Runde bereits geschossen.');
+    } else if (state.tatendrang < ATTACK_COST) {
+      setMessage(tower.name + ' ist bereit, aber der Tatendrang reicht nicht.');
+    } else if (!state.enemies.length) {
+      setMessage(tower.name + ': Reichweite ' + rw + ', ' + salve + ' Schaden aus ' + besetzung + '. Kein Gegner auf dem Feld.');
     } else {
-      const d = distanceTo(tower, naechster);
-      const inReichweite = state.enemies.filter(e => distanceTo(tower, e) <= rw).length;
-      if (d > rw) setMessage(unit.name + ' ausgewählt. Reichweite ' + rw + ', der nächste Gegner steht ' + d + ' Felder entfernt.');
-      else if (state.tatendrang < ATTACK_COST) setMessage(unit.name + ' ausgewählt, aber der Tatendrang reicht nicht für einen Angriff.');
-      else setMessage(unit.name + ' ausgewählt: Reichweite ' + rw + ', ' + unit.dmg + ' Schaden, ' + inReichweite + ' Ziel' + (inReichweite === 1 ? '' : 'e') + ' erreichbar. Gegner anklicken.');
+      const erreichbar = state.enemies.filter(e => distanceTo(tower, e) <= rw).length;
+      if (!erreichbar) {
+        const d = distanceTo(tower, nearestEnemyTo(tower));
+        setMessage(tower.name + ': Reichweite ' + rw + ', der nächste Gegner steht ' + d + ' Felder entfernt.');
+      } else {
+        setMessage(tower.name + ': Reichweite ' + rw + ', ' + salve + ' Schaden aus ' + besetzung + ', ' +
+          erreichbar + ' Ziel' + (erreichbar === 1 ? '' : 'e') + ' erreichbar. Gegner anklicken.');
+      }
     }
     renderAll();
     return;
   }
 
-  if (state.selectedUnit) {
-    state.selectedUnit = null;
+  if (state.selectedTower) {
+    state.selectedTower = null;
     setMessage('Auswahl aufgehoben.');
     renderAll();
   }
 }
 
-/** Eine ausgewaehlte Einheit greift den Gegner an. Kostet Tatendrang. */
-function attackEnemy(tower, unit, enemy) {
+/**
+ * Ein Turm feuert eine Salve. Einmal pro Runde, unabhaengig davon, wie viele
+ * Einheiten darauf stehen; dafuer summiert sich ihr Schaden.
+ */
+function attackWithTower(tower, enemy) {
   if (!enemy || !state.enemies.includes(enemy)) { setMessage('Dieses Ziel gibt es nicht mehr.'); renderAll(); return; }
+  if (towerHasFired(tower)) { setMessage(tower.name + ' hat in dieser Runde bereits geschossen.'); renderAll(); return; }
   if (state.tatendrang < ATTACK_COST) { setMessage('Nicht genug Tatendrang für einen Angriff.'); renderAll(); return; }
 
-  const rw = unitRange(tower, unit);
   const d = distanceTo(tower, enemy);
-  if (d > rw) {
-    setMessage(unit.name + ' reicht nicht so weit: ' + enemy.name + ' steht ' + d + ' Felder entfernt, Reichweite ' + rw + '.');
+  const schaden = towerDamageAt(tower, d);
+  if (schaden <= 0) {
+    setMessage(tower.name + ' reicht nicht so weit: ' + enemy.name + ' steht ' + d + ' Felder entfernt, Reichweite ' + towerReach(tower) + '.');
     renderAll();
     return;
   }
 
   state.tatendrang -= ATTACK_COST;
-  enemy.hp -= unit.dmg;
+  tower.attackedRound = state.round;
+  enemy.hp -= schaden;
+
+  const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d).length;
+  const salve = anzahl > 1 ? ' (' + anzahl + ' Einheiten)' : '';
 
   if (enemy.hp <= 0) {
     state.enemies = state.enemies.filter(e => e !== enemy);
-    setMessage(unit.name + ' streckt ' + enemy.name + ' nieder!');
+    setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
   } else {
-    setMessage(unit.name + ' trifft ' + enemy.name + ' für ' + unit.dmg + ' Schaden (' + enemy.hp + '/' + enemy.maxHp + ' LP übrig).');
+    setMessage(tower.name + ' trifft ' + enemy.name + ' für ' + schaden + ' Schaden' + salve +
+      ' (' + enemy.hp + '/' + enemy.maxHp + ' LP übrig).');
   }
   renderAll();
 }
@@ -1171,7 +1295,7 @@ function placeTower(col, row) {
   removeFromHand(card);
   state.pendingCard = null;
   state.hoverCell = null;
-  state.selectedUnit = null;
+  state.selectedTower = null;
   setMessage(card.name + ' errichtet.');
   renderAll();
 }
@@ -1235,36 +1359,32 @@ function resolveEnemyTurn() {
   const meldungen = [];
 
   for (const e of [...state.enemies]) {
-    const turm = findNearestTower(e);
-    let zielPunkt, istBurg = false;
-    if (turm) {
-      zielPunkt = closestPointOnRect(e.col, e.row, turm);
-    } else {
-      zielPunkt = closestPointOnRect(e.col, e.row, CASTLE);
-      istBurg = true;
+    const plan = enemyPlan(e);
+
+    // Bewegen oder schlagen, nie beides in derselben Runde.
+    if (plan.aktion === 'vorruecken') {
+      let rest = e.move;
+      let punkt = plan.zielPunkt;
+      while (rest > 0 && chebyshev(e.col, e.row, punkt.col, punkt.row) > e.reach) {
+        if (!schrittRichtung(e, punkt)) break;
+        rest--;
+        punkt = closestPointOnRect(e.col, e.row, plan.ziel);
+      }
+      continue;
     }
 
-    let rest = e.move;
-    while (rest > 0 && chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row) > e.reach) {
-      if (!schrittRichtung(e, zielPunkt)) break;
-      rest--;
-      if (turm) zielPunkt = closestPointOnRect(e.col, e.row, turm);
-      else zielPunkt = closestPointOnRect(e.col, e.row, CASTLE);
-    }
-
-    if (chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row) > e.reach) continue;
-
-    if (turm) {
+    if (plan.turm) {
+      const turm = plan.turm;
       turm.hp -= e.dmg;
       if (turm.hp <= 0) {
         const besatzung = turm.slots.filter(x => x).length;
         state.towers = state.towers.filter(t => t.id !== turm.id);
-        if (state.selectedUnit && state.selectedUnit.towerId === turm.id) state.selectedUnit = null;
+        if (state.selectedTower === turm.id) state.selectedTower = null;
         meldungen.push(turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!');
       } else {
         meldungen.push(e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')');
       }
-    } else if (istBurg) {
+    } else {
       state.castleHp -= e.dmg;
       meldungen.push(e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')');
     }
@@ -1293,7 +1413,7 @@ function endRound() {
   state.tatendrang = state.maxTatendrang;
   state.pendingCard = null;
   state.hoverCell = null;
-  state.selectedUnit = null;
+  state.selectedTower = null;
 
   if (state.castleHp <= 0) {
     setMessage('Die Burg ist gefallen. Spiel vorbei.');
@@ -1310,16 +1430,16 @@ function endRound() {
 
 window.addEventListener('keydown', (evt) => {
   if (evt.key !== 'Escape') return;
-  if (!state.pendingCard && !state.selectedUnit) return;
+  if (!state.pendingCard && !state.selectedTower) return;
   state.pendingCard = null;
-  state.selectedUnit = null;
+  state.selectedTower = null;
   state.hoverCell = null;
   setMessage('Auswahl aufgehoben.');
   renderAll();
 });
 
 document.getElementById('help-btn').addEventListener('click', () => {
-  setMessage('Karte anklicken und aufs Feld setzen · Einheit anklicken, dann den Gegner (1 Tatendrang) · Esc hebt auf');
+  setMessage('Karte anklicken und aufs Feld setzen · Turm anklicken, dann den Gegner (1 Tatendrang, ein Schuss pro Turm und Runde) · Esc hebt auf');
 });
 
 // ============================================================
@@ -1338,7 +1458,7 @@ function renderHand() {
     const el = document.createElement('div');
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
-    el.onclick = () => { if (disabled) return; state.selectedUnit = null; playCard(card); };
+    el.onclick = () => { if (disabled) return; state.selectedTower = null; playCard(card); };
 
     const head = document.createElement('div');
     head.className = 'card-head';
