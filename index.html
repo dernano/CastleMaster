@@ -67,7 +67,16 @@
   }
 
   /* ---------- Spielfeld mit aufgesetzter Anzeige ---------- */
-  #board { position: relative; width: 100%; max-width: 960px; }
+  #board {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    border: 3px solid #4a3a24;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 0 #14100b, 0 18px 40px rgba(0, 0, 0, 0.7),
+      inset 0 0 0 1px rgba(255, 235, 190, 0.12);
+  }
 
   canvas#field {
     display: block;
@@ -133,30 +142,48 @@
   .ghost-btn:active { transform: translateY(3px); box-shadow: none; }
   .ghost-btn:hover { color: var(--text); border-color: var(--frame-hi); }
 
-  #lines { width: 100%; max-width: 960px; text-align: center; min-height: 34px; }
-  #message { font-family: var(--pixel); font-size: 15px; color: var(--gold); min-height: 20px;
-    text-shadow: 0 2px 0 rgba(0,0,0,0.55); }
-  #intent { font-size: 12.5px; color: var(--muted); min-height: 16px; }
+  /* Meldungen schweben ueber der Bruestung, ohne eigenen Kasten */
+  #lines {
+    position: absolute; left: 0; right: 0; bottom: 31.5%;
+    text-align: center; pointer-events: none; z-index: 3;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(0,0,0,0.9);
+  }
+  #message { font-family: var(--pixel); font-size: 16px; color: var(--gold); min-height: 20px;
+    padding: 0 14px; }
+  #lines #intent { margin-top: 1px; }
+  #intent { font-family: var(--pixel); font-size: 13px; color: #cbbba0; min-height: 16px; }
 
   /* ---------- Untere Leiste ---------- */
+  /* Die Bedienung liegt auf der Bruestung, verankert am Bildrand */
   #tray {
-    width: 100%; max-width: 960px; display: grid; gap: 8px;
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: grid; align-items: end; z-index: 4;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: "mini hand side";
-    align-items: stretch;
+    padding: 0 10px 8px;
+    gap: 6px;
   }
   #minimap-panel { grid-area: mini; }
   #hand-wrap { grid-area: hand; }
   #side { grid-area: side; }
 
-  #minimap-panel { padding: 6px; display: grid; place-items: center; }
+  #minimap-panel {
+    padding: 5px;
+    background: rgba(16, 12, 9, 0.72);
+    border: 2px solid #6b5535;
+    border-radius: 5px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+    display: grid; place-items: center;
+    margin-bottom: 4px;
+  }
   canvas#minimap { display: block; image-rendering: pixelated; width: 108px; height: 81px; }
 
-  #hand-wrap { padding: 6px 4px; overflow-x: auto; overflow-y: visible; }
+  /* Kein Rahmen: Die Karten liegen unmittelbar auf der Mauer. */
+  #hand-wrap { padding: 0 4px; overflow: visible; }
   /* Die Hand liegt aufgefaechert wie ein echtes Blatt: die Karten ueberlappen
      und die angefasste kommt nach vorn. */
-  #hand { display: flex; gap: 0; justify-content: center; min-width: min-content; padding: 4px 10px 2px; }
-  #hand .card-slot { margin-right: -16px; }
+  #hand { display: flex; gap: 0; justify-content: center; min-width: min-content; padding: 0 10px; }
+  #hand .card-slot { margin-right: -14px; }
   #hand .card-slot:last-child { margin-right: 0; }
   #hand .card-slot:nth-child(1) { z-index: 1; }
   #hand .card-slot:nth-child(2) { z-index: 2; }
@@ -175,7 +202,7 @@
   #hand .card-slot:nth-child(6) { transform: rotate(4.5deg) translateY(6px); }
   #hand .card-slot:hover { transform: none; }
 
-  #side { display: flex; flex-direction: column; gap: 8px; }
+  #side { display: flex; flex-direction: column; gap: 6px; align-items: stretch; margin-bottom: 4px; }
 
   button.endround {
     background: linear-gradient(180deg, #d8503f, var(--herz) 55%, #6d1722);
@@ -194,7 +221,12 @@
   }
   button.endround:disabled { filter: grayscale(0.7) brightness(0.7); cursor: not-allowed; }
 
-  #deck-pile { padding: 6px 8px; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  #deck-pile {
+    padding: 5px 10px; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.3;
+    background: rgba(16, 12, 9, 0.72);
+    border: 2px solid #6b5535; border-radius: 5px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+  }
   #deck-pile b { display: block; font-family: var(--pixel); font-size: 24px; font-weight: 700;
     color: var(--parchment); text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
@@ -202,7 +234,7 @@
   /* Ein Halter traegt Einzug und Schweben, die Karte darin die Neigung.
      Sonst wuerden sich die Transformationen gegenseitig ueberschreiben. */
   .card-slot {
-    width: 132px;
+    width: 124px;
     flex: none;
     perspective: 640px;
     animation: kartefaechern 0.36s cubic-bezier(0.2, 1.3, 0.35, 1) backwards;
@@ -219,7 +251,7 @@
   .card {
     position: relative;
     width: 100%;
-    min-height: 208px;
+    min-height: 196px;
     display: flex;
     flex-direction: column;
     padding: 0 0 6px;
@@ -377,34 +409,97 @@
   kbd { font-family: inherit; font-size: 11px; background: var(--panel-2); border: 1px solid var(--frame);
     border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--muted); }
 
-  footer { max-width: 960px; text-align: center; font-size: 11.5px; color: var(--disabled); line-height: 1.7; }
+  /* Hilfetafel, statt einer Fusszeile ausserhalb des Bildes */
+  #hilfe {
+    position: absolute; inset: 0; z-index: 6;
+    display: grid; place-items: center;
+    background: rgba(8, 6, 5, 0.86);
+  }
+  .hilfe-box { padding: 18px 22px; max-width: 460px; }
+  .hilfe-box h2 { margin: 0 0 10px; font-family: var(--pixel); font-size: 22px; color: var(--gold);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.6); }
+  .hilfe-box ul { margin: 0 0 12px; padding-left: 18px; color: var(--text); font-size: 12.5px; line-height: 1.65; }
+  .hilfe-box li { margin-bottom: 3px; }
+  .hilfe-box .farben { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 12px; }
 
-  @media (max-width: 760px) {
-    body { padding: 8px 16px 16px; }
-    /* Anzeige steht ueber dem Feld statt darauf */
-    #board { display: flex; flex-direction: column-reverse; gap: 6px; }
-    #hud-row { position: static; justify-content: center; }
-    .hud { padding: 3px 5px; }
-    .chip { font-size: 12px; padding: 1px 5px; }
-    .chip + .chip { padding-left: 7px; }
-    .wave { min-width: 96px; }
+  /* Schmale Bildschirme: Die Hand bleibt im Bild, wird aber kompakt.
+     Beschreibungstext und Werte entfallen, sie stehen ohnehin in der Hilfe. */
+  @media (max-width: 860px) {
+    body { padding: 8px 10px 12px; }
 
-    #tray {
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-areas: "hand hand" "mini side";
-    }
-    #hand { justify-content: flex-start; }
-    #side { flex-direction: row; }
-    #side button.endround { flex: 1; }
-    #deck-pile { display: flex; flex-direction: column; justify-content: center; min-width: 74px; }
-    footer { font-size: 11px; }
+    .hud { padding: 2px 4px; gap: 3px; }
+    .chip { font-size: 10px; padding: 1px 3px; gap: 3px; }
+    .chip .ic { font-size: 10px; }
+    .chip b { font-size: 12px; }
+    .chip + .chip { padding-left: 5px; }
+    #hud-row { left: 5px; right: 5px; top: 5px; gap: 4px; flex-wrap: nowrap; }
+    .wave { min-width: 0; padding: 0 4px; }
+    .wave-top { font-size: 10px; gap: 4px; }
+    .wave-top b { font-size: 12px; }
+    .wave-top .foes { display: none; }
+    .icon-btn { width: 22px; height: 22px; font-size: 11px; border-width: 1px; }
+
+    .card-slot { width: 74px; }
+    .card { min-height: 112px; border-width: 2px; border-radius: 6px; }
+    .card::before { width: 5px; }
+    .card-head { padding: 4px 4px 3px 8px; gap: 3px; }
+    .cost { width: 17px; height: 17px; font-size: 11px; border-width: 1.5px; }
+    .card-name { font-size: 9px; line-height: 1; }
+    .card-suit { font-size: 10px; }
+    .card-art-frame { margin: 0 4px 0 8px; border-width: 1.5px; }
+    .card-art { height: 34px; }
+    .card-stats { display: none; }
+    .card-text { display: none; }
+    .card-badge { margin: 4px 4px 0 8px; font-size: 8px; padding: 2px 0 1px; letter-spacing: 0.03em; }
+
+    #hand .card-slot { margin-right: -18px; }
+    #tray { padding: 0 5px 5px; gap: 3px; }
+    #minimap-panel { padding: 3px; border-width: 1px; margin-bottom: 2px; }
+    canvas#minimap { width: 58px; height: 44px; }
+    button.endround { font-size: 11px; padding: 6px 7px; border-width: 2px; border-radius: 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #3a0d14; }
+    #deck-pile { font-size: 8px; padding: 3px 5px; border-width: 1px; line-height: 1.2; }
+    #deck-pile b { font-size: 13px; }
+    #side { gap: 3px; margin-bottom: 2px; }
+
+    #lines { bottom: 22%; }
+    #message { font-size: 11px; padding: 0 8px; min-height: 14px; }
+    #intent { font-size: 9.5px; min-height: 12px; }
+
+    .reward-box { padding: 12px 14px; }
+    .reward-box h2 { font-size: 18px; }
+    .reward-box p { font-size: 11px; }
+    #reward-cards .card-slot { width: 88px; }
+    #reward-cards .card { min-height: 132px; }
+    #reward-cards .card-text { display: block; font-size: 8px; padding: 3px 5px 4px 9px; }
+    .hilfe-box { padding: 12px 14px; }
+    .hilfe-box h2 { font-size: 17px; }
+    .hilfe-box ul { font-size: 10.5px; line-height: 1.5; }
+    .hilfe-box .farben { font-size: 9.5px; }
   }
 </style>
 </head>
 <body>
 
 <div id="board">
-  <canvas id="field" width="960" height="570"></canvas>
+  <canvas id="field" width="960" height="768"></canvas>
+
+  <div id="hilfe" class="hidden">
+    <div class="hilfe-box panel">
+      <h2>Steuerung</h2>
+      <ul>
+        <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
+        <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
+        <li><b>Angreifen:</b> Turm antippen, dann den Gegner. Kostet 1 Tatendrang, ein Schuss pro Turm und Zug.</li>
+        <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
+        <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
+        <li><kbd>Esc</kbd> hebt jede Auswahl auf.</li>
+      </ul>
+      <p class="farben">🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht<br>
+        Testraster 20x15, Ziel später 80x60.</p>
+      <button type="button" class="ghost-btn" id="hilfe-zu">Weiter spielen</button>
+    </div>
+  </div>
 
   <div id="reward" class="hidden">
     <div class="reward-box panel">
@@ -412,6 +507,20 @@
       <p id="reward-sub">Wähle eine Karte für dein Deck.</p>
       <div id="reward-cards"></div>
       <button type="button" class="ghost-btn" id="reward-skip">Überspringen</button>
+    </div>
+  </div>
+
+  <div id="lines">
+    <div id="message"></div>
+    <div id="intent"></div>
+  </div>
+
+  <div id="tray">
+    <div id="minimap-panel"><canvas id="minimap" width="108" height="81"></canvas></div>
+    <div id="hand-wrap"><div id="hand"></div></div>
+    <div id="side">
+      <button class="endround" onclick="endTurn()" id="endround-btn">Zug beenden</button>
+      <div id="deck-pile"><b id="deck-total">12</b>Karten im Deck</div>
     </div>
   </div>
 
@@ -434,24 +543,7 @@
   </div>
 </div>
 
-<div id="lines">
-  <div id="message"></div>
-  <div id="intent"></div>
-</div>
 
-<div id="tray">
-  <div id="minimap-panel" class="panel"><canvas id="minimap" width="122" height="92"></canvas></div>
-  <div id="hand-wrap" class="panel"><div id="hand"></div></div>
-  <div id="side">
-    <button class="endround" onclick="endTurn()" id="endround-btn">Zug beenden</button>
-    <div id="deck-pile" class="panel"><b id="deck-total">12</b>Karten im Deck</div>
-  </div>
-</div>
-
-<footer>
-  🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)<br>
-  Angreifen: Turm anklicken, dann den Gegner. Kostet 1 Tatendrang, ein Schuss pro Turm und Runde. <kbd>Esc</kbd> hebt die Auswahl auf.
-</footer>
 
 <script>
 // ============================================================
@@ -883,7 +975,7 @@ const wolken = Array.from({ length: 4 }, (_, i) => ({
   x: -200 + i * 320, y: 90 + i * 95, rx: 170 + i * 34, ry: 62 + i * 11, tempo: 9 + i * 3,
 }));
 const flusen = Array.from({ length: 26 }, () => ({
-  x: Math.random() * 960, y: Math.random() * 520,
+  x: Math.random() * 960, y: Math.random() * 500,
   vx: 8 + Math.random() * 14, vy: -3 + Math.random() * 6, gr: Math.random() < 0.7 ? 1 : 2,
 }));
 
@@ -927,7 +1019,7 @@ function drawBanner_Runde() {
   let x = 0, a = 1;
   if (f < 0.18) { x = (1 - weich(f / 0.18)) * -canvas.width; a = f / 0.18; }
   else if (f > 0.78) { const g = (f - 0.78) / 0.22; x = weich(g) * canvas.width; a = 1 - g; }
-  const mitte = canvas.height * 0.42;
+  const mitte = 300;
 
   ctx.save();
   ctx.globalAlpha = a;
@@ -1584,6 +1676,66 @@ function drawRaster() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
+const BRUESTUNG_Y = 572;   // Oberkante der Mauer, auf der die Karten liegen
+
+/**
+ * Die Bruestung schliesst das Bild nach unten ab. Der Spieler schaut ueber
+ * seine eigene Mauer, und die Handkarten liegen darauf. Damit gehoert die
+ * Hand zum Bild statt in einem Kasten darunter zu haengen.
+ */
+function drawBruestung() {
+  const y0 = BRUESTUNG_Y;
+
+  // Der Grund faellt vor der Mauer ins Dunkle ab
+  const tiefe = ctx.createLinearGradient(0, y0 - 96, 0, y0 + 6);
+  tiefe.addColorStop(0, 'rgba(11,9,8,0)');
+  tiefe.addColorStop(0.7, 'rgba(11,9,8,0.72)');
+  tiefe.addColorStop(1, 'rgba(11,9,8,0.96)');
+  ctx.fillStyle = tiefe;
+  ctx.fillRect(0, y0 - 96, canvas.width, 102);
+
+  // Zinnenkranz
+  const zinneB = 46, luecke = 26, zinneH = 26;
+  for (let x = -20; x < canvas.width + 40; x += zinneB + luecke) {
+    ctx.fillStyle = '#8d7e60';
+    ctx.fillRect(x, y0 - zinneH, zinneB, zinneH);
+    ctx.fillStyle = '#c0b08a';
+    ctx.fillRect(x, y0 - zinneH, zinneB, 5);
+    ctx.fillStyle = 'rgba(28,20,10,0.30)';
+    ctx.fillRect(x, y0 - zinneH + 5, 3, zinneH - 5);
+    ctx.fillRect(x + zinneB - 3, y0 - zinneH + 5, 3, zinneH - 5);
+  }
+
+  // Mauerkoerper
+  ctx.fillStyle = '#7d6f55';
+  ctx.fillRect(0, y0, canvas.width, canvas.height - y0);
+  ctx.fillStyle = '#a89771';
+  ctx.fillRect(0, y0, canvas.width, 7);
+  ctx.fillStyle = '#c4b590';
+  ctx.fillRect(0, y0, canvas.width, 3);
+
+  // Fugen im Mauerwerk
+  ctx.strokeStyle = 'rgba(30,22,12,0.22)';
+  ctx.lineWidth = 1;
+  for (let r = 0; r < 6; r++) {
+    const y = y0 + 34 + r * 34;
+    if (y > canvas.height) break;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    const versatz = r % 2 ? 0 : 44;
+    for (let x = versatz; x < canvas.width; x += 88) {
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 34); ctx.stroke();
+    }
+  }
+
+  // Das Licht faellt von oben auf die Mauer, unten wird es dunkel
+  const schatten = ctx.createLinearGradient(0, y0, 0, canvas.height);
+  schatten.addColorStop(0, 'rgba(255,236,196,0.10)');
+  schatten.addColorStop(0.35, 'rgba(0,0,0,0)');
+  schatten.addColorStop(1, 'rgba(8,6,4,0.72)');
+  ctx.fillStyle = schatten;
+  ctx.fillRect(0, y0, canvas.width, canvas.height - y0);
+}
+
 let vignetteBild = null;
 /** Weicher Randabfall, damit das Bild nicht hart im Schwarz endet. */
 function drawVignette() {
@@ -1891,17 +2043,17 @@ function updateAnimations(dt) {
   if (banner) { banner.t += dt; if (banner.t >= banner.dauer) banner = null; }
   for (const v of voegel) {
     v.x += v.tempo * dt;
-    if (v.x > canvas.width + 60) { v.x = -60; v.y = 55 + Math.random() * 90; }
+    if (v.x > canvas.width + 60) { v.x = -60; v.y = 55 + Math.random() * 80; }
   }
   for (const w of wolken) {
     w.x += w.tempo * dt;
-    if (w.x - w.rx > canvas.width + 60) { w.x = -w.rx - 60; w.y = 70 + Math.random() * 330; }
+    if (w.x - w.rx > canvas.width + 60) { w.x = -w.rx - 60; w.y = 70 + Math.random() * 300; }
   }
   for (const f of flusen) {
     f.x += f.vx * dt; f.y += f.vy * dt;
     if (f.x > canvas.width + 5) { f.x = -5; f.y = Math.random() * canvas.height; }
     if (f.y < -5) f.y = canvas.height + 5;
-    if (f.y > canvas.height + 5) f.y = -5;
+    if (f.y > BRUESTUNG_Y - 40) f.y = -5;
   }
   for (let i = staubkoerner.length - 1; i >= 0; i--) {
     const k = staubkoerner[i];
@@ -1986,6 +2138,7 @@ function draw() {
   drawZahlen();
   drawFlusen();
   ctx.restore();
+  drawBruestung();
   drawRaster();
   drawVignette();
   if (blitzSchirm > 0.01) {
@@ -2559,6 +2712,10 @@ function endTurn() {
 
 window.addEventListener('keydown', (evt) => {
   if (evt.key !== 'Escape') return;
+  if (!document.getElementById('hilfe').classList.contains('hidden')) {
+    document.getElementById('hilfe').classList.add('hidden');
+    return;
+  }
   if (!state.pendingCard && !state.selectedTower) return;
   state.pendingCard = null;
   state.selectedTower = null;
@@ -2578,9 +2735,12 @@ document.getElementById('sound-btn').classList.toggle('aus', !tonAn);
 
 document.getElementById('reward-skip').addEventListener('click', () => nimmBelohnung(null));
 
+const hilfeTafel = document.getElementById('hilfe');
 document.getElementById('help-btn').addEventListener('click', () => {
-  setMessage('Karte anklicken und aufs Feld setzen · Turm anklicken, dann den Gegner (1 Tatendrang, ein Schuss pro Turm und Runde) · Esc hebt auf');
+  hilfeTafel.classList.toggle('hidden');
+  klang('karte');
 });
+document.getElementById('hilfe-zu').addEventListener('click', () => hilfeTafel.classList.add('hidden'));
 
 // ============================================================
 //  Oberflaeche

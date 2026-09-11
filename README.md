@@ -59,6 +59,20 @@ Bauwerken, sonst wäre ein verdecktes Ziel nicht anwählbar.
 Beim Rundenwechsel und nach gewonnener Runde fährt ein Banner über das Bild.
 Karten fächern sich beim Nachziehen auf.
 
+## Aufbau des Bildes
+
+Das Spiel ist eine einzige gerahmte Ansicht, keine Seite mit Kästen darunter.
+Unten schließt eine Brüstung mit Zinnen ab: Du schaust über deine eigene Mauer,
+und die Handkarten liegen darauf. Werte und Rundenanzeige liegen oben auf,
+Minikarte unten links, Zug-Knopf und Deck unten rechts, die Meldungen schweben
+frei über der Mauer.
+
+Steuerung und Kartenfarben stehen auf einer Hilfetafel hinter dem `?` oben
+rechts, statt als Fußzeile außerhalb des Bildes.
+
+Auf schmalen Bildschirmen bleibt die Hand im Bild, wird aber kompakt:
+Kostenstein, Name, Bild und Typenband, ohne Beschreibungstext.
+
 ## Schrift und Karten
 
 Die Oberfläche läuft in Pixelify Sans, einer kantigen Pixelschrift, die zum
