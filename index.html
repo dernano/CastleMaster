@@ -2,108 +2,223 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Castle Master – Prototyp v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Castle Master</title>
 <style>
   :root {
-    --parchment: #e9dcc0;
-    --parchment-dark: #d9c9a3;
-    --ink: #2b2018;
-    --walnut: #4a3527;
-    --walnut-dark: #2f2018;
-    --herz: #7c1f34;
-    --herz-dark: #5c1526;
-    --blatt: #4a5c2b;
-    --blatt-dark: #37451f;
-    --schellen: #a67818;
-    --schellen-dark: #7d5a10;
-    --eichel: #5c4326;
-    --eichel-dark: #40300f;
-    --disabled: #9c9184;
+    --ink: #100d0a;
+    --panel: #1c1713;
+    --panel-2: #262019;
+    --frame: #6b5535;
+    --frame-hi: #9a7d4a;
+    --gold: #e3b552;
+    --parchment: #e8dcc0;
+    --parchment-dark: #cfc0a0;
+    --text: #f0e6d2;
+    --muted: #a8977c;
+    --herz: #8c2230;
+    --herz-hi: #c0392b;
+    --blau: #2f5fa8;
+    --blatt: #5c7a30;
+    --disabled: #6e675c;
   }
+
   * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
   body {
     margin: 0;
-    min-height: 100vh;
-    background: var(--parchment);
-    font-family: Georgia, 'Iowan Old Style', serif;
-    color: var(--ink);
-    padding: 16px 16px 100px;
+    background: #0b0908;
+    background-image:
+      radial-gradient(ellipse at 50% 20%, #1d1711 0%, #0b0908 70%);
+    color: var(--text);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 16px;
+    gap: 8px;
   }
-  h1 { text-align: center; font-size: 1.5rem; letter-spacing: 0.04em; margin: 0 0 2px; color: var(--walnut-dark); }
-  .subtitle { text-align: center; font-size: 0.8rem; color: var(--eichel); margin-bottom: 12px; font-style: italic; }
 
-  .topbar { display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
-  .stat { display: flex; align-items: center; gap: 6px; background: var(--walnut-dark); color: var(--parchment);
-    padding: 6px 14px; border-radius: 3px; font-size: 0.9rem; box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
-  .stat .icon { font-size: 1.1rem; }
-  .stat.castle-hp { background: var(--herz-dark); }
-  .stat.pile { background: rgba(255,255,255,0.5); color: var(--eichel-dark); border: 1px solid var(--parchment-dark);
-    box-shadow: none; font-size: 0.82rem; padding: 6px 12px; }
-  .stat.pile b { font-size: 0.95rem; color: var(--walnut-dark); }
-  .stat.pile.empty { opacity: 0.5; }
-  .round-label { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--eichel); }
+  /* ---------- Rahmen im Stil geschnitzter Holztafeln ---------- */
+  .panel {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 2px solid var(--frame);
+    border-radius: 5px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 3px 0 rgba(0,0,0,0.55);
+  }
 
-  button.endround { background: var(--herz); color: var(--parchment); border: none; padding: 7px 16px;
-    border-radius: 3px; font-family: inherit; font-size: 0.88rem; letter-spacing: 0.03em; cursor: pointer;
-    box-shadow: 0 2px 0 var(--herz-dark); }
-  button.endround:active { transform: translateY(1px); box-shadow: none; }
+  /* ---------- Spielfeld mit aufgesetzter Anzeige ---------- */
+  #board { position: relative; width: 100%; max-width: 960px; }
 
-  .message { text-align: center; min-height: 20px; font-size: 0.85rem; color: var(--herz-dark); font-style: italic; margin-bottom: 8px; }
-  .intent { text-align: center; min-height: 18px; font-size: 0.78rem; color: var(--eichel-dark); margin-bottom: 10px; }
+  canvas#field {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    border-radius: 4px;
+  }
 
-  .field-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
-  canvas { border: 2px solid var(--walnut); border-radius: 4px; background: var(--parchment-dark); max-width: 100%; touch-action: none; }
+  #hud-row {
+    position: absolute; left: 8px; right: 8px; top: 8px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 8px; flex-wrap: wrap; pointer-events: none;
+  }
+  #hud-row > * { pointer-events: auto; }
+  .hud { display: flex; gap: 6px; padding: 5px 7px; align-items: center; }
 
-  .hand-label { text-align: center; font-size: 0.78rem; color: var(--eichel); letter-spacing: 0.05em; margin-bottom: 8px; }
-  .hand { max-width: 950px; margin: 0 auto; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .chip { display: flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 14px; white-space: nowrap; }
+  .chip + .chip { border-left: 1px solid rgba(255,255,255,0.12); }
+  .chip .ic { font-size: 13px; filter: saturate(1.2); }
+  .chip b { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .chip.tatendrang b { color: var(--gold); }
+  .chip.burg b { color: #e9917f; }
+  .chip.dim { color: var(--muted); }
+  .chip.dim b { color: var(--parchment-dark); }
 
-  .card { width: 128px; min-height: 172px; background: var(--parchment); border: 2px solid var(--walnut);
-    border-radius: 6px; padding: 9px; display: flex; flex-direction: column; cursor: pointer;
-    transition: transform 0.12s ease, box-shadow 0.12s ease; position: relative; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
-  .card:hover:not(.disabled) { transform: translateY(-5px); box-shadow: 0 7px 9px rgba(0,0,0,0.2); }
-  .card.disabled { opacity: 0.45; cursor: not-allowed; }
-  .card.selected { outline: 3px solid var(--schellen); outline-offset: 2px; }
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-  .card-cost { background: var(--walnut-dark); color: var(--parchment); border-radius: 50%; width: 22px; height: 22px;
-    display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
-  .card-suit { font-size: 1.2rem; line-height: 1; }
-  .card-name { font-size: 0.86rem; font-weight: bold; margin-bottom: 3px; }
-  .card-type { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-  .card-type.Gebäude { color: var(--eichel); }
-  .card-type.Einheit { color: var(--herz); }
-  .card-type.Fähigkeit { color: var(--blatt); }
-  .card-type.Macht { color: var(--schellen-dark); }
-  .card-text { font-size: 0.68rem; font-style: italic; color: #55483a; margin-top: auto; line-height: 1.2; }
-  .card-stats { font-size: 0.72rem; color: var(--walnut-dark); margin-bottom: 3px; }
+  .wave { display: flex; flex-direction: column; gap: 3px; min-width: 148px; padding: 1px 6px; }
+  .wave-top { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  .wave-top .swords { color: var(--muted); }
+  .wave-bar { height: 5px; background: #3a1a1a; border-radius: 2px; overflow: hidden; }
+  .wave-bar i { display: block; height: 100%; background: linear-gradient(90deg, #e0503c, #8c2230); }
 
-  footer { text-align: center; margin-top: 24px; font-size: 0.68rem; color: var(--disabled); line-height: 1.7; }
-  kbd { font-family: inherit; font-size: 0.64rem; background: rgba(255,255,255,0.5);
-    border: 1px solid var(--parchment-dark); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--eichel-dark); }
+  .icon-btn {
+    width: 30px; height: 28px; display: grid; place-items: center;
+    background: var(--panel-2); border: 2px solid var(--frame); border-radius: 4px;
+    color: var(--text); cursor: pointer; font: inherit; font-size: 13px;
+  }
+  .icon-btn:hover { border-color: var(--frame-hi); }
+
+  /* ---------- Meldungszeilen ---------- */
+  #lines { width: 100%; max-width: 960px; text-align: center; min-height: 34px; }
+  #message { font-size: 14px; color: var(--gold); min-height: 18px; }
+  #intent { font-size: 12.5px; color: var(--muted); min-height: 16px; }
+
+  /* ---------- Untere Leiste ---------- */
+  #tray {
+    width: 100%; max-width: 960px; display: grid; gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "mini hand side";
+    align-items: stretch;
+  }
+  #minimap-panel { grid-area: mini; }
+  #hand-wrap { grid-area: hand; }
+  #side { grid-area: side; }
+
+  #minimap-panel { padding: 6px; display: grid; place-items: center; }
+  canvas#minimap { display: block; image-rendering: pixelated; width: 122px; height: 92px; }
+
+  #hand-wrap { padding: 8px; overflow-x: auto; overflow-y: hidden; }
+  #hand { display: flex; gap: 8px; justify-content: center; min-width: min-content; }
+
+  #side { display: flex; flex-direction: column; gap: 8px; }
+
+  button.endround {
+    background: linear-gradient(180deg, var(--herz-hi), var(--herz));
+    color: #ffeede; border: 2px solid #5d1720; border-radius: 5px;
+    padding: 9px 12px; font: inherit; font-size: 14px; font-weight: bold;
+    letter-spacing: 0.03em; cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 3px 0 rgba(0,0,0,0.5);
+  }
+  button.endround:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); }
+  button.endround:disabled { filter: grayscale(0.7) brightness(0.7); cursor: not-allowed; }
+
+  #deck-pile { padding: 6px 10px; text-align: center; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  #deck-pile b { display: block; font-size: 17px; color: var(--parchment); }
+
+  /* ---------- Karten ---------- */
+  .card {
+    width: 122px; flex: none; background: var(--parchment);
+    border: 2px solid #40301c; border-radius: 4px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.5); color: #2b2018;
+    display: flex; flex-direction: column; cursor: pointer; position: relative;
+    padding: 5px 5px 6px; transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .card:hover:not(.disabled) { transform: translateY(-5px); box-shadow: 0 8px 10px rgba(0,0,0,0.55); }
+  .card.disabled { filter: grayscale(0.75) brightness(0.82); cursor: not-allowed; }
+  .card.selected { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 3px 0 rgba(0,0,0,0.5); }
+
+  .card-head { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+  .cost {
+    width: 19px; height: 21px; flex: none; display: grid; place-items: center;
+    background: linear-gradient(180deg, #4a7fc8, var(--blau));
+    border: 1.5px solid #1d3c6b; color: #fff; font-size: 12px; font-weight: bold;
+    clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  }
+  .card-name { font-size: 11px; font-weight: bold; line-height: 1.15; flex: 1; }
+  .card-suit { font-size: 12px; flex: none; opacity: 0.85; }
+  .card-art { width: 100%; height: 56px; border: 1.5px solid #6b5535; display: block; image-rendering: pixelated; }
+  .card-text { font-size: 10px; line-height: 1.25; padding: 5px 2px 4px; flex: 1; color: #4a3a28; }
+  .card-badge {
+    align-self: center; font-size: 9.5px; letter-spacing: 0.05em;
+    background: var(--parchment-dark); border: 1.5px solid #6b5535; border-radius: 3px;
+    padding: 1px 9px; color: #3a2c1c;
+  }
+
+  kbd { font-family: inherit; font-size: 11px; background: var(--panel-2); border: 1px solid var(--frame);
+    border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--muted); }
+
+  footer { max-width: 960px; text-align: center; font-size: 11.5px; color: var(--disabled); line-height: 1.7; }
+
+  @media (max-width: 760px) {
+    body { padding: 6px 6px 12px; }
+    /* Anzeige steht ueber dem Feld statt darauf */
+    #board { display: flex; flex-direction: column-reverse; gap: 6px; }
+    #hud-row { position: static; justify-content: center; }
+    .hud { padding: 3px 5px; }
+    .chip { font-size: 12px; padding: 1px 5px; }
+    .chip + .chip { padding-left: 7px; }
+    .wave { min-width: 96px; }
+
+    #tray {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: "hand hand" "mini side";
+    }
+    #hand { justify-content: flex-start; }
+    #side { flex-direction: row; }
+    #side button.endround { flex: 1; }
+    #deck-pile { display: flex; flex-direction: column; justify-content: center; min-width: 74px; }
+    footer { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
 
-<h1>🏰 Castle Master</h1>
-<div class="subtitle">Prototyp v2 – Grid-Feld, frei platzierbare Türme, erster Gegner (Testraster 20x15)</div>
+<div id="board">
+  <canvas id="field" width="960" height="570"></canvas>
 
-<div class="topbar">
-  <div class="round-label">Runde <span id="round-val">1</span></div>
-  <div class="stat"><span class="icon">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
-  <div class="stat castle-hp"><span class="icon">🏰</span> <span id="castle-hp-val">20</span> / 20 Burg-LP</div>
-  <div class="stat pile" id="pile-draw" title="Nachziehstapel">🂠 <b id="draw-count">0</b> Nachziehstapel</div>
-  <div class="stat pile" id="pile-discard" title="Ablagestapel">🗇 <b id="discard-count">0</b> Ablage</div>
-  <button class="endround" onclick="endRound()">Runde beenden</button>
+  <div id="hud-row">
+  <div class="hud hud-left panel">
+    <span class="chip tatendrang"><span class="ic">⚡</span> <b id="tatendrang-val">3</b>/<span id="tatendrang-max">3</span></span>
+    <span class="chip burg"><span class="ic">🏰</span> <b id="castle-hp-val">20</b>/20</span>
+    <span class="chip dim" id="pile-draw"><span class="ic">🂠</span> <b id="draw-count">0</b></span>
+    <span class="chip dim" id="pile-discard"><span class="ic">🗇</span> <b id="discard-count">0</b></span>
+  </div>
+
+  <div class="hud hud-right">
+    <div class="wave panel">
+      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b></span></div>
+      <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
+    </div>
+    <button class="icon-btn" id="help-btn" type="button" title="Steuerung">?</button>
+  </div>
+  </div>
 </div>
 
-<div class="message" id="message"></div>
-<div class="intent" id="intent"></div>
-
-<div class="field-wrap">
-  <canvas id="field" width="560" height="420"></canvas>
+<div id="lines">
+  <div id="message"></div>
+  <div id="intent"></div>
 </div>
 
-<div class="hand-label">Deine Hand <span id="hand-count"></span></div>
-<div class="hand" id="hand"></div>
+<div id="tray">
+  <div id="minimap-panel" class="panel"><canvas id="minimap" width="122" height="92"></canvas></div>
+  <div id="hand-wrap" class="panel"><div id="hand"></div></div>
+  <div id="side">
+    <button class="endround" onclick="endRound()" id="endround-btn">Runde beenden</button>
+    <div id="deck-pile" class="panel"><b id="deck-total">12</b>Karten im Deck</div>
+  </div>
+</div>
 
 <footer>
   🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)<br>
@@ -111,57 +226,49 @@
 </footer>
 
 <script>
-const COLS = 20, ROWS = 15, CELL = 28;
-const canvas = document.getElementById('field');
-const ctx = canvas.getContext('2d');
+// ============================================================
+//  Castle Master - Daten und Spielzustand
+// ============================================================
+const COLS = 20, ROWS = 15;
 
 const CARD_POOL = [
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6,
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, art: 'turm',
     text: 'Fundament deiner Burg. Ohne ihn kein Widerstand.' },
-  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3,
+  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, art: 'mauer',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
-  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3,
+  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer',
     text: 'Braucht festen Boden unter den Füßen.' },
-  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5,
+  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5, art: 'bogen',
     text: 'Zielt, wo andere zögern.' },
-  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1,
+  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'wind',
     text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
-  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3,
+  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3, art: 'krone',
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
 ];
 
 const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 20 };
 
-// Startdeck: wie oft jede Karte zu Beginn im Nachziehstapel liegt.
 const STARTER_DECK = [
-  ['palisade', 3],
-  ['wachturm', 2],
-  ['waldlaeufer', 3],
-  ['bogenschuetze', 2],
-  ['sturmwind', 1],
-  ['krone', 1],
+  ['palisade', 3], ['wachturm', 2], ['waldlaeufer', 3],
+  ['bogenschuetze', 2], ['sturmwind', 1], ['krone', 1],
 ];
-
 const HAND_SIZE = 5;
-
-// Ein Angriff ist eine aktive Aktion im eigenen Zug und kostet Tatendrang.
 const ATTACK_COST = 1;
 
 let state = {
   round: 1,
   tatendrang: 3, maxTatendrang: 3,
   castleHp: CASTLE.maxHp,
-  towers: [], // { id, col, row, w, h, hp, maxHp, slots: [null|{name,dmg}] }
-  enemy: null, // { col, row, range, dmg, hp, maxHp }
-  draw: [],    // Nachziehstapel, oberste Karte am Ende des Arrays
-  hand: [],
-  discard: [], // Ablagestapel
+  towers: [],
+  enemy: null,
+  draw: [], hand: [], discard: [],
   pendingCard: null,
-  selectedUnit: null, // { towerId, slotIdx } - Einheit, die angreifen soll
+  selectedUnit: null,
+  hoverCell: null,
   nextTowerId: 1,
 };
 
-// Fisher-Yates, mischt an Ort und Stelle.
+// ---------- Deck ----------
 function shuffle(cards) {
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -181,13 +288,8 @@ function buildStarterDeck() {
   return shuffle(deck);
 }
 
-/**
- * Zieht bis zu n Karten auf die Hand. Ist der Nachziehstapel leer, wandert
- * der Ablagestapel gemischt zurueck. Sind beide leer, kommen weniger Karten.
- */
 function drawCards(n) {
-  let drawn = 0;
-  let reshuffled = false;
+  let drawn = 0, reshuffled = false;
   for (let i = 0; i < n; i++) {
     if (state.draw.length === 0) {
       if (state.discard.length === 0) break;
@@ -205,28 +307,29 @@ function setMessage(t) { document.getElementById('message').textContent = t; }
 function setIntent(t) { document.getElementById('intent').textContent = t; }
 
 function spawnEnemy() {
-  state.enemy = {
-    col: COLS - 1,
-    row: Math.floor(Math.random() * ROWS),
-    range: 4,
-    dmg: 2,
-    hp: 5,
-    maxHp: 5,
-  };
+  state.enemy = { col: COLS - 1, row: Math.floor(Math.random() * ROWS), range: 4, dmg: 2, hp: 5, maxHp: 5 };
 }
 
+// ---------- Geometrie auf dem Raster ----------
 function cellInsideRect(col, row, r) {
   return col >= r.col && col < r.col + r.w && row >= r.row && row < r.row + r.h;
 }
-
 function closestPointOnRect(fromCol, fromRow, r) {
-  const c = Math.max(r.col, Math.min(fromCol, r.col + r.w - 1));
-  const rr = Math.max(r.row, Math.min(fromRow, r.row + r.h - 1));
-  return { col: c, row: rr };
+  return {
+    col: Math.max(r.col, Math.min(fromCol, r.col + r.w - 1)),
+    row: Math.max(r.row, Math.min(fromRow, r.row + r.h - 1)),
+  };
 }
-
-function chebyshev(c1, r1, c2, r2) {
-  return Math.max(Math.abs(c1 - c2), Math.abs(r1 - r2));
+function chebyshev(c1, r1, c2, r2) { return Math.max(Math.abs(c1 - c2), Math.abs(r1 - r2)); }
+function rectsOverlap(a, b) {
+  return a.col < b.col + b.w && a.col + a.w > b.col && a.row < b.row + b.h && a.row + a.h > b.row;
+}
+function isValidTowerPlacement(col, row, w, h) {
+  if (col < 0 || row < 0 || col + w > COLS || row + h > ROWS) return false;
+  const rect = { col, row, w, h };
+  if (rectsOverlap(rect, CASTLE)) return false;
+  for (const t of state.towers) if (rectsOverlap(rect, t)) return false;
+  return true;
 }
 
 function findNearestTower(enemy) {
@@ -239,8 +342,11 @@ function findNearestTower(enemy) {
   return best;
 }
 
+function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
+
 function currentIntentText() {
-  if (!state.enemy) return '';
+  if (state.castleHp <= 0) return 'Die Belagerung ist entschieden.';
+  if (!state.enemy) return 'Kein Gegner auf dem Feld.';
   const e = state.enemy;
   const target = findNearestTower(e);
   if (target) {
@@ -248,17 +354,12 @@ function currentIntentText() {
     const d = chebyshev(e.col, e.row, p.col, p.row);
     if (d <= 1) return '⚔ Gegner bereit zum Angriff auf ' + towerLabel(target) + '!';
     return '➤ Gegner rückt auf ' + towerLabel(target) + ' vor (Reichweite ' + e.range + ').';
-  } else {
-    if (e.col <= CASTLE.col + CASTLE.w) return '⚔ Gegner bereit, die Burg anzugreifen!';
-    return '➤ Gegner rückt auf die Burg vor (Reichweite ' + e.range + ').';
   }
+  if (e.col <= CASTLE.col + CASTLE.w) return '⚔ Gegner bereit, die Burg anzugreifen!';
+  return '➤ Gegner rückt auf die Burg vor (Reichweite ' + e.range + ').';
 }
 
-function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
-
 function findTowerById(id) { return state.towers.find(t => t.id === id) || null; }
-
-/** Die gerade ausgewaehlte Einheit samt ihrem Turm, oder null. */
 function getSelectedUnit() {
   if (!state.selectedUnit) return null;
   const tower = findTowerById(state.selectedUnit.towerId);
@@ -267,184 +368,598 @@ function getSelectedUnit() {
   if (!unit) return null;
   return { tower, unit };
 }
-
-/** Abstand vom Turm zum Gegner, gemessen wie die Bewegung des Gegners. */
 function distanceToEnemy(tower) {
   if (!state.enemy) return Infinity;
   const p = closestPointOnRect(state.enemy.col, state.enemy.row, tower);
   return chebyshev(state.enemy.col, state.enemy.row, p.col, p.row);
 }
-
-function enemyInRange(tower, unit) {
-  return Boolean(state.enemy) && distanceToEnemy(tower) <= unit.range;
-}
-
+function enemyInRange(tower, unit) { return Boolean(state.enemy) && distanceToEnemy(tower) <= unit.range; }
 function anyTowerWithFreeSlot() { return state.towers.some(t => t.slots.some(s => s === null)); }
 function anyTowerWithUnit() { return state.towers.some(t => t.slots.some(s => s)); }
 
-// ---------- Rendering ----------
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ============================================================
+//  Isometrische Pixel-Darstellung
+// ============================================================
+const canvas = document.getElementById('field');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
-  ctx.strokeStyle = '#c9b78e';
+const TW = 44, TH = 22;           // Kachelbreite und -hoehe der Raute
+const ORIGIN_X = 418, ORIGIN_Y = 120;
+const RAND = 2;                   // Dekorativer Ring ausserhalb des Spielfelds
+
+const imFeld = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
+// Wasser liegt an den beiden hinteren Kanten, Sand an den vorderen.
+const istWasser = (c, r) => (c < 0 || r < 0) && c < COLS && r < ROWS;
+
+const isoX = (c, r) => (c - r) * (TW / 2) + ORIGIN_X;
+const isoY = (c, r) => (c + r) * (TH / 2) + ORIGIN_Y;
+
+// Deterministischer Rauschwert je Feld, damit der Boden nicht flimmert.
+function noise(c, r) {
+  const n = Math.sin(c * 127.1 + r * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function poly(points, fill) {
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function fillDiamond(c, r, color) {
+  const x = isoX(c, r), y = isoY(c, r);
+  poly([[x, y], [x + TW / 2, y + TH / 2], [x, y + TH], [x - TW / 2, y + TH / 2]], color);
+}
+
+/** Quader auf dem Raster: zwei sichtbare Seitenwaende plus Deckflaeche. */
+function drawBlock(col, row, w, h, height, col3, base = 0) {
+  const lift = (c, r, up) => [isoX(c, r), isoY(c, r) - up];
+  const A = lift(col, row, base + height);
+  const B = lift(col + w, row, base + height);
+  const C = lift(col + w, row + h, base + height);
+  const D = lift(col, row + h, base + height);
+  const B0 = lift(col + w, row, base);
+  const C0 = lift(col + w, row + h, base);
+  const D0 = lift(col, row + h, base);
+  poly([B, C, C0, B0], col3.rechts);
+  poly([D, C, C0, D0], col3.links);
+  poly([A, B, C, D], col3.oben);
+}
+
+/** Zinnenkranz entlang der Oberkante eines Quaders. */
+function drawMerlons(col, row, w, h, height, col3) {
+  const s = 0.32, step = 0.5, hoehe = 7;
+  const spots = [];
+  for (let x = col; x < col + w - 0.01; x += step) {
+    spots.push([x + 0.09, row + 0.03]);
+    spots.push([x + 0.09, row + h - s - 0.03]);
+  }
+  for (let y = row + step; y < row + h - step + 0.01; y += step) {
+    spots.push([col + 0.03, y + 0.09]);
+    spots.push([col + w - s - 0.03, y + 0.09]);
+  }
+  spots.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+  for (const [c, r] of spots) drawBlock(c, r, s, s, hoehe, col3, height);
+}
+
+const STEIN = { oben: '#cbbc98', links: '#6e6149', rechts: '#9a8a68' };
+const STEIN_HELL = { oben: '#e4d7b4', links: '#8a7a5c', rechts: '#b9a781' };
+const BURG = { oben: '#c2b391', links: '#645845', rechts: '#8e7f60' };
+const HOLZ = { oben: '#8a6238', links: '#4e361d', rechts: '#6b4a2a' };
+
+// ---------- Pixelfiguren ----------
+const PAL = {
+  '.': null,
+  k: '#171009',
+  b: '#2c5f9e', B: '#4e8ad6',
+  r: '#8f2b2b', R: '#c4483c',
+  s: '#d9b48f',
+  y: '#6b4a2a',
+  m: '#9aa0a8',
+  g: '#e3b552',
+};
+
+const FIG_WACHE = [
+  '..kkk....',
+  '.kbbbk...',
+  '.ksssk...',
+  '..kkk....',
+  'ybBBBb...',
+  'ykbBBBbk.',
+  'y.bbbbb..',
+  'y.b...b..',
+  '..k...k..',
+];
+
+const FIG_GEGNER = [
+  '..kkk..k.',
+  '.krrrk.k.',
+  '.ksssk.k.',
+  '..kkk..k.',
+  '.rRRRr.k.',
+  'kmrRRRrk.',
+  '.rrrrr.k.',
+  '.r...r.k.',
+  '.k...k...',
+];
+
+function drawSprite(rows, x, y, scale, context = ctx, palette = PAL) {
+  const w = rows[0].length, h = rows.length;
+  const ox = Math.round(x - (w * scale) / 2);
+  const oy = Math.round(y - h * scale);
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      const col = palette[rows[r][c]];
+      if (!col) continue;
+      context.fillStyle = col;
+      context.fillRect(ox + c * scale, oy + r * scale, scale, scale);
+    }
+  }
+}
+
+function drawShadow(x, y, rx) {
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, rx * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ---------- Palmen und Felsen im Randstreifen ----------
+function drawPalme(x, y) {
+  drawShadow(x + 3, y + 1, 7);
+  ctx.fillStyle = '#5d4022';
+  ctx.fillRect(x - 2, y - 26, 4, 26);
+  ctx.fillStyle = '#6b4a28';
+  ctx.fillRect(x - 2, y - 26, 2, 26);
+  const blatt = ['#3f6b2c', '#4f8236', '#356024'];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    ctx.fillStyle = blatt[i % 3];
+    ctx.beginPath();
+    ctx.ellipse(x + Math.cos(a) * 9, y - 28 + Math.sin(a) * 4.5, 9, 4, a / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#2c4a1d';
+  ctx.fillRect(x - 3, y - 30, 6, 4);
+}
+
+function drawFels(x, y, s) {
+  drawShadow(x, y, s * 1.1);
+  ctx.fillStyle = '#7b7263';
+  ctx.fillRect(x - s, y - s, s * 2, s);
+  ctx.fillStyle = '#9a9081';
+  ctx.fillRect(x - s, y - s * 1.5, s * 2, s * 0.6);
+  ctx.fillStyle = '#5f584c';
+  ctx.fillRect(x - s, y - s * 0.2, s * 2, s * 0.4);
+}
+
+// Randdeko einmalig festlegen, damit nichts springt.
+const DEKO = [];
+(function buildDeko() {
+  for (let r = -RAND; r < ROWS + RAND; r++) {
+    for (let c = -RAND; c < COLS + RAND; c++) {
+      if (imFeld(c, r) || istWasser(c, r)) continue;
+      const n = noise(c * 3.3, r * 7.7);
+      if (n > 0.86) DEKO.push({ c, r, art: 'palme' });
+      else if (n > 0.74) DEKO.push({ c, r, art: 'fels', s: 3 + Math.round(noise(c, r) * 3) });
+    }
+  }
+})();
+
+// ---------- Anklickbare Flaechen, in Zeichenreihenfolge gesammelt ----------
+let pickables = [];
+function addPick(art, ref, x, y, w, h) { pickables.push({ art, ref, x, y, w, h }); }
+
+function drawGround() {
+  for (let r = -RAND; r < ROWS + RAND; r++) {
+    for (let c = -RAND; c < COLS + RAND; c++) {
+      const drin = imFeld(c, r);
+      const wasser = istWasser(c, r);
+      const n = noise(c, r);
+      const x = isoX(c, r), y = isoY(c, r) + TH / 2;
+      let farbe;
+      if (wasser) farbe = n < 0.5 ? '#1f5771' : '#256380';
+      else if (drin) farbe = n < 0.34 ? '#d3ae7b' : n < 0.7 ? '#cda772' : '#c69d68';
+      else farbe = n < 0.5 ? '#bb9a68' : '#b08f5e';
+      fillDiamond(c, r, farbe);
+
+      // Brandung dort, wo Wasser auf Land trifft
+      if (wasser && !istWasser(c + 1, r) && !istWasser(c, r + 1)) {
+        fillDiamond(c, r, 'rgba(150,205,220,0.28)');
+      }
+      if (wasser && n > 0.72) {
+        ctx.fillStyle = 'rgba(190,225,240,0.30)';
+        ctx.fillRect(x - 5, y, 9, 2);
+      }
+      if (!wasser && n > 0.9) {
+        ctx.fillStyle = drin ? 'rgba(120,95,55,0.35)' : 'rgba(110,88,50,0.4)';
+        ctx.fillRect(x - 5, y - 1, 3, 2);
+        ctx.fillRect(x + 3, y + 2, 2, 2);
+      }
+      if (drin && n > 0.55 && n < 0.6) {
+        ctx.fillStyle = 'rgba(96,116,58,0.45)';
+        ctx.fillRect(x - 2, y - 2, 2, 3);
+        ctx.fillRect(x + 2, y - 1, 2, 3);
+      }
+    }
+  }
+
+  // Rasterlinien nur im Spielfeld, dezent
+  ctx.strokeStyle = 'rgba(85,64,34,0.07)';
   ctx.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(isoX(c, 0), isoY(c, 0));
+    ctx.lineTo(isoX(c, ROWS), isoY(c, ROWS));
+    ctx.stroke();
   }
   for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
-  }
-
-  if (state.pendingCard && state.pendingCard.type === 'Gebäude' && state.hoverCell) {
-    const w = 2, h = 2;
-    const valid = isValidTowerPlacement(state.hoverCell.col, state.hoverCell.row, w, h);
-    ctx.fillStyle = valid ? 'rgba(74,92,43,0.35)' : 'rgba(124,31,52,0.35)';
-    ctx.fillRect(state.hoverCell.col * CELL, state.hoverCell.row * CELL, w * CELL, h * CELL);
-  }
-
-  ctx.fillStyle = '#5c4326';
-  ctx.fillRect(CASTLE.col * CELL, CASTLE.row * CELL, CASTLE.w * CELL, CASTLE.h * CELL);
-  ctx.fillStyle = '#e9dcc0';
-  ctx.font = '16px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('🏰', (CASTLE.col + CASTLE.w / 2) * CELL, (CASTLE.row + CASTLE.h / 2) * CELL + 5);
-  drawHpBar(CASTLE.col * CELL, CASTLE.row * CELL - 8, CASTLE.w * CELL, state.castleHp, CASTLE.maxHp, '#7c1f34');
-
-  // Reichweite als Quadrat, weil Abstaende wie bei der Gegnerbewegung
-  // ueber die groessere der beiden Achsen gemessen werden.
-  const sel = getSelectedUnit();
-  state.towers.forEach(t => {
-    const defender = t.slots.find(s => s && s.range);
-    if (!defender) return;
-    const aktiv = sel && sel.tower.id === t.id;
-    drawRangeBox(t, aktiv ? sel.unit.range : defender.range,
-      aktiv ? 'rgba(74,92,43,0.85)' : 'rgba(124,31,52,0.28)',
-      aktiv ? 'rgba(74,92,43,0.10)' : 'rgba(124,31,52,0.04)');
-  });
-
-  state.towers.forEach(t => {
-    const targetable = state.pendingCard && (
-      (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
-      (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
-    );
-    const ausgewaehlt = sel && sel.tower.id === t.id;
-    ctx.fillStyle = ausgewaehlt ? '#8a6a3a' : targetable ? '#8a6a3a' : '#6b4e2a';
-    ctx.fillRect(t.col * CELL, t.row * CELL, t.w * CELL, t.h * CELL);
-    if (targetable || ausgewaehlt) {
-      ctx.strokeStyle = ausgewaehlt ? '#a67818' : '#4a5c2b';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(t.col * CELL + 1, t.row * CELL + 1, t.w * CELL - 2, t.h * CELL - 2);
-    }
-    ctx.fillStyle = '#e9dcc0';
-    ctx.font = '14px serif';
-    ctx.fillText('🌰', (t.col + t.w / 2) * CELL, (t.row + t.h / 2) * CELL + 3);
-    const hasUnit = t.slots.some(s => s);
-    if (hasUnit) {
-      ctx.font = '11px serif';
-      ctx.fillText('❤', (t.col + t.w / 2) * CELL, (t.row + t.h / 2) * CELL + 16);
-    }
-    drawHpBar(t.col * CELL, t.row * CELL - 6, t.w * CELL, t.hp, t.maxHp, '#5c4326');
-  });
-
-  if (state.enemy) {
-    const e = state.enemy;
-    if (sel) {
-      const inReichweite = enemyInRange(sel.tower, sel.unit) && state.tatendrang >= ATTACK_COST;
-      ctx.beginPath();
-      ctx.arc(e.col * CELL + CELL / 2, e.row * CELL + CELL / 2, CELL / 2 + 2, 0, Math.PI * 2);
-      ctx.strokeStyle = inReichweite ? '#4a5c2b' : '#7c1f34';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-    ctx.fillStyle = '#2b2018';
     ctx.beginPath();
-    ctx.arc(e.col * CELL + CELL / 2, e.row * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e9dcc0';
-    ctx.font = '13px serif';
-    ctx.fillText('⚔', e.col * CELL + CELL / 2, e.row * CELL + CELL / 2 + 4);
-    drawHpBar(e.col * CELL, e.row * CELL - 6, CELL, e.hp, e.maxHp, '#2b2018');
+    ctx.moveTo(isoX(0, r), isoY(0, r));
+    ctx.lineTo(isoX(COLS, r), isoY(COLS, r));
+    ctx.stroke();
+  }
+}
+
+/** Reichweitenfeld: alle Kacheln im Chebyshev-Abstand markieren. */
+function markRange(t, range, farbe) {
+  for (let r = t.row - range; r < t.row + t.h + range; r++) {
+    for (let c = t.col - range; c < t.col + t.w + range; c++) {
+      if (c < 0 || r < 0 || c >= COLS || r >= ROWS) continue;
+      if (cellInsideRect(c, r, t)) continue;
+      fillDiamond(c, r, farbe);
+    }
+  }
+}
+
+function drawHpBar(x, y, w, hp, maxHp, farbe) {
+  const q = Math.max(0, Math.min(1, hp / maxHp));
+  ctx.fillStyle = 'rgba(10,8,6,0.75)';
+  ctx.fillRect(x - w / 2 - 1, y - 1, w + 2, 5);
+  ctx.fillStyle = '#3a2a22';
+  ctx.fillRect(x - w / 2, y, w, 3);
+  ctx.fillStyle = farbe;
+  ctx.fillRect(x - w / 2, y, w * q, 3);
+}
+
+function drawBanner(x, y, farbe) {
+  ctx.fillStyle = '#3a2c1c';
+  ctx.fillRect(x, y - 16, 1.5, 18);
+  ctx.fillStyle = farbe;
+  ctx.fillRect(x + 1.5, y - 16, 8, 10);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x + 1.5, y - 8, 8, 2);
+}
+
+function drawCastle() {
+  const C = CASTLE;
+  const H = 34;           // Hoehe des Mauerrings
+  const KEEP = 40;        // zusaetzliche Hoehe des Bergfrieds
+
+  drawBlock(C.col, C.row, C.w, C.h, H, BURG);
+  drawMerlons(C.col, C.row, C.w, C.h, H, STEIN);
+
+  // Tor in der zum Feld zeigenden Wand
+  const gx = isoX(C.col + C.w, C.row + C.h / 2 + 0.5);
+  const gy = isoY(C.col + C.w, C.row + C.h / 2 + 0.5);
+  ctx.fillStyle = '#3a2a1a';
+  ctx.beginPath();
+  ctx.moveTo(gx - 1, gy - 4);
+  ctx.lineTo(gx + 9, gy + 1);
+  ctx.lineTo(gx + 9, gy - 13);
+  ctx.quadraticCurveTo(gx + 4, gy - 22, gx - 1, gy - 18);
+  ctx.closePath();
+  ctx.fill();
+
+  // Bergfried am hinteren Ende
+  drawBlock(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN_HELL, H);
+  drawMerlons(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN, H + KEEP - 7);
+
+  const kx = isoX(C.col + 1, C.row + 1.45);
+  const ky = isoY(C.col + 1, C.row + 1.45) - H - KEEP;
+  drawBanner(kx + 11, ky + 4, '#2f5fa8');
+  if (state.castleHp < C.maxHp) drawHpBar(kx, ky - 16, 44, state.castleHp, C.maxHp, '#c0392b');
+
+  const links = isoX(C.col, C.row + C.h) - TW / 2;
+  const rechts = isoX(C.col + C.w, C.row) + TW / 2;
+  const oben = isoY(C.col, C.row) - H - KEEP - 20;
+  const unten = isoY(C.col + C.w, C.row + C.h) + TH;
+  addPick('castle', C, links, oben, rechts - links, unten - oben);
+}
+
+function drawTower(t) {
+  const H = 34;
+  const sel = getSelectedUnit();
+  const ausgewaehlt = sel && sel.tower.id === t.id;
+  const zielbar = state.pendingCard && (
+    (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
+    (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
+  );
+
+  drawBlock(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
+  drawMerlons(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
+
+  const cx = isoX(t.col + t.w / 2, t.row + t.h / 2);
+  const cy = isoY(t.col + t.w / 2, t.row + t.h / 2) - H;
+
+  if (ausgewaehlt || zielbar) {
+    ctx.strokeStyle = ausgewaehlt ? '#e3b552' : '#8fbf55';
+    ctx.lineWidth = 2;
+    const A = [isoX(t.col, t.row), isoY(t.col, t.row) - H];
+    const B = [isoX(t.col + t.w, t.row), isoY(t.col + t.w, t.row) - H];
+    const Cc = [isoX(t.col + t.w, t.row + t.h), isoY(t.col + t.w, t.row + t.h) - H];
+    const D = [isoX(t.col, t.row + t.h), isoY(t.col, t.row + t.h) - H];
+    ctx.beginPath();
+    ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.lineTo(Cc[0], Cc[1]); ctx.lineTo(D[0], D[1]);
+    ctx.closePath(); ctx.stroke();
   }
 
-  ctx.textAlign = 'start';
+  // Besatzung auf der Krone
+  const einheiten = t.slots.filter(s => s);
+  einheiten.forEach((u, i) => {
+    const versatz = (i - (einheiten.length - 1) / 2) * 11;
+    drawSprite(FIG_WACHE, cx + versatz, cy + 4, 2);
+  });
+  if (einheiten.length) drawBanner(cx + 14, cy + 2, '#2f5fa8');
+
+  if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
+  addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 46);
 }
 
-function drawRangeBox(t, range, stroke, fill) {
-  const x = (t.col - range) * CELL;
-  const y = (t.row - range) * CELL;
-  const w = (t.w + range * 2) * CELL;
-  const h = (t.h + range * 2) * CELL;
-  ctx.fillStyle = fill;
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = stroke;
-  ctx.setLineDash([4, 4]);
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x, y, w, h);
-  ctx.setLineDash([]);
+function drawEnemy() {
+  const e = state.enemy;
+  if (!e) return;
+  const cx = isoX(e.col, e.row);
+  const cy = isoY(e.col, e.row) + TH / 2;
+  const sel = getSelectedUnit();
+
+  if (sel) {
+    const treffbar = enemyInRange(sel.tower, sel.unit) && state.tatendrang >= ATTACK_COST;
+    ctx.strokeStyle = treffbar ? '#8fbf55' : '#c0392b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, TW / 2 - 3, TH / 2 - 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  drawShadow(cx, cy, 8);
+  drawSprite(FIG_GEGNER, cx, cy + 2, 2);
+  drawHpBar(cx, cy - 26, 22, e.hp, e.maxHp, '#c0392b');
+  addPick('enemy', e, cx - 12, cy - 24, 24, 28);
 }
 
-function drawHpBar(x, y, w, hp, maxHp, color) {
-  ctx.fillStyle = '#00000030';
-  ctx.fillRect(x, y, w, 4);
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w * Math.max(0, hp / maxHp), 4);
+function drawDeko(d) {
+  const x = isoX(d.c, d.r), y = isoY(d.c, d.r) + TH / 2;
+  if (d.art === 'palme') drawPalme(x, y);
+  else drawFels(x, y, d.s);
 }
 
-function isValidTowerPlacement(col, row, w, h) {
-  if (col < 0 || row < 0 || col + w > COLS || row + h > ROWS) return false;
-  const rect = { col, row, w, h };
-  if (rectsOverlap(rect, CASTLE)) return false;
-  for (const t of state.towers) if (rectsOverlap(rect, t)) return false;
-  return true;
-}
-function rectsOverlap(a, b) {
-  return a.col < b.col + b.w && a.col + a.w > b.col && a.row < b.row + b.h && a.row + a.h > b.row;
+function drawPlacementPreview() {
+  if (!state.pendingCard || state.pendingCard.type !== 'Gebäude' || !state.hoverCell) return;
+  const { col, row } = state.hoverCell;
+  const ok = isValidTowerPlacement(col, row, 2, 2);
+  for (let r = row; r < row + 2; r++) {
+    for (let c = col; c < col + 2; c++) {
+      if (c < 0 || r < 0 || c >= COLS || r >= ROWS) continue;
+      fillDiamond(c, r, ok ? 'rgba(143,191,85,0.45)' : 'rgba(192,57,43,0.45)');
+    }
+  }
 }
 
-// ---------- Canvas interaction ----------
-function canvasCellFromEvent(evt) {
+function draw() {
+  pickables = [];
+  ctx.fillStyle = '#0b0908';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawGround();
+
+  // Reichweite der ausgewaehlten Einheit als Feldmarkierung
+  const sel = getSelectedUnit();
+  if (sel) markRange(sel.tower, sel.unit.range, 'rgba(143,191,85,0.20)');
+  else {
+    for (const t of state.towers) {
+      const u = t.slots.find(s => s && s.range);
+      if (u) markRange(t, u.range, 'rgba(140,34,48,0.09)');
+    }
+  }
+
+  drawPlacementPreview();
+
+  // Malerreihenfolge: was weiter vorn liegt, kommt spaeter
+  const objekte = [];
+  objekte.push({ tiefe: CASTLE.col + CASTLE.w + CASTLE.row + CASTLE.h, zeichne: drawCastle });
+  for (const t of state.towers) objekte.push({ tiefe: t.col + t.w + t.row + t.h, zeichne: () => drawTower(t) });
+  if (state.enemy) objekte.push({ tiefe: state.enemy.col + state.enemy.row + 1, zeichne: drawEnemy });
+  for (const d of DEKO) objekte.push({ tiefe: d.c + d.r + 1, zeichne: () => drawDeko(d) });
+  objekte.sort((a, b) => a.tiefe - b.tiefe);
+  for (const o of objekte) o.zeichne();
+}
+
+// ---------- Minikarte ----------
+const mini = document.getElementById('minimap');
+const mctx = mini.getContext('2d');
+function drawMinimap() {
+  const w = mini.width, h = mini.height;
+  const sx = w / COLS, sy = h / ROWS;
+  mctx.fillStyle = '#20190f';
+  mctx.fillRect(0, 0, w, h);
+  mctx.fillStyle = '#3d3220';
+  mctx.fillRect(0, 0, w, h);
+  mctx.fillStyle = '#2f5fa8';
+  mctx.fillRect(CASTLE.col * sx, CASTLE.row * sy, CASTLE.w * sx, CASTLE.h * sy);
+  for (const t of state.towers) {
+    mctx.fillStyle = t.slots.some(s => s) ? '#6f9ee0' : '#8a8070';
+    mctx.fillRect(t.col * sx, t.row * sy, t.w * sx, t.h * sy);
+  }
+  if (state.enemy) {
+    mctx.fillStyle = '#e0503c';
+    mctx.fillRect(state.enemy.col * sx - 1, state.enemy.row * sy - 1, sx + 2, sy + 2);
+  }
+  mctx.strokeStyle = '#6b5535';
+  mctx.lineWidth = 2;
+  mctx.strokeRect(1, 1, w - 2, h - 2);
+}
+
+// ---------- Kartenbilder ----------
+function paintCardArt(cv, art) {
+  const c = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  c.imageSmoothingEnabled = false;
+
+  // Himmel
+  for (let y = 0; y < h; y++) {
+    const t = y / h;
+    c.fillStyle = t < 0.62 ? (t < 0.3 ? '#7ea8c4' : '#9cc0d2') : '#c9a772';
+    c.fillRect(0, y, w, 1);
+  }
+
+  const boden = Math.round(h * 0.72);
+  c.fillStyle = '#c09a63';
+  c.fillRect(0, boden, w, h - boden);
+  c.fillStyle = '#a8824f';
+  c.fillRect(0, h - 6, w, 6);
+
+  const stein = '#d6c8a8', steinDunkel = '#9c8c6d', steinSchatten = '#7d6f55';
+
+  if (art === 'mauer' || art === 'waldlaeufer' || art === 'bogen') {
+    const top = Math.round(h * 0.46);
+    c.fillStyle = steinDunkel; c.fillRect(0, top, w, boden - top + 4);
+    c.fillStyle = stein; c.fillRect(0, top, w, 6);
+    c.fillStyle = steinSchatten;
+    for (let x = 2; x < w; x += 11) c.fillRect(x, top + 8, 9, 1);
+    for (let y = top + 8; y < boden; y += 7) c.fillRect(0, y, w, 1);
+    for (let x = 0; x < w; x += 12) { c.fillStyle = stein; c.fillRect(x, top - 7, 7, 8); }
+    if (art !== 'mauer') {
+      const scale = 4;
+      const cx = Math.round(w / 2);
+      drawSprite(FIG_WACHE, cx, top + 2, scale, c);
+      // Gespannter Bogen beziehungsweise gezogener Pfeil
+      c.fillStyle = '#6b4a2a';
+      if (art === 'bogen') {
+        c.beginPath();
+        c.arc(cx - 14, top - 16, 13, -1.1, 1.1);
+        c.lineWidth = 3; c.strokeStyle = '#6b4a2a'; c.stroke();
+        c.fillStyle = '#e8e2d2'; c.fillRect(cx - 13, top - 17, 22, 2);
+        c.fillStyle = '#4a3a28'; c.fillRect(cx + 7, top - 19, 5, 5);
+      } else {
+        c.fillRect(cx + 9, top - 30, 3, 26);
+        c.fillStyle = '#5c7a30';
+        c.fillRect(cx + 6, top - 32, 9, 5);
+      }
+    }
+  } else if (art === 'turm') {
+    const bx = Math.round(w / 2) - 14, top = Math.round(h * 0.12);
+    c.fillStyle = steinDunkel; c.fillRect(bx, top, 28, boden - top + 4);
+    c.fillStyle = stein; c.fillRect(bx, top, 28, 5);
+    c.fillStyle = steinSchatten;
+    for (let y = top + 7; y < boden; y += 7) c.fillRect(bx, y, 28, 1);
+    c.fillRect(bx + 12, top + 12, 5, 9);
+    for (let x = bx; x < bx + 28; x += 9) { c.fillStyle = stein; c.fillRect(x, top - 7, 6, 8); }
+    c.fillStyle = '#2f5fa8'; c.fillRect(bx + 30, top + 2, 8, 10);
+    c.fillStyle = '#3a2c1c'; c.fillRect(bx + 29, top - 4, 1.5, 18);
+  } else if (art === 'wind') {
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    for (let i = 0; i < 5; i++) {
+      const y = 8 + i * 9;
+      c.fillRect(4 + i * 3, y, 40 - i * 4, 2);
+    }
+    for (let i = 0; i < 3; i++) {
+      const y = 14 + i * 13, x = w - 14 - i * 6;
+      c.fillStyle = '#e8e2d2'; c.fillRect(x - 22, y, 22, 2);
+      c.fillStyle = '#4a3a28';
+      c.fillRect(x, y - 2, 6, 6);
+    }
+  } else if (art === 'krone') {
+    for (let y = 0; y < h; y++) { c.fillStyle = y < h * 0.7 ? '#3b2f4d' : '#2a2136'; c.fillRect(0, y, w, 1); }
+    const cx = Math.round(w / 2), by = Math.round(h * 0.64);
+    c.fillStyle = '#b8891f'; c.fillRect(cx - 22, by, 44, 9);
+    c.fillStyle = '#e3b552'; c.fillRect(cx - 22, by, 44, 4);
+    for (let i = 0; i < 5; i++) {
+      const x = cx - 22 + i * 10;
+      c.fillStyle = '#e3b552'; c.fillRect(x, by - 11, 5, 11);
+      c.fillStyle = '#fff0b8'; c.fillRect(x, by - 14, 5, 4);
+    }
+    c.fillStyle = '#c0392b'; c.fillRect(cx - 3, by + 2, 6, 5);
+    c.fillStyle = '#2f5fa8'; c.fillRect(cx - 15, by + 2, 5, 5); c.fillRect(cx + 10, by + 2, 5, 5);
+  }
+
+  // Vignette
+  c.fillStyle = 'rgba(40,28,14,0.18)';
+  c.fillRect(0, 0, w, 2); c.fillRect(0, h - 2, w, 2);
+  c.fillRect(0, 0, 2, h); c.fillRect(w - 2, 0, 2, h);
+}
+
+// ============================================================
+//  Eingabe
+// ============================================================
+function canvasPoint(evt) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const x = (evt.clientX - rect.left) * scaleX;
-  const y = (evt.clientY - rect.top) * scaleY;
-  return { col: Math.floor(x / CELL), row: Math.floor(y / CELL) };
+  return {
+    x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+    y: (evt.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+
+/** Rasterfeld unter einem Bildpunkt, ueber die Umkehrung der Isometrie. */
+function cellFromPoint(p) {
+  const dx = p.x - ORIGIN_X;
+  const dy = p.y - ORIGIN_Y - TH / 2;
+  const col = Math.floor((dx / (TW / 2) + dy / (TH / 2)) / 2 + 0.5);
+  const row = Math.floor((dy / (TH / 2) - dx / (TW / 2)) / 2 + 0.5);
+  return { col, row };
+}
+
+/** Vorderstes angeklicktes Objekt, oder null. */
+function pickAt(p) {
+  for (let i = pickables.length - 1; i >= 0; i--) {
+    const o = pickables[i];
+    if (p.x >= o.x && p.x <= o.x + o.w && p.y >= o.y && p.y <= o.y + o.h) return o;
+  }
+  return null;
 }
 
 canvas.addEventListener('mousemove', (evt) => {
   if (!state.pendingCard || state.pendingCard.type !== 'Gebäude') return;
-  state.hoverCell = canvasCellFromEvent(evt);
+  state.hoverCell = cellFromPoint(canvasPoint(evt));
   draw();
 });
 
-canvas.addEventListener('click', (evt) => {
-  const cell = canvasCellFromEvent(evt);
-  if (state.castleHp <= 0) return;
+canvas.addEventListener('mouseleave', () => {
+  if (state.hoverCell) { state.hoverCell = null; draw(); }
+});
 
-  // Ohne ausgewaehlte Karte dient der Klick dem Angreifen.
-  if (!state.pendingCard) { handleSelectionClick(cell); return; }
+canvas.addEventListener('click', (evt) => {
+  if (state.castleHp <= 0) return;
+  const p = canvasPoint(evt);
+  const treffer = pickAt(p);
+  const cell = cellFromPoint(p);
+
+  if (!state.pendingCard) { handleSelectionClick(treffer, cell); return; }
 
   state.selectedUnit = null;
 
   if (state.pendingCard.type === 'Gebäude') {
-    if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) {
-      placeTower(cell.col, cell.row);
-    } else {
-      setMessage('Hier kann kein Turm stehen.');
-    }
+    if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) placeTower(cell.col, cell.row);
+    else setMessage('Hier kann kein Turm stehen.');
+    renderAll();
     return;
   }
 
-  const tower = state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
+  const tower = treffer && treffer.art === 'tower' ? treffer.ref
+    : state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
   if (!tower) return;
 
   if (state.pendingCard.type === 'Einheit') {
     const slotIdx = tower.slots.findIndex(s => s === null);
-    if (slotIdx === -1) { setMessage('Dieser Turm hat keinen freien Platz.'); return; }
+    if (slotIdx === -1) { setMessage('Dieser Turm hat keinen freien Platz.'); renderAll(); return; }
     placeUnit(tower, slotIdx);
   } else if (state.pendingCard.type === 'Fähigkeit') {
     const slotIdx = tower.slots.findIndex(s => s !== null);
-    if (slotIdx === -1) { setMessage('Auf diesem Turm steht keine Einheit.'); return; }
+    if (slotIdx === -1) { setMessage('Auf diesem Turm steht keine Einheit.'); renderAll(); return; }
     applyAbility(tower, slotIdx);
   }
 });
@@ -454,19 +969,18 @@ canvas.addEventListener('click', (evt) => {
  * dann den Gegner anklicken. Ein zweiter Klick auf denselben Turm wechselt
  * zur naechsten Einheit darauf.
  */
-function handleSelectionClick(cell) {
-  if (state.enemy && cell.col === state.enemy.col && cell.row === state.enemy.row) {
+function handleSelectionClick(treffer, cell) {
+  const gegnerGetroffen = treffer && treffer.art === 'enemy';
+  if (gegnerGetroffen || (state.enemy && cell.col === state.enemy.col && cell.row === state.enemy.row)) {
     const sel = getSelectedUnit();
-    if (!sel) {
-      setMessage('Wähle zuerst eine Einheit auf einem Turm, dann den Gegner.');
-      renderAll();
-      return;
-    }
+    if (!sel) { setMessage('Wähle zuerst eine Einheit auf einem Turm, dann den Gegner.'); renderAll(); return; }
     attackEnemy(sel.tower, sel.unit);
     return;
   }
 
-  const tower = state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
+  const tower = treffer && treffer.art === 'tower' ? treffer.ref
+    : state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
+
   if (tower) {
     const besetzt = tower.slots.map((slot, i) => (slot ? i : -1)).filter(i => i >= 0);
     if (besetzt.length === 0) {
@@ -487,13 +1001,9 @@ function handleSelectionClick(cell) {
       setMessage(unit.name + ' ausgewählt. Zurzeit ist kein Gegner auf dem Feld.');
     } else {
       const d = distanceToEnemy(tower);
-      if (d > unit.range) {
-        setMessage(unit.name + ' ausgewählt, aber der Gegner steht ' + d + ' Felder entfernt (Reichweite ' + unit.range + ').');
-      } else if (state.tatendrang < ATTACK_COST) {
-        setMessage(unit.name + ' ausgewählt, aber der Tatendrang reicht nicht für einen Angriff.');
-      } else {
-        setMessage(unit.name + ' ausgewählt. Klicke den Gegner an, um für ' + unit.dmg + ' Schaden anzugreifen (' + ATTACK_COST + ' Tatendrang).');
-      }
+      if (d > unit.range) setMessage(unit.name + ' ausgewählt, aber der Gegner steht ' + d + ' Felder entfernt (Reichweite ' + unit.range + ').');
+      else if (state.tatendrang < ATTACK_COST) setMessage(unit.name + ' ausgewählt, aber der Tatendrang reicht nicht für einen Angriff.');
+      else setMessage(unit.name + ' ausgewählt. Klicke den Gegner an, um für ' + unit.dmg + ' Schaden anzugreifen (' + ATTACK_COST + ' Tatendrang).');
     }
     renderAll();
     return;
@@ -531,7 +1041,9 @@ function attackEnemy(tower, unit) {
   renderAll();
 }
 
-// ---------- Game actions ----------
+// ============================================================
+//  Spielzuege
+// ============================================================
 function playCard(card) {
   if (card.type === 'Gebäude') {
     state.pendingCard = card;
@@ -598,7 +1110,7 @@ function removeFromHand(card) {
   state.discard.push(card);
 }
 
-// ---------- Enemy turn ----------
+// ---------- Gegnerzug ----------
 function resolveEnemyTurn() {
   const e = state.enemy;
   if (!e) return;
@@ -616,14 +1128,12 @@ function resolveEnemyTurn() {
   while (remaining > 0) {
     const dist = chebyshev(e.col, e.row, targetPoint.col, targetPoint.row);
     if (dist <= 1) break;
-    const dx = Math.sign(targetPoint.col - e.col);
-    const dy = Math.sign(targetPoint.row - e.row);
-    e.col += dx; e.row += dy;
+    e.col += Math.sign(targetPoint.col - e.col);
+    e.row += Math.sign(targetPoint.row - e.row);
     remaining--;
   }
 
-  const finalDist = chebyshev(e.col, e.row, targetPoint.col, targetPoint.row);
-  if (finalDist <= 1) {
+  if (chebyshev(e.col, e.row, targetPoint.col, targetPoint.row) <= 1) {
     if (target) {
       target.hp -= e.dmg;
       const defender = target.slots.find(s => s);
@@ -636,7 +1146,7 @@ function resolveEnemyTurn() {
       }
     } else if (isCastle) {
       state.castleHp -= e.dmg;
-      setMessage('Die Burg wird direkt angegriffen! (' + state.castleHp + '/' + CASTLE.maxHp + ' LP übrig)');
+      setMessage('Die Burg wird direkt angegriffen! (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ' LP übrig)');
     }
   }
 
@@ -655,7 +1165,6 @@ function endRound() {
   const kampfMeldung = document.getElementById('message').textContent;
   if (!state.enemy && state.castleHp > 0) spawnEnemy();
 
-  // Nicht gespielte Karten wandern auf den Ablagestapel, dann neu ziehen.
   const abgelegt = state.hand.length;
   state.discard.push(...state.hand);
   state.hand = [];
@@ -665,6 +1174,7 @@ function endRound() {
   state.tatendrang = state.maxTatendrang;
   state.pendingCard = null;
   state.hoverCell = null;
+  state.selectedUnit = null;
 
   if (state.castleHp <= 0) {
     setMessage('Die Burg ist gefallen. Spiel vorbei.');
@@ -679,38 +1189,65 @@ function endRound() {
   renderAll();
 }
 
-// ---------- Hand rendering ----------
+window.addEventListener('keydown', (evt) => {
+  if (evt.key !== 'Escape') return;
+  if (!state.pendingCard && !state.selectedUnit) return;
+  state.pendingCard = null;
+  state.selectedUnit = null;
+  state.hoverCell = null;
+  setMessage('Auswahl aufgehoben.');
+  renderAll();
+});
+
+document.getElementById('help-btn').addEventListener('click', () => {
+  setMessage('Karte anklicken und aufs Feld setzen · Einheit anklicken, dann den Gegner (1 Tatendrang) · Esc hebt auf');
+});
+
+// ============================================================
+//  Oberflaeche
+// ============================================================
 function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   state.hand.forEach(card => {
-    const el = document.createElement('div');
     const canAfford = state.tatendrang >= card.cost;
     let disabled = !canAfford || state.castleHp <= 0;
     if (card.type === 'Einheit' && !anyTowerWithFreeSlot()) disabled = true;
     if (card.type === 'Fähigkeit' && !anyTowerWithUnit()) disabled = true;
     if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
 
+    const el = document.createElement('div');
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
-    el.onclick = () => {
-      if (disabled) return;
-      state.selectedUnit = null;
-      playCard(card);
-    };
+    el.onclick = () => { if (disabled) return; state.selectedUnit = null; playCard(card); };
 
-    el.innerHTML = `
-      <div class="card-top">
-        <span class="card-cost">${card.cost}</span>
-        <span class="card-suit">${card.suit}</span>
-      </div>
-      <div class="card-name">${card.name}</div>
-      <div class="card-type ${card.type}">${card.type}</div>
-      ${card.dmg ? `<div class="card-stats">⚔ ${card.dmg} Schaden</div>` : ''}
-      ${card.range ? `<div class="card-stats">➤ ${card.range} Reichweite</div>` : ''}
-      ${card.hp ? `<div class="card-stats">♥ ${card.hp} Turm-LP</div>` : ''}
-      <div class="card-text">${card.text}</div>
-    `;
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    head.innerHTML = '<span class="cost">' + card.cost + '</span><span class="card-name">' +
+      card.name + '</span><span class="card-suit">' + card.suit + '</span>';
+    el.appendChild(head);
+
+    const art = document.createElement('canvas');
+    art.className = 'card-art';
+    art.width = 108; art.height = 56;
+    paintCardArt(art, card.art);
+    el.appendChild(art);
+
+    const werte = [];
+    if (card.dmg) werte.push('⚔ ' + card.dmg);
+    if (card.range) werte.push('➤ ' + card.range);
+    if (card.hp) werte.push('♥ ' + card.hp);
+
+    const txt = document.createElement('div');
+    txt.className = 'card-text';
+    txt.innerHTML = (werte.length ? '<b>' + werte.join(' · ') + '</b><br>' : '') + card.text;
+    el.appendChild(txt);
+
+    const badge = document.createElement('div');
+    badge.className = 'card-badge';
+    badge.textContent = card.type;
+    el.appendChild(badge);
+
     handEl.appendChild(el);
   });
 }
@@ -722,29 +1259,25 @@ function renderAll() {
   document.getElementById('castle-hp-val').textContent = Math.max(0, state.castleHp);
   document.getElementById('draw-count').textContent = state.draw.length;
   document.getElementById('discard-count').textContent = state.discard.length;
-  document.getElementById('pile-draw').classList.toggle('empty', state.draw.length === 0);
-  document.getElementById('pile-discard').classList.toggle('empty', state.discard.length === 0);
-  document.getElementById('hand-count').textContent = state.hand.length ? '(' + state.hand.length + ')' : '(leer)';
+  document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
+  document.getElementById('endround-btn').disabled = state.castleHp <= 0;
+
+  const bar = document.getElementById('enemy-bar');
+  bar.style.width = state.enemy ? Math.max(0, (state.enemy.hp / state.enemy.maxHp) * 100) + '%' : '0%';
+
   setIntent(currentIntentText());
   draw();
+  drawMinimap();
   renderHand();
 }
-
-window.addEventListener('keydown', (evt) => {
-  if (evt.key !== 'Escape') return;
-  if (!state.pendingCard && !state.selectedUnit) return;
-  state.pendingCard = null;
-  state.selectedUnit = null;
-  state.hoverCell = null;
-  setMessage('Auswahl aufgehoben.');
-  renderAll();
-});
 
 // init
 state.draw = buildStarterDeck();
 drawCards(HAND_SIZE);
 spawnEnemy();
 renderAll();
+setMessage('Errichte einen Turm und besetze ihn, bevor der Gegner die Burg erreicht.');
+
 </script>
 
 </body>

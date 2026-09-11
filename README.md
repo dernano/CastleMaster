@@ -4,8 +4,8 @@ Ein rundenbasiertes Deckbuilding-Kartenspiel im Browser. Du errichtest Türme
 auf einem Raster, besetzt sie mit Einheiten und hältst damit einen Gegner von
 deiner Burg fern. Die Kartenfarben folgen dem doppeldeutschen Blatt.
 
-Grundlage ist Prototyp v2 aus dem Chat. Darauf aufgesetzt ist ein echtes Deck
-mit Nachzieh- und Ablagestapel.
+Grundlage ist Prototyp v2 aus dem Chat, erweitert um ein echtes Deck und um
+gezielte Angriffe. Die Darstellung ist eine isometrische Pixel-Ansicht.
 
 ## Starten
 
@@ -20,11 +20,27 @@ ebenfalls, weil alles in einer Datei steckt.
 ## Spielfeld
 
 Ein Raster von 20 mal 15 Feldern als Testgröße, angepeilt sind später 80 mal
-60. Die Burg steht links und hat 20 Lebenspunkte. Der Gegner erscheint rechts.
+60. Die Burg steht links am Wasser und hat 20 Lebenspunkte. Der Gegner
+erscheint rechts.
 
 Türme belegen zwei mal zwei Felder und werden frei platziert. Beim Setzen einer
 Gebäude-Karte zeigt eine Vorschau, ob die Stelle frei ist. Jeder Turm hat eigene
 Lebenspunkte und mindestens einen Platz für eine Einheit.
+
+## Darstellung
+
+Die Ansicht ist isometrisch und wird vollständig im Code gezeichnet, ohne
+Bilddateien. Boden, Wasser, Mauern, Zinnen, Palmen und Felsen entstehen aus
+Rauten und Quadern, die Figuren aus kleinen Pixelrastern. Auch die Bilder auf
+den Karten werden zur Laufzeit gemalt.
+
+Damit hat das Projekt weiterhin keine Abhängigkeiten und besteht aus einer
+einzigen Datei. Die Grenze ist die Zeichenfläche: handgezeichnete Pixelgrafik
+mit vielen Einzelbildern sieht reicher aus als alles, was sich sinnvoll aus
+Rechtecken bauen lässt.
+
+Abstände werden über die größere der beiden Achsen gemessen. Reichweiten
+erscheinen deshalb als markierte Felder, nicht als Kreis.
 
 ## Kartenfarben und Typen
 
@@ -67,9 +83,9 @@ kündigt an, was der Gegner als Nächstes vorhat.
 Einheiten schießen nicht von selbst. Du setzt sie im eigenen Zug gezielt auf
 den Gegner an:
 
-1. Eine Einheit auf einem Turm anklicken. Ihre Reichweite wird als Quadrat um
-   den Turm gezeigt, der Gegner bekommt einen Ring: grün heißt in Reichweite,
-   rot heißt zu weit weg oder zu wenig Tatendrang.
+1. Eine Einheit auf einem Turm anklicken. Ihre Reichweite wird auf dem Boden
+   markiert, der Gegner bekommt einen Ring: grün heißt in Reichweite, rot heißt
+   zu weit weg oder zu wenig Tatendrang.
 2. Den Gegner anklicken. Er nimmt den Schaden der Einheit.
 
 Ein Angriff kostet 1 Tatendrang, festgelegt als `ATTACK_COST`. Der Tatendrang
@@ -77,10 +93,8 @@ ist die einzige Grenze, eine Einheit kann in derselben Runde also mehrfach
 angreifen, solange du bezahlst. Damit steht jede Runde dieselbe Frage: bauen
 oder schießen.
 
-Abstände werden über die größere der beiden Achsen gemessen, genau wie die
-Bewegung des Gegners. Deshalb ist die Reichweitenanzeige ein Quadrat und kein
-Kreis. Steht auf einem Turm mehr als eine Einheit, wechselt ein zweiter Klick
-auf denselben Turm zur nächsten. `Esc` hebt jede Auswahl auf.
+Steht auf einem Turm mehr als eine Einheit, wechselt ein zweiter Klick auf
+denselben Turm zur nächsten. `Esc` hebt jede Auswahl auf.
 
 Zusätzlich schlägt eine Einheit weiterhin automatisch zurück, wenn der Gegner
 ihren Turm angreift. Das stammt aus v2 und ist unangetastet geblieben.
@@ -120,7 +134,12 @@ Skript.
 Alles steckt in `index.html`: Stil, Aufbau und Logik. Wichtige Stellen im
 Skript sind `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 `state` für den Spielzustand mit den Stapeln `draw`, `hand` und `discard`,
-`handleSelectionClick` und `attackEnemy` für das Angreifen, `resolveEnemyTurn`
-für den Gegnerzug und `draw()` für die Canvas-Darstellung.
+`handleSelectionClick` und `attackEnemy` für das Angreifen und
+`resolveEnemyTurn` für den Gegnerzug.
+
+Für die Darstellung sind `isoX` und `isoY` die Umrechnung aufs Raster,
+`cellFromPoint` die Umkehrung für Klicks, `drawBlock` und `drawMerlons` die
+Bausteine für Mauerwerk, `drawSprite` die Pixelfiguren und `paintCardArt` die
+Bilder auf den Karten.
 
 `scripts/serve.js` ist ein statischer Dev-Server ohne Abhängigkeiten.
