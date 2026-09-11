@@ -123,6 +123,17 @@
   /* ---------- Meldungszeilen ---------- */
   .hidden { display: none !important; }
 
+  #schluss {
+    position: absolute; inset: 0; z-index: 7;
+    display: grid; place-items: center;
+    background: rgba(8, 6, 5, 0.88);
+  }
+  #schluss-zahlen { display: flex; justify-content: center; gap: 14px; margin: 4px 0 14px; flex-wrap: wrap; }
+  #schluss-zahlen span { font-family: var(--fliess); font-size: 11px; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  #schluss-zahlen b { font-family: var(--pixel); font-size: 21px; color: var(--parchment);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
+
   #reward {
     position: absolute; inset: 0; z-index: 5;
     display: grid; place-items: center;
@@ -501,6 +512,15 @@
     </div>
   </div>
 
+  <div id="schluss" class="hidden">
+    <div class="reward-box panel">
+      <h2 id="schluss-titel">Feldzug bestanden</h2>
+      <p id="schluss-text"></p>
+      <div id="schluss-zahlen"></div>
+      <button type="button" class="endround" id="schluss-btn">Neuer Feldzug</button>
+    </div>
+  </div>
+
   <div id="reward" class="hidden">
     <div class="reward-box panel">
       <h2 id="reward-title">Runde überstanden</h2>
@@ -534,7 +554,7 @@
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span class="swords">⚔</span> <span>Runde <b id="round-val">1</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
+      <div class="wave-top"><span class="swords">⚔</span> <span>Feldzug <b id="run-val">1</b> · Runde <b id="round-val">1</b>/<b id="round-max">12</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus">♪</button>
@@ -583,18 +603,28 @@ const ENEMY_TYPES = {
     punkte: 5, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
   ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
     punkte: 7, abRunde: 5, scale: 3, pal: { r: '#5d4023', R: '#8a6238' } },
+  // Nur in der letzten Runde eines Feldzugs, nie im normalen Aufgebot.
+  meister: { id: 'meister', name: 'Belagerungsmeister', hp: 65, dmg: 8, move: 2, reach: 2,
+    punkte: 99, abRunde: 999, scale: 3, pal: { r: '#4a2b52', R: '#7d4a86' } },
 };
 
 // Eine Runde ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
 // davon zaehlen Zuege: erst der Spieler, dann die Gegner.
-const rundenBudget = (runde) => 3 + Math.round(runde * 2.2); // Staerke des Aufgebots
+const RUNDEN_JE_FELDZUG = 12;       // so viele Runden bis zum Sieg
+const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
+
+// Jeder gewonnene Feldzug macht den naechsten haerter, wie die Aufstiegsstufen
+// in Slay the Spire.
+const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
+
+const rundenBudget = (runde) => Math.round((4 + runde * 2.9) * feldzugHaerte(state.feldzug || 1));
 const einsatzProZug = (runde) => 1 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
 const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
-const MAX_GEGNER_AUF_DEM_FELD = 6;                   // wie viele gleichzeitig draussen stehen
+const MAX_GEGNER_AUF_DEM_FELD = 8;                   // wie viele gleichzeitig draussen stehen
 const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
 // Spaetere Runden schicken zaehere Gegner.
-const belagerungsHp = (runde) => 1 + 0.1 * (runde - 1);
+const belagerungsHp = (runde) => (1 + 0.1 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
 const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 4);
 
 // Das geschuetzte Lager liegt rechts neben dem Spielfeld.
@@ -609,6 +639,7 @@ const HAND_SIZE = 5;
 const ATTACK_COST = 1;
 
 let state = {
+  feldzug: 1,        // wievielter Durchlauf, jeder haerter als der vorige
   runde: 1,          // Belagerungsrunde, also ein ganzer Kampf
   zug: 1,            // Zug innerhalb der Runde
   phase: 'kampf',    // 'kampf' | 'belohnung' | 'ende'
@@ -686,11 +717,13 @@ function makeEnemy(typ, runde) {
  * zunaechst im Lager und treten von dort Zug um Zug aufs Feld.
  */
 function buildRoster(runde) {
-  let budget = rundenBudget(runde);
+  const endkampf = runde >= RUNDEN_JE_FELDZUG;
+  let budget = endkampf ? Math.round(rundenBudget(runde) * 0.55) : rundenBudget(runde);
   const offen = Object.values(ENEMY_TYPES)
     .filter(t => runde >= t.abRunde)
     .sort((a, b) => b.punkte - a.punkte);
   const lager = [];
+  if (endkampf) lager.push(makeEnemy('meister', runde));
   const gezaehlt = {};
   // Kein Typ soll mehr als die Haelfte des Aufgebots stellen, sonst
   // bestehen spaete Runden nur noch aus Rammen.
@@ -2641,8 +2674,72 @@ function rundeGewonnen() {
     state.enemies.length === 0 && state.lager.length === 0;
 }
 
+/** Bestwert lesen und schreiben. */
+function ladeRekord() {
+  try { return JSON.parse(localStorage.getItem(FELDZUG_REKORD)) || { runde: 0, feldzug: 0, siege: 0 }; }
+  catch (e) { return { runde: 0, feldzug: 0, siege: 0 }; }
+}
+function merkeRekord(aenderung) {
+  const r = ladeRekord();
+  const neu = {
+    runde: Math.max(r.runde, aenderung.runde || 0),
+    feldzug: Math.max(r.feldzug, aenderung.feldzug || 0),
+    siege: (r.siege || 0) + (aenderung.sieg ? 1 : 0),
+  };
+  try { localStorage.setItem(FELDZUG_REKORD, JSON.stringify(neu)); } catch (e) { /* ohne Speicher eben so */ }
+  return neu;
+}
+
+/** Setzt alles zurueck und beginnt einen frischen Feldzug. */
+function neuerFeldzug(stufe) {
+  state.feldzug = Math.max(1, stufe);
+  state.castleHp = CASTLE.maxHp;
+  state.towers = [];
+  state.enemies = [];
+  state.lager = [];
+  state.draw = buildStarterDeck();
+  state.hand = [];
+  state.discard = [];
+  state.nextTowerId = 1;
+  state.nextEnemyId = 1;
+  leichen.length = 0;
+  projektile.length = 0;
+  startRunde(1);
+  zeigeBanner('Feldzug ' + state.feldzug, 'Zwölf Runden bis zum Belagerungsmeister');
+}
+
+/** Der Feldzug ist geschafft. */
+function feldzugGewonnen() {
+  state.phase = 'sieg';
+  state.pendingCard = null;
+  state.selectedTower = null;
+  const r = merkeRekord({ runde: state.runde, feldzug: state.feldzug, sieg: true });
+  state.rekord = r;
+  zeigeBanner('Feldzug bestanden', 'Der Belagerungsmeister ist gefallen');
+  schirmBlitz(1.4);
+  klang('sieg');
+  setMessage('Feldzug ' + state.feldzug + ' bestanden!');
+  renderAll();
+}
+
+/** Die Burg ist gefallen. */
+function feldzugVerloren() {
+  state.phase = 'ende';
+  state.pendingCard = null;
+  state.selectedTower = null;
+  const r = merkeRekord({ runde: state.runde, feldzug: state.feldzug });
+  state.rekord = r;
+  zeigeBanner('Die Burg ist gefallen', 'Runde ' + state.runde + ' von ' + RUNDEN_JE_FELDZUG);
+  schirmBlitz(1.2);
+  klang('burg');
+  setMessage('Die Burg ist gefallen in Runde ' + state.runde + '.');
+  renderAll();
+}
+
 /** Nach gewonnener Runde drei Karten zur Auswahl anbieten. */
 function beginneBelohnung() {
+  // Die letzte Runde beendet den Feldzug, statt eine Karte anzubieten.
+  if (state.runde >= RUNDEN_JE_FELDZUG) { feldzugGewonnen(); return; }
   state.phase = 'belohnung';
   state.pendingCard = null;
   state.selectedTower = null;
@@ -2678,12 +2775,7 @@ function endTurn() {
   resolveEnemyTurn();
   const kampfMeldung = document.getElementById('message').textContent;
 
-  if (state.castleHp <= 0) {
-    state.phase = 'ende';
-    setMessage('Die Burg ist gefallen. Du hast ' + (state.runde - 1) + ' Runden überstanden.');
-    renderAll();
-    return;
-  }
+  if (state.castleHp <= 0) { feldzugVerloren(); return; }
 
   const neu = deployFromLager();
 
@@ -2741,6 +2833,13 @@ document.getElementById('help-btn').addEventListener('click', () => {
   klang('karte');
 });
 document.getElementById('hilfe-zu').addEventListener('click', () => hilfeTafel.classList.add('hidden'));
+
+document.getElementById('schluss-btn').addEventListener('click', () => {
+  klang('karte');
+  // Nach einem Sieg geht es eine Stufe hoeher weiter, nach einer Niederlage
+  // von vorn. Der Bestwert bleibt in beiden Faellen erhalten.
+  neuerFeldzug(state.phase === 'sieg' ? state.feldzug + 1 : 1);
+});
 
 // ============================================================
 //  Oberflaeche
@@ -2843,6 +2942,30 @@ function renderHand() {
   });
 }
 
+function renderSchluss() {
+  const box = document.getElementById('schluss');
+  const sieg = state.phase === 'sieg';
+  const ende = state.phase === 'ende';
+  if (!sieg && !ende) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+
+  const r = state.rekord || ladeRekord();
+  document.getElementById('schluss-titel').textContent = sieg ? 'Feldzug bestanden' : 'Die Burg ist gefallen';
+  document.getElementById('schluss-text').textContent = sieg
+    ? 'Der Belagerungsmeister ist gefallen. Der nächste Feldzug wird härter.'
+    : 'Runde ' + state.runde + ' von ' + RUNDEN_JE_FELDZUG + '. Ein neuer Feldzug beginnt mit frischem Deck.';
+
+  document.getElementById('schluss-zahlen').innerHTML =
+    '<span><b>' + state.runde + '</b>erreichte Runde</span>' +
+    '<span><b>' + (state.draw.length + state.hand.length + state.discard.length) + '</b>Karten im Deck</span>' +
+    '<span><b>' + (r.siege || 0) + '</b>bestandene Feldzüge</span>' +
+    '<span><b>' + Math.max(r.runde || 0, state.runde) + '</b>beste Runde</span>';
+
+  document.getElementById('schluss-btn').textContent = sieg
+    ? 'Feldzug ' + (state.feldzug + 1) + ' beginnen'
+    : 'Neuer Versuch';
+}
+
 function renderReward() {
   const box = document.getElementById('reward');
   if (state.phase !== 'belohnung') { box.classList.add('hidden'); return; }
@@ -2862,7 +2985,9 @@ function renderReward() {
 }
 
 function renderAll() {
+  document.getElementById('run-val').textContent = state.feldzug;
   document.getElementById('round-val').textContent = state.runde;
+  document.getElementById('round-max').textContent = RUNDEN_JE_FELDZUG;
   document.getElementById('turn-val').textContent = state.zug;
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
@@ -2871,7 +2996,7 @@ function renderAll() {
   document.getElementById('draw-count').textContent = state.draw.length;
   document.getElementById('discard-count').textContent = state.discard.length;
   document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
-  document.getElementById('endround-btn').disabled = state.castleHp <= 0 || state.phase !== 'kampf';
+  document.getElementById('endround-btn').disabled = state.phase !== 'kampf';
 
   const bar = document.getElementById('enemy-bar');
   const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0) +
@@ -2883,6 +3008,7 @@ function renderAll() {
   drawMinimap();
   renderHand();
   renderReward();
+  renderSchluss();
 }
 
 // ---------- Bildschleife ----------
@@ -2897,9 +3023,11 @@ function frame(t) {
 requestAnimationFrame(frame);
 
 // init
+state.rekord = ladeRekord();
 state.draw = buildStarterDeck();
 startRunde(1);
-setMessage('Runde 1. Errichte einen Turm und besetze ihn, bevor die Gegner das Lager verlassen haben.');
+zeigeBanner('Feldzug 1', 'Zwölf Runden bis zum Belagerungsmeister');
+setMessage('Errichte einen Turm und besetze ihn, bevor die Gegner das Lager verlassen haben.');
 
 </script>
 

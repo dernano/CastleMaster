@@ -17,6 +17,20 @@ npm start          # http://localhost:5173
 Kein `npm install` nötig, das Projekt hat keine Abhängigkeiten. Alles steckt in
 `index.html`, ein Doppelklick auf die Datei funktioniert ebenfalls.
 
+## Feldzug
+
+Ein **Feldzug** sind zwölf Runden. In der letzten wartet der
+**Belagerungsmeister**, ein Endgegner, der sonst nie im Aufgebot auftaucht.
+Fällt er, ist der Feldzug bestanden.
+
+Danach beginnt sofort der nächste, eine Stufe härter: Aufgebote und
+Gegnerstärke steigen um 18 Prozent je bestandenem Feldzug, wie die
+Aufstiegsstufen in Slay the Spire.
+
+Fällt die Burg, endet der Lauf und ein neuer beginnt bei Stufe eins. In beiden
+Fällen wird alles zurückgesetzt: frisches Startdeck, keine Türme, volle Burg.
+Erreichte Runde, bestandene Feldzüge und die beste Runde bleiben gespeichert.
+
 ## Runden und Züge
 
 Eine **Runde** ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb davon
@@ -166,6 +180,7 @@ dass er in diesem Zug schon geschossen hat. `Esc` hebt jede Auswahl auf.
 | Armbrustschütze | 6 | 2 | 2 | 4 | 2 |
 | Ritter | 14 | 3 | 3 | 1 | 3 |
 | Ramme | 20 | 5 | 2 | 1 | 5 |
+| Belagerungsmeister | 65 | 8 | 2 | 2 | nur Runde 12 |
 
 Jeder Gegner hat eine eigene Angriffsreichweite. Ein Späher muss bis auf ein
 Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern und
@@ -209,10 +224,15 @@ Rest wartet im Lager. Spätere Runden schicken zähere und stärkere Gegner.
 
 Der Tatendrang wächst alle zwei Runden um einen Punkt bis höchstens acht.
 
-Zum Justieren stehen oben im Skript `rundenBudget`, `einsatzProZug`,
-`maxTatendrangFuer`, `MAX_GEGNER_AUF_DEM_FELD`, `belagerungsHp` und
-`belagerungsSchaden`. Drei Testläufe mit einfacher Spielweise endeten in Runde
-23, 10 und 10.
+Zum Justieren stehen oben im Skript `RUNDEN_JE_FELDZUG`, `feldzugHaerte`,
+`rundenBudget`, `einsatzProZug`, `maxTatendrangFuer`,
+`MAX_GEGNER_AUF_DEM_FELD`, `belagerungsHp` und `belagerungsSchaden`. Vier
+Testläufe mit einfacher Spielweise endeten in Runde 7, 12 (bestanden), 5 und 7.
+
+Eine offene Frage: Türme bleiben zwischen den Runden stehen. Das passt zum
+Burgenbau, macht späte Runden aber leichter, weil man mit sechs besetzten
+Türmen hineingeht. In Slay the Spire beginnt jeder Kampf leer. Ein Zurücksetzen
+der Türme je Runde würde das Deck zur eigentlichen Fortschrittsachse machen.
 
 ## Was noch fehlt
 
