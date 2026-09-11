@@ -42,11 +42,24 @@ davon unberührt: Ein Zug gilt sofort, nur die Darstellung läuft nach. Gegner
 haben deshalb neben ihrer Rasterposition eine sichtbare Position, die der
 logischen hinterherwandert.
 
-Zu sehen sind: gleitende Bewegung statt Springen, fliegende Pfeile mit Bogen,
-Aufblitzen und Schadenszahl beim Treffer, zusammensackende Gefallene,
-Staubwolken, Ausholen beim Zuschlagen, Rütteln der Ansicht bei schweren
-Treffern, wehende Fahnen, bewegtes Wasser mit Brandung, ziehende
-Wolkenschatten, Flusen in der Luft und Rauch über den Lagerfeuern.
+Zu sehen sind: Türme wachsen beim Bauen aus dem Boden, schwingen dabei kurz
+über ihre Endhöhe hinaus und stauben auf; Zinnen und Dach setzen sich erst zum
+Schluss. Dazu gleitende Bewegung statt Springen, Rückstoß beim Schuss,
+fliegende Pfeile mit Bogen, Aufblitzen und Zurückweichen des Getroffenen,
+aufspringende Schadenszahlen, zusammensackende Gefallene, Staubwolken,
+Ausholen beim Zuschlagen, Rütteln der Ansicht bei schweren Treffern, wehende
+Fahnen, bewegtes Wasser mit Brandung, ziehende Wolkenschatten, Vögel, Flusen in
+der Luft und Rauch über den Lagerfeuern.
+
+Beim Rundenwechsel und nach gewonnener Runde fährt ein Banner über das Bild.
+Karten fächern sich beim Nachziehen auf.
+
+## Ton
+
+Alle Geräusche werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
+Bogenschuss, Treffer, Turmbau, einstürzender Turm, Schlag gegen die Burg, ein
+kleiner Dreiklang nach gewonnener Runde. Der Schalter `♪` oben rechts schaltet
+den Ton ab, die Einstellung bleibt gespeichert.
 
 Wer im System weniger Bewegung eingestellt hat, bekommt alles ohne Animation,
 die Zahlen und Effekte bleiben lesbar.
