@@ -152,23 +152,39 @@ rechts, statt als Fußzeile außerhalb des Bildes.
 Auf schmalen Bildschirmen bleibt die Hand im Bild, wird aber kompakt:
 Kostenstein, Name, Bild und Typenband, ohne Beschreibungstext.
 
-## Schrift und Karten
+## Schrift und Kartenbild
 
-Die Oberfläche läuft in Pixelify Sans, einer kantigen Pixelschrift, die zum
-gezeichneten Spielfeld passt. Sie ist als variabler lateinischer Schnitt fest in
-die Datei eingebettet, rund 16 KB. Damit hängt nichts an einem Schriftdienst,
-es wird nichts nachgeladen, und das Spiel sieht ohne Netz genauso aus.
-Kartenbeschreibungen bleiben in einer ruhigen Kursiven, weil Pixelschrift in
-Fließtext schlecht liest.
+Die Schrift ist Pixelify Sans, als Datei in die Seite eingebettet. Das Spiel
+sieht deshalb ohne Netz genauso aus und hängt an keinem fremden Dienst.
 
-Die Karten sind keine Kacheln mehr, sondern Karten: dicker Rand, heller Grat
-innen, Schlagschatten nach unten, Farbkante und Typenband in der Farbe der
-Kartenfarbe, ein facettierter Kostenstein und das Bild in vertiefter Fassung.
+Das Kartenbild folgt dem **doppeldeutschen Blatt** aus Wien: weißer Grund,
+schwarze Konturen, flache Leuchtfarben ohne jeden Verlauf, und die Zeichnung
+**doppelköpfig gespiegelt**. Gemalt wird nur die obere Hälfte; die untere ist
+dieselbe Zeichnung, um 180 Grad gedreht, getrennt durch die schwarze Linie, auf
+der das Namensband sitzt.
 
-Die Hand liegt aufgefächert wie ein Blatt, die Karten überlappen und sind
-leicht gedreht. Unter dem Zeiger neigt sich eine Karte räumlich mit, hebt ab,
-ein Glanz wandert darüber, und beim Drücken federt sie ein. Im Ruhezustand
-schweben sie unmerklich.
+Dazu kommen die Zeichen des Blattes:
+
+- **Eckzeichen** oben links und, um 180 Grad gedreht, unten rechts: Wert und
+  Farbe, wie die römischen Ziffern der Zahlkarten.
+- **Die vier Farben** sind gezeichnet, nicht als Schriftzeichen gesetzt:
+  Eichel, Herz, Laub und Schellen. Ein Emoji ist in dieser Größe nur ein
+  Klecks, eine gezeichnete Form trägt den Strich des Blattes weiter.
+- **Alle Karten sind gleich groß.** Was nicht hineinpasst, läuft am unteren
+  Rand aus, statt die Karte zu dehnen. So bleibt der Fächer ruhig.
+
+Die Farben liegen in `BLATT`, die Motive in `zeichneMotiv`, die Spiegelung in
+`paintCardArt`, die Kartenfarben in `zeichneFarbe`. Eine Halbfigur wie im
+Wiener Bild baut `hofFigur`, einen Turm mit Zinnen `turmForm`; `umriss`,
+`kasten`, `scheibe` und `zug` sind die Grundformen, jede flach gefüllt und
+schwarz umrandet.
+
+Die Seltenheit sitzt auf dem **Namensband** und der inneren Linie: grau, blau,
+goldorange. Die Kartenfarbe steht im Eckzeichen, wie im echten Blatt.
+
+Auf schmalen Schirmen wird aus dem Fächer eine Reihe zum Wischen, und die
+Auslage des Marketenders ebenso. Ein Fächer aus fünf Karten, der auf ein
+Handy passen soll, verdeckt sich sonst fast vollständig selbst.
 
 ## Ton
 
@@ -345,8 +361,13 @@ Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 ## Was noch fehlt
 
 - **Wenig Ton.** Die neuen Kartenwirkungen klingen alle gleich.
-- **Keine eigenen Bilder.** Alles ist im Code gezeichnet; eingespielte Grafiken
-  und Klänge fehlen noch.
+- **Keine eigenen Bilder.** Alles ist im Code gezeichnet. Eingespielte Grafiken
+  und Klänge fehlen noch; dafür bräuchte es einen Lader, und im veröffentlichten
+  Artifact müssten die Bilder eingebettet sein, weil die Seite nichts von außen
+  holen darf.
+- **Die Figuren auf dem Feld sind noch einfach.** Es gibt genau zwei Sprites,
+  `FIG_WACHE` und `FIG_GEGNER`; alle fünf Gegnertypen sind dieselbe Figur in
+  anderer Farbe. Das Kartenbild ist inzwischen deutlich weiter als das Feld.
 - **Gegner weichen Mauern nur einfach aus.** Sie prüfen das nächste Feld, sie
   suchen keinen Weg um eine lange Mauer herum.
 

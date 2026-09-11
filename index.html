@@ -202,9 +202,6 @@
   /* Die Hand liegt aufgefaechert wie ein echtes Blatt: die Karten ueberlappen
      und die angefasste kommt nach vorn. */
   #hand { display: flex; gap: 0; justify-content: center; min-width: min-content; padding: 0 10px; }
-  /* In der Hand sind alle Karten gleich hoch, sonst wird der Faecher schief.
-     Der Spruch darf dafuer angeschnitten werden, die Regel steht darueber. */
-  #hand .card { height: 210px; min-height: 0; overflow: hidden; }
   #hand .card-slot { margin-right: -14px; }
   #hand .card-slot:last-child { margin-right: 0; }
   #hand .card-slot:nth-child(1) { z-index: 1; }
@@ -252,11 +249,12 @@
   #deck-pile b { display: block; font-family: var(--pixel); font-size: 24px; font-weight: 700;
     color: var(--parchment); text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
-  /* ---------- Karten ---------- */
-  /* Ein Halter traegt Einzug und Schweben, die Karte darin die Neigung.
-     Sonst wuerden sich die Transformationen gegenseitig ueberschreiben. */
+  /* ---------- Karten im doppeldeutschen Blatt ---------- */
+  /* Weisser Grund, schwarze Doppellinie, flache Leuchtfarben. Alle Karten
+     sind gleich gross; was nicht hineinpasst, wird abgeschnitten, nicht
+     gedehnt. So bleibt der Faecher ruhig und das Blatt wirkt wie ein Blatt. */
   .card-slot {
-    width: 124px;
+    width: 132px;
     flex: none;
     perspective: 640px;
     animation: kartefaechern 0.36s cubic-bezier(0.2, 1.3, 0.35, 1) backwards;
@@ -272,37 +270,31 @@
 
   .card {
     position: relative;
+    box-sizing: border-box;
     width: 100%;
-    min-height: 196px;
+    height: 228px;
     display: flex;
     flex-direction: column;
-    padding: 0 0 6px;
+    align-items: stretch;
+    padding: 4px;
     cursor: pointer;
-    color: #2b2018;
-    border-radius: 9px;
-    transform-style: preserve-3d;
+    overflow: hidden;
+    color: #14110c;
+    background: #fffdf4;
+    border: 2px solid #14110c;
+    border-radius: 5px;
+    box-shadow: 0 4px 0 #241a11, 0 8px 14px rgba(0, 0, 0, 0.5);
     transition: box-shadow 0.14s ease, filter 0.14s ease;
-
-    /* Dicker Rand, heller Grat innen, tiefer Schatten aussen */
-    background:
-      linear-gradient(170deg, #f6ecd4 0%, #e7d9ba 46%, #dbcaa6 100%);
-    border: 3px solid #37281a;
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 252, 240, 0.75),
-      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.55),
-      0 5px 0 #241a11,
-      0 9px 16px rgba(0, 0, 0, 0.55);
   }
 
-  /* Farbkante der Kartenfarbe */
+  /* Die innere Linie traegt die Seltenheit: grau, blau, golden */
   .card::before {
     content: "";
     position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 7px;
-    border-radius: 6px 0 0 6px;
-    background: linear-gradient(180deg, var(--farbe-hell), var(--farbe));
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.35);
+    inset: 3px;
+    border: 1.5px solid var(--sel-rand, #6e6a63);
+    border-radius: 3px;
+    pointer-events: none;
   }
 
   /* Glanz, der beim Ueberfahren durchwandert */
@@ -310,9 +302,8 @@
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 6px;
     pointer-events: none;
-    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 46%, transparent 62%);
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.6) 46%, transparent 62%);
     background-size: 260% 100%;
     background-position: 140% 0;
     opacity: 0;
@@ -323,125 +314,104 @@
 
   .card-slot:hover > .card {
     animation-play-state: paused;
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 252, 240, 0.9),
-      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.45),
-      0 10px 0 #241a11,
-      0 18px 26px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 9px 0 #241a11, 0 16px 22px rgba(0, 0, 0, 0.55);
   }
 
-  .card.disabled { cursor: not-allowed; filter: grayscale(0.8) brightness(0.72) contrast(0.9); }
+  .card.disabled { cursor: not-allowed; filter: grayscale(0.85) brightness(0.74) contrast(0.92); }
   .card-slot.gesperrt { pointer-events: none; }
+  .card.selected { box-shadow: 0 0 0 3px var(--gold), 0 9px 0 #241a11, 0 16px 22px rgba(0, 0, 0, 0.55); }
+  .card.sel-kostbar::before { border-width: 2px; }
 
-  .card.selected {
-    border-color: var(--gold);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 245, 205, 0.95),
-      0 0 0 3px rgba(227, 181, 82, 0.65),
-      0 10px 0 #241a11,
-      0 16px 24px rgba(0, 0, 0, 0.6);
+  /* Eckzeichen: Wert und Kartenfarbe, unten rechts um 180 Grad gedreht */
+  .card-ecke {
+    position: absolute;
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    line-height: 1;
+    z-index: 2;
+    pointer-events: none;
   }
-
-  .card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 7px 9px 1px 13px;
+  .card-ecke.oben { left: 7px; top: 6px; }
+  .card-ecke.unten { right: 7px; bottom: 6px; transform: rotate(180deg); }
+  .card-ecke b {
+    font-family: var(--pixel); font-size: 15px; font-weight: 700;
+    color: #14110c;
   }
+  .card-farbe { width: 17px; height: 17px; display: block; margin-top: 0; }
 
-  /* Kostenstein mit Facette */
-  .cost {
-    width: 26px; height: 26px; flex: none;
-    display: grid; place-items: center;
-    font-family: var(--pixel);
-    font-size: 16px; font-weight: 700; line-height: 1;
-    color: #fff;
-    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
-    background: radial-gradient(circle at 34% 28%, #7fb0ee, #2f5fa8 62%, #1d3c6b);
-    border: 2px solid #16294a;
-    border-radius: 50%;
-    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.55), 0 2px 0 rgba(0, 0, 0, 0.3);
-  }
-
-  .card-name {
-    padding: 0 7px 4px 11px;
-    min-width: 0;
-    font-family: var(--pixel);
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: 1.1;
-    letter-spacing: 0.01em;
-    color: #2a1d12;
-    text-shadow: 0 1px 0 rgba(255, 250, 235, 0.8);
-    overflow-wrap: anywhere;
-  }
-  .card-name.lang { font-size: 11.5px; line-height: 1.15; }
-  .card-suit { font-size: 15px; flex: none; line-height: 1;
-    filter: drop-shadow(0 1px 0 rgba(255,250,235,0.7)); }
-
-  /* Bild in vertiefter Fassung */
+  /* Das Bild sitzt in einer schwarzen Fassung, wie der Rahmen im Blatt */
   .card-art-frame {
-    margin: 0 8px 0 13px;
-    border: 2px solid #4a3620;
-    border-radius: 4px;
+    position: relative;
+    margin: 21px 3px 0;
+    border: 1.5px solid #14110c;
     overflow: hidden;
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 250, 235, 0.7);
     line-height: 0;
+    flex: none;
   }
-  .card-art { width: 100%; height: 58px; display: block; image-rendering: pixelated; }
+  .card-art { width: 100%; height: 104px; display: block; }
+
+  /* Namensband auf der Trennlinie der beiden Haelften */
+  .card-band {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--pixel); font-size: 10px; line-height: 1.1;
+    text-align: center;
+    padding: 2px 2px 1px;
+    color: #fffdf4;
+    background: var(--sel-band, #4f4c46);
+    border-top: 1.5px solid #14110c;
+    border-bottom: 1.5px solid #14110c;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .card-band.lang { font-size: 8px; }
+
+  .card-typ {
+    font-family: var(--fliess); font-size: 8px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    text-align: center; color: #6a6355;
+    padding: 3px 0 2px;
+    flex: none;
+  }
 
   .card-stats {
-    display: flex; flex-wrap: wrap; gap: 4px;
-    padding: 7px 8px 2px 13px;
+    display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;
+    padding: 0 4px 2px;
+    flex: none;
   }
   .pill {
     font-family: var(--pixel);
-    font-size: 12px; font-weight: 600; line-height: 1;
-    padding: 3px 6px 2px;
-    border-radius: 4px;
-    background: rgba(58, 42, 24, 0.12);
-    border: 1px solid rgba(58, 42, 24, 0.3);
-    color: #3a2a18;
+    font-size: 11px; font-weight: 600; line-height: 1;
+    padding: 2px 4px 1px;
+    border: 1px solid #14110c;
+    color: #14110c;
+    background: #fffdf4;
   }
-  .pill.schaden { color: #7c1f2c; border-color: rgba(124,31,44,0.4); background: rgba(124,31,44,0.1); }
-  .pill.reich   { color: #2f5fa8; border-color: rgba(47,95,168,0.4); background: rgba(47,95,168,0.1); }
-  .pill.leben   { color: #4a5c2b; border-color: rgba(74,92,43,0.4); background: rgba(74,92,43,0.1); }
-  .pill.hoehe   { color: #8a6116; border-color: rgba(138,97,22,0.4); background: rgba(138,97,22,0.12); }
+  .pill.schaden { background: #f6d5d2; }
+  .pill.reich   { background: #d3dff2; }
+  .pill.leben   { background: #d5ecda; }
+  .pill.hoehe   { background: #faeec4; }
+  .pill.platz   { background: #e6d9f2; }
+  .pill.durch   { background: #f7e0cc; }
 
-  /* Was die Karte tut, klein und nuechtern ueber dem Spruch */
+  /* Regel und Spruch teilen sich das weisse Feld darunter */
+  .card-unten {
+    flex: 1; min-height: 0; overflow: hidden;
+    padding: 0 8px 17px 7px;
+    /* Was nicht mehr hineinpasst, laeuft aus, statt mitten im Wort zu enden */
+    mask-image: linear-gradient(180deg, #000 0 68%, transparent 92%);
+  }
   .card-rule {
     font-family: var(--fliess);
-    font-size: 9.5px; line-height: 1.25;
-    padding: 4px 9px 0 13px;
-    color: #4a3a24;
-    font-weight: 600;
+    font-size: 9px; line-height: 1.25;
+    color: #2c2519;
+    font-weight: 700;
   }
-  .pill.platz  { color: #6b4a86; border-color: rgba(107,74,134,0.4); background: rgba(107,74,134,0.1); }
-  .pill.durch  { color: #a8541e; border-color: rgba(168,84,30,0.4); background: rgba(168,84,30,0.12); }
-
   .card-text {
     font-family: var(--fliess);
-    font-size: 10.5px; line-height: 1.3;
-    padding: 5px 9px 6px 13px;
-    flex: 1;
-    color: #5a4630;
+    font-size: 9px; line-height: 1.25;
+    color: #77705e;
     font-style: italic;
-  }
-
-  /* Typenband am Fuss, in der Farbe der Kartenfarbe */
-  .card-badge {
-    margin: 0 6px 0 11px;
-    font-family: var(--pixel);
-    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-    text-align: center;
-    padding: 3px 0 2px;
-    border-radius: 4px;
-    color: #fdf4df;
-    background: linear-gradient(180deg, var(--farbe-hell), var(--farbe));
-    border: 1.5px solid rgba(0, 0, 0, 0.4);
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    margin-top: 2px;
   }
 
   kbd { font-family: inherit; font-size: 11px; background: var(--panel-2); border: 1px solid var(--frame);
@@ -593,10 +563,10 @@
     /* Angeschnittene Reihen sollen nach mehr aussehen, nicht nach Fehler */
     mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
   }
-  #station-karten .card-slot { width: 106px; }
-  #station-karten .card { min-height: 172px; }
-  #station-karten .card-art { height: 48px; }
-  .station-ware { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  #station-karten .card-slot { width: 112px; }
+  #station-karten .card { height: 198px; }
+  #station-karten .card-art { height: 88px; }
+  .station-ware { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .station-ware .preis {
     font-family: var(--pixel); font-size: 12px; color: var(--gold);
     background: rgba(16, 12, 9, 0.8); border: 1px solid #6b5535; border-radius: 4px;
@@ -631,23 +601,28 @@
     .wave-top .foes { display: none; }
     .icon-btn { width: 22px; height: 22px; font-size: 11px; border-width: 1px; }
 
-    .card-slot { width: 74px; }
-    .card { min-height: 112px; border-width: 2px; border-radius: 6px; }
-    .card::before { width: 5px; }
-    .card-head { padding: 4px 5px 0 8px; gap: 3px; }
-    .cost { width: 17px; height: 17px; font-size: 11px; border-width: 1.5px; }
-    .card-name { font-size: 9px; line-height: 1.05; padding: 0 5px 2px 8px; }
-    .card-name.lang { font-size: 7.5px; }
-    .card-suit { font-size: 10px; }
-    .card-art-frame { margin: 0 4px 0 8px; border-width: 1.5px; }
-    .card-art { height: 34px; }
-    .card-stats { display: none; }
-    .card-rule { display: none; }
-    .card-text { display: none; }
-    .card-badge { margin: 4px 4px 0 8px; font-size: 8px; padding: 2px 0 1px; letter-spacing: 0.03em; }
+    .card-slot { width: 82px; }
+    .card { height: 140px; border-width: 1.5px; padding: 2px; border-radius: 4px; }
+    .card::before { inset: 2px; border-width: 1px; }
+    .card-ecke.oben { left: 4px; top: 3px; }
+    .card-ecke.unten { right: 4px; bottom: 3px; }
+    .card-ecke b { font-size: 10px; }
+    .card-farbe { width: 10px; height: 10px; }
+    .card-art-frame { margin: 13px 2px 0; border-width: 1px; }
+    .card-art { height: 64px; }
+    .card-band { font-size: 6.5px; padding: 1px; border-width: 1px; }
+    .card-band.lang { font-size: 5.5px; }
+    .card-typ { font-size: 5.5px; padding: 2px 0 1px; letter-spacing: 0.08em; }
+    .card-stats { gap: 2px; padding: 0 2px 1px; }
+    .pill { font-size: 7px; padding: 1px 2px 0; }
+    .card-unten { display: none; }
 
-    #hand .card { height: 112px; }
-    #hand .card-slot { margin-right: -18px; }
+    #hand-wrap { min-width: 0; overflow-x: auto; overflow-y: visible;
+      scrollbar-width: none; padding: 0; }
+    #hand-wrap::-webkit-scrollbar { display: none; }
+    #hand { justify-content: flex-start; padding: 0 4px; gap: 4px; }
+    #hand .card-slot { margin-right: 0; transform: none; }
+    #hand .card-slot:hover { transform: none; }
     #tray { padding: 0 5px 5px; gap: 3px; }
     #minimap-panel { padding: 3px; border-width: 1px; margin-bottom: 2px; }
     canvas#minimap { width: 58px; height: 44px; }
@@ -664,20 +639,34 @@
     .reward-box { padding: 12px 14px; }
     .reward-box h2 { font-size: 18px; }
     .reward-box p { font-size: 11px; }
-    #reward-cards .card-slot { width: 88px; }
-    #reward-cards .card { min-height: 132px; }
-    #reward-cards .card-rule, #station-karten .card-rule {
-      display: block; font-size: 7.5px; padding: 2px 5px 0 8px; }
-    #reward-cards .card-text { display: block; font-size: 8px; padding: 3px 5px 4px 9px; }
+    #reward-cards .card-slot { width: 96px; }
+    #reward-cards .card { height: 168px; }
+    #reward-cards .card-art { height: 76px; }
+    #reward-cards .card-unten { display: block; }
+    #reward-cards .card-rule { font-size: 7px; }
+    #reward-cards .card-text { font-size: 7px; }
     .station-box { padding: 10px 12px 12px; width: 100%; }
     .station-box.weit { width: 100%; }
-    .station-box h2 { font-size: 17px; }
-    .station-box > p { font-size: 10.5px; margin-bottom: 7px; }
+    .station-box h2 { font-size: 15px; }
+    .station-box > p { font-size: 9.5px; margin-bottom: 4px; line-height: 1.35; }
     #station-karten { gap: 5px; max-height: none; }
-    #station-karten .card-slot { width: 76px; }
-    #station-karten .card { min-height: 116px; }
-    #station-karten .card-art { height: 32px; }
-    #station-wappen { width: 26px; height: 26px; font-size: 13px; margin-bottom: 3px; }
+    #station-karten {
+      gap: 5px; flex-wrap: nowrap; justify-content: flex-start;
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+      mask-image: linear-gradient(90deg, #000 0 94%, transparent 100%);
+    }
+    #station-karten::-webkit-scrollbar { display: none; }
+    #station-karten .card-slot { width: 74px; }
+    #station-karten .card { height: 120px; }
+    #station-karten .card-art { height: 54px; }
+    #station-karten .card-band { font-size: 5px; }
+    #station-karten .card-typ { display: none; }
+    .station-ware .preis {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      border-radius: 0 0 3px 3px; border-width: 0; padding: 1px 0;
+      background: rgba(16, 12, 9, 0.92);
+    }
+    #station-wappen { width: 21px; height: 21px; font-size: 11px; margin-bottom: 2px; }
     .station-ware .preis { font-size: 9px; padding: 1px 5px 0; }
     #station-meldung { font-size: 10px; margin-bottom: 6px; }
     #station-knoepfe { gap: 5px; }
@@ -2908,236 +2897,400 @@ function drawMinimap() {
 }
 
 // ---------- Kartenbilder ----------
+// ============================================================
+//  Kartenbilder im doppeldeutschen Blatt
+// ============================================================
+// Vorbild ist das Wiener Bild: weisser Grund, schwarze Konturen, flache
+// Leuchtfarben ohne Verlauf, und die Figur doppelkoepfig gespiegelt. Gemalt
+// wird nur die obere Haelfte; die untere ist dieselbe Zeichnung, um 180 Grad
+// gedreht. Das ist nicht Sparsamkeit, sondern genau das, was das Blatt tut.
+
+const BLATT = {
+  rot: '#d42a24', rotTief: '#9a1a16',
+  gelb: '#f5c400', gelbTief: '#c08f00',
+  gruen: '#1f9c4a', gruenTief: '#126b33',
+  blau: '#1f4fa0', blauTief: '#123566',
+  lila: '#c40d78',
+  haut: '#f4cda6',
+  stein: '#e6e2d6', steinTief: '#b3ae9e',
+  holz: '#a9702f',
+  weiss: '#fffdf4',
+  schwarz: '#14110c',
+};
+
+/** Ein Pfad, flach gefuellt und schwarz umrissen. So sieht das Blatt aus. */
+function umriss(c, zeichnePfad, farbe, strich) {
+  c.beginPath();
+  zeichnePfad();
+  if (farbe) { c.fillStyle = farbe; c.fill(); }
+  c.lineWidth = strich === undefined ? 1.6 : strich;
+  c.strokeStyle = BLATT.schwarz;
+  c.lineJoin = 'round';
+  c.stroke();
+}
+
+function kasten(c, x, y, w, h, farbe, strich) {
+  umriss(c, () => c.rect(x, y, w, h), farbe, strich);
+}
+function scheibe(c, x, y, r, farbe, strich) {
+  umriss(c, () => c.arc(x, y, r, 0, 6.2832), farbe, strich);
+}
+function zug(c, punkte, farbe, strich) {
+  umriss(c, () => {
+    c.moveTo(punkte[0][0], punkte[0][1]);
+    for (let i = 1; i < punkte.length; i++) c.lineTo(punkte[i][0], punkte[i][1]);
+    c.closePath();
+  }, farbe, strich);
+}
+/** Freie Linie ohne Fuellung, etwa fuer Schnuere und Sehnen. */
+function strichzug(c, punkte, farbe, breite) {
+  c.beginPath();
+  c.moveTo(punkte[0][0], punkte[0][1]);
+  for (let i = 1; i < punkte.length; i++) c.lineTo(punkte[i][0], punkte[i][1]);
+  c.strokeStyle = farbe || BLATT.schwarz;
+  c.lineWidth = breite || 1.6;
+  c.lineCap = 'round';
+  c.stroke();
+}
+
+/**
+ * Halbfigur wie ein Ober oder Unter: Hut mit Feder, Gesicht, Wams mit
+ * Mittelnaht, zwei Aermel. Die Waffe malt der Aufrufer dazu.
+ */
+function hofFigur(c, mx, boden, groesse, wams, hut, feder) {
+  const s = groesse;
+  // Wams
+  zug(c, [[mx - 13 * s, boden], [mx - 9 * s, boden - 16 * s], [mx + 9 * s, boden - 16 * s],
+          [mx + 13 * s, boden]], wams);
+  strichzug(c, [[mx, boden - 16 * s], [mx, boden]], BLATT.schwarz, 1.4);
+  // Aermel
+  zug(c, [[mx - 9 * s, boden - 15 * s], [mx - 16 * s, boden - 9 * s],
+          [mx - 12 * s, boden - 4 * s], [mx - 9 * s, boden - 10 * s]], hut);
+  zug(c, [[mx + 9 * s, boden - 15 * s], [mx + 16 * s, boden - 9 * s],
+          [mx + 12 * s, boden - 4 * s], [mx + 9 * s, boden - 10 * s]], hut);
+  // Kragen
+  zug(c, [[mx - 9 * s, boden - 16 * s], [mx, boden - 12 * s], [mx + 9 * s, boden - 16 * s]], BLATT.weiss);
+  // Kopf
+  scheibe(c, mx, boden - 21 * s, 5 * s, BLATT.haut);
+  c.fillStyle = BLATT.schwarz;
+  c.fillRect(mx - 3 * s, boden - 22 * s, 1.4, 1.4);
+  c.fillRect(mx + 2 * s, boden - 22 * s, 1.4, 1.4);
+  // Hut mit Feder
+  zug(c, [[mx - 7 * s, boden - 24 * s], [mx + 7 * s, boden - 24 * s],
+          [mx + 5 * s, boden - 29 * s], [mx - 5 * s, boden - 29 * s]], hut);
+  if (feder !== false) {
+    strichzug(c, [[mx + 4 * s, boden - 28 * s], [mx + 11 * s, boden - 33 * s]], BLATT.schwarz, 1.4);
+    zug(c, [[mx + 10 * s, boden - 31 * s], [mx + 15 * s, boden - 35 * s],
+            [mx + 13 * s, boden - 29 * s]], feder || BLATT.rot);
+  }
+}
+
+/** Turm mit Zinnen, wahlweise mit Spitzdach. */
+function turmForm(c, mx, boden, breite, hoehe, dach) {
+  const halb = breite / 2;
+  kasten(c, mx - halb, boden - hoehe, breite, hoehe, BLATT.stein);
+  // Quaderfugen
+  c.strokeStyle = BLATT.steinTief; c.lineWidth = 1;
+  for (let y = boden - hoehe + 7; y < boden - 2; y += 7) {
+    c.beginPath(); c.moveTo(mx - halb + 1, y); c.lineTo(mx + halb - 1, y); c.stroke();
+  }
+  // Zinnen
+  const zahl = Math.max(3, Math.round(breite / 8));
+  const zb = breite / (zahl * 2 - 1);
+  for (let i = 0; i < zahl; i++) {
+    kasten(c, mx - halb + i * zb * 2, boden - hoehe - 6, zb, 7, BLATT.stein);
+  }
+  // Fenster
+  umriss(c, () => {
+    c.moveTo(mx - 3, boden - hoehe * 0.55);
+    c.lineTo(mx + 3, boden - hoehe * 0.55);
+    c.lineTo(mx + 3, boden - hoehe * 0.3);
+    c.lineTo(mx - 3, boden - hoehe * 0.3);
+    c.closePath();
+  }, BLATT.blau);
+  if (dach) {
+    zug(c, [[mx - halb - 3, boden - hoehe - 6], [mx + halb + 3, boden - hoehe - 6],
+            [mx, boden - hoehe - 22]], BLATT.rot);
+  }
+}
+
+/**
+ * Malt ein Motiv in einen Kasten der Groesse w mal h. Alles hier ist flach
+ * und umrissen, nichts hat einen Verlauf.
+ */
+function zeichneMotiv(c, art, w, h) {
+  const mx = w / 2, boden = h - 2;
+
+  switch (art) {
+    // ---------- Einheiten: Halbfiguren mit ihrer Waffe ----------
+    case 'waldlaeufer':
+      hofFigur(c, mx - 4, boden, 1.35, BLATT.gruen, BLATT.gruenTief, BLATT.gelb);
+      strichzug(c, [[mx + 12, boden - 2], [mx + 12, boden - 34]], BLATT.holz, 2.6);
+      zug(c, [[mx + 12, boden - 38], [mx + 16, boden - 30], [mx + 8, boden - 30]], BLATT.stein);
+      break;
+    case 'bogen':
+      hofFigur(c, mx - 5, boden, 1.35, BLATT.rot, BLATT.rotTief, BLATT.gelb);
+      c.beginPath(); c.arc(mx + 10, boden - 18, 15, -1.35, 1.35);
+      c.strokeStyle = BLATT.holz; c.lineWidth = 3; c.stroke();
+      strichzug(c, [[mx + 13, boden - 33], [mx + 13, boden - 3]], BLATT.schwarz, 1.2);
+      strichzug(c, [[mx - 2, boden - 18], [mx + 22, boden - 18]], BLATT.schwarz, 1.4);
+      break;
+    case 'speer':
+      hofFigur(c, mx - 4, boden, 1.35, BLATT.blau, BLATT.blauTief, BLATT.rot);
+      strichzug(c, [[mx + 13, boden], [mx + 13, boden - 36]], BLATT.holz, 2.8);
+      zug(c, [[mx + 13, boden - 44], [mx + 18, boden - 34], [mx + 8, boden - 34]], BLATT.stein);
+      break;
+    case 'armbrust':
+      hofFigur(c, mx - 3, boden, 1.35, BLATT.lila, BLATT.blauTief, BLATT.gelb);
+      kasten(c, mx + 2, boden - 21, 22, 4, BLATT.holz);
+      kasten(c, mx + 8, boden - 30, 4, 12, BLATT.holz);
+      strichzug(c, [[mx + 2, boden - 25], [mx + 24, boden - 25]], BLATT.schwarz, 1.4);
+      break;
+    case 'schleuder':
+      hofFigur(c, mx - 4, boden, 1.35, BLATT.gelb, BLATT.rotTief, BLATT.gruen);
+      c.beginPath(); c.arc(mx + 14, boden - 26, 10, 0.3, 4.3);
+      c.strokeStyle = BLATT.schwarz; c.lineWidth = 1.6; c.stroke();
+      scheibe(c, mx + 21, boden - 31, 4, BLATT.steinTief);
+      break;
+    case 'fackel':
+      hofFigur(c, mx - 4, boden, 1.35, BLATT.rot, BLATT.gelbTief, BLATT.gelb);
+      strichzug(c, [[mx + 13, boden - 4], [mx + 13, boden - 28]], BLATT.holz, 2.6);
+      zug(c, [[mx + 13, boden - 42], [mx + 19, boden - 28], [mx + 7, boden - 28]], BLATT.rot);
+      zug(c, [[mx + 13, boden - 36], [mx + 16, boden - 28], [mx + 10, boden - 28]], BLATT.gelb);
+      break;
+
+    // ---------- Bauwerke ----------
+    case 'mauer': {
+      kasten(c, 4, boden - 26, w - 8, 26, BLATT.stein);
+      c.strokeStyle = BLATT.steinTief; c.lineWidth = 1;
+      for (let y = boden - 19; y < boden - 2; y += 7) {
+        c.beginPath(); c.moveTo(5, y); c.lineTo(w - 5, y); c.stroke();
+      }
+      for (let i = 0; i * 16 < w - 10; i++) kasten(c, 4 + i * 16, boden - 32, 9, 7, BLATT.stein);
+      break;
+    }
+    case 'turm': turmForm(c, mx, boden, 30, 42, false); break;
+    case 'bergfried':
+      turmForm(c, mx - 15, boden, 18, 30, false);
+      turmForm(c, mx + 16, boden, 18, 34, false);
+      turmForm(c, mx, boden, 26, 48, true);
+      break;
+    case 'doppelturm':
+      turmForm(c, mx - 16, boden, 20, 36, true);
+      turmForm(c, mx + 16, boden, 20, 44, true);
+      break;
+    case 'graben':
+      turmForm(c, mx, boden - 10, 26, 34, false);
+      kasten(c, 2, boden - 10, w - 4, 10, BLATT.blau);
+      c.strokeStyle = BLATT.weiss; c.lineWidth = 1.2;
+      for (let x = 6; x < w - 6; x += 12) {
+        c.beginPath(); c.moveTo(x, boden - 5); c.lineTo(x + 6, boden - 5); c.stroke();
+      }
+      break;
+    case 'balliste':
+      kasten(c, mx - 26, boden - 12, 52, 7, BLATT.holz);
+      scheibe(c, mx - 17, boden - 5, 6, BLATT.holz);
+      scheibe(c, mx + 17, boden - 5, 6, BLATT.holz);
+      kasten(c, mx - 30, boden - 26, 60, 6, BLATT.holz);
+      kasten(c, mx - 34, boden - 34, 6, 16, BLATT.stein);
+      kasten(c, mx + 28, boden - 34, 6, 16, BLATT.stein);
+      strichzug(c, [[mx - 31, boden - 30], [mx + 31, boden - 30]], BLATT.schwarz, 1.6);
+      strichzug(c, [[mx, boden - 30], [mx, boden - 46]], BLATT.schwarz, 2.2);
+      zug(c, [[mx, boden - 52], [mx + 5, boden - 43], [mx - 5, boden - 43]], BLATT.stein);
+      break;
+
+    // ---------- Geraet und Zeichen ----------
+    case 'oel':
+      kasten(c, mx - 20, boden - 30, 40, 20, BLATT.steinTief);
+      strichzug(c, [[mx - 24, boden - 30], [mx + 24, boden - 30]], BLATT.schwarz, 2.4);
+      for (let i = 0; i < 4; i++) {
+        zug(c, [[mx - 15 + i * 10, boden - 10], [mx - 11 + i * 10, boden - 10],
+                [mx - 13 + i * 10, boden - 1 + (i % 2) * 2]], i % 2 ? BLATT.gelb : BLATT.rot);
+      }
+      break;
+    case 'feuer': {
+      const flamme = (fx, fb, fh, farbe) => umriss(c, () => {
+        c.moveTo(fx - fb, boden);
+        c.quadraticCurveTo(fx - fb, boden - fh * 0.55, fx - fb * 0.3, boden - fh * 0.8);
+        c.quadraticCurveTo(fx, boden - fh * 0.6, fx, boden - fh);
+        c.quadraticCurveTo(fx + fb * 0.5, boden - fh * 0.6, fx + fb, boden - fh * 0.5);
+        c.quadraticCurveTo(fx + fb, boden - fh * 0.2, fx + fb * 0.7, boden);
+        c.closePath();
+      }, farbe);
+      flamme(mx - 24, 9, 24, BLATT.rot);
+      flamme(mx + 24, 9, 24, BLATT.rot);
+      flamme(mx, 16, 44, BLATT.rot);
+      flamme(mx, 9, 28, BLATT.gelb);
+      break;
+    }
+    case 'horn':
+      umriss(c, () => {
+        c.moveTo(mx - 22, boden - 6); c.quadraticCurveTo(mx - 6, boden - 34, mx + 16, boden - 30);
+        c.lineTo(mx + 22, boden - 38); c.lineTo(mx + 22, boden - 16);
+        c.quadraticCurveTo(mx - 4, boden - 12, mx - 14, boden - 2);
+        c.closePath();
+      }, BLATT.gelb);
+      strichzug(c, [[mx - 16, boden - 12], [mx + 12, boden - 24]], BLATT.gelbTief, 1.4);
+      break;
+    case 'fahne':
+      kasten(c, mx - 20, boden - 46, 4, 46, BLATT.holz);
+      zug(c, [[mx - 16, boden - 44], [mx + 22, boden - 44], [mx + 14, boden - 34],
+              [mx + 22, boden - 24], [mx - 16, boden - 24]], BLATT.rot);
+      scheibe(c, mx - 1, boden - 34, 6, BLATT.gelb);
+      break;
+    case 'kette':
+      for (let i = 0; i < 4; i++) {
+        const kx = mx - 24 + i * 16, ky = boden - 18 + (i % 2 ? 6 : -6);
+        umriss(c, () => c.ellipse(kx, ky, 9, 6, i % 2 ? 0.5 : -0.5, 0, 6.2832), BLATT.steinTief);
+        umriss(c, () => c.ellipse(kx, ky, 4.5, 2.5, i % 2 ? 0.5 : -0.5, 0, 6.2832), BLATT.weiss, 1.1);
+      }
+      break;
+    case 'hammer':
+      kasten(c, mx - 3, boden - 26, 6, 26, BLATT.holz);
+      kasten(c, mx - 20, boden - 38, 40, 14, BLATT.steinTief);
+      kasten(c, mx - 20, boden - 38, 10, 14, BLATT.stein);
+      break;
+    case 'beutel':
+      umriss(c, () => c.ellipse(mx, boden - 13, 19, 14, 0, 0, 6.2832), BLATT.rot);
+      kasten(c, mx - 8, boden - 32, 16, 8, BLATT.rotTief);
+      strichzug(c, [[mx - 10, boden - 24], [mx + 10, boden - 24]], BLATT.schwarz, 2);
+      scheibe(c, mx - 25, boden - 5, 6, BLATT.gelb);
+      scheibe(c, mx + 24, boden - 7, 6, BLATT.gelb);
+      break;
+    case 'wind':
+      for (let i = 0; i < 3; i++) {
+        const y = boden - 8 - i * 15;
+        kasten(c, 8 + i * 5, y - 3, w - 30 - i * 11, 6, BLATT.blau);
+        umriss(c, () => {
+          c.moveTo(w - 22 - i * 6, y - 10); c.lineTo(w - 5 - i * 6, y);
+          c.lineTo(w - 22 - i * 6, y + 10);
+          c.closePath();
+        }, BLATT.gelb);
+      }
+      break;
+    case 'nacht':
+      kasten(c, 0, 0, w, h, BLATT.blauTief, 0);
+      scheibe(c, mx + 22, boden - 34, 11, BLATT.gelb);
+      c.fillStyle = BLATT.blauTief;
+      c.beginPath(); c.arc(mx + 16, boden - 38, 11, 0, 6.2832); c.fill();
+      for (let i = 0; i < 9; i++) {
+        const sx = 6 + ((i * 29) % (w - 12)), sy = 5 + ((i * 17) % (h - 20));
+        c.fillStyle = BLATT.weiss;
+        c.fillRect(sx, sy, 2, 2);
+      }
+      zug(c, [[0, boden], [0, boden - 12], [16, boden - 20], [34, boden - 10],
+              [w, boden - 18], [w, boden]], BLATT.gruenTief);
+      break;
+    case 'krone':
+      zug(c, [[mx - 24, boden - 10], [mx + 24, boden - 10], [mx + 24, boden - 20],
+              [mx + 16, boden - 12], [mx + 8, boden - 26], [mx, boden - 12],
+              [mx - 8, boden - 26], [mx - 16, boden - 12], [mx - 24, boden - 20]], BLATT.gelb);
+      scheibe(c, mx, boden - 5, 4, BLATT.rot);
+      scheibe(c, mx - 14, boden - 5, 3.5, BLATT.blau);
+      scheibe(c, mx + 14, boden - 5, 3.5, BLATT.gruen);
+      scheibe(c, mx - 8, boden - 27, 3, BLATT.rot);
+      scheibe(c, mx + 8, boden - 27, 3, BLATT.rot);
+      break;
+    default:
+      scheibe(c, mx, boden - 20, 16, BLATT.gelb);
+  }
+}
+
+/**
+ * Die vier deutschen Farben, gezeichnet statt als Schriftzeichen: Eichel,
+ * Herz, Laub und Schellen. Ein Emoji in dieser Groesse ist nur ein Klecks,
+ * eine gezeichnete Form traegt den Strich des Blattes weiter.
+ */
+function zeichneFarbe(cv, suit) {
+  const c = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  c.clearRect(0, 0, w, h);
+  const mx = w / 2, my = h / 2;
+  const e = Math.min(w, h) / 16;   // alles ist auf ein 16er Raster gezeichnet
+
+  if (suit === '❤') {                       // Herz
+    umriss(c, () => {
+      c.moveTo(mx, my + 6.5 * e);
+      c.bezierCurveTo(mx - 9 * e, my - 0.5 * e, mx - 6 * e, my - 7.5 * e, mx, my - 3 * e);
+      c.bezierCurveTo(mx + 6 * e, my - 7.5 * e, mx + 9 * e, my - 0.5 * e, mx, my + 6.5 * e);
+      c.closePath();
+    }, BLATT.rot, 1.3);
+  } else if (suit === '🌰') {            // Eichel
+    // Frucht
+    umriss(c, () => {
+      c.moveTo(mx - 4.5 * e, my - 1 * e);
+      c.bezierCurveTo(mx - 5 * e, my + 6 * e, mx + 5 * e, my + 6 * e, mx + 4.5 * e, my - 1 * e);
+      c.closePath();
+    }, BLATT.gruen, 1.3);
+    // Huetchen
+    umriss(c, () => {
+      c.moveTo(mx - 6.5 * e, my - 1.5 * e);
+      c.quadraticCurveTo(mx, my - 8 * e, mx + 6.5 * e, my - 1.5 * e);
+      c.closePath();
+    }, BLATT.gelb, 1.3);
+    c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.9;
+    for (let i = -1; i <= 1; i++) {
+      c.beginPath();
+      c.moveTo(mx + i * 2.6 * e, my - 1.4 * e);
+      c.lineTo(mx + i * 1.7 * e, my - 4.6 * e);
+      c.stroke();
+    }
+    c.beginPath(); c.moveTo(mx, my - 6 * e); c.lineTo(mx, my - 7.5 * e); c.stroke();
+  } else if (suit === '🍃') {            // Laub
+    umriss(c, () => {
+      c.moveTo(mx, my - 7 * e);
+      c.bezierCurveTo(mx + 7 * e, my - 3 * e, mx + 5 * e, my + 4 * e, mx, my + 5.5 * e);
+      c.bezierCurveTo(mx - 5 * e, my + 4 * e, mx - 7 * e, my - 3 * e, mx, my - 7 * e);
+      c.closePath();
+    }, BLATT.gruen, 1.3);
+    c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.9;
+    c.beginPath(); c.moveTo(mx, my - 5 * e); c.lineTo(mx, my + 7 * e); c.stroke();
+    for (let i = 0; i < 2; i++) {
+      const y = my - 2 * e + i * 3 * e;
+      c.beginPath(); c.moveTo(mx, y); c.lineTo(mx - 3.4 * e, y + 1.6 * e); c.stroke();
+      c.beginPath(); c.moveTo(mx, y); c.lineTo(mx + 3.4 * e, y + 1.6 * e); c.stroke();
+    }
+  } else {                                        // Schellen
+    umriss(c, () => {
+      c.moveTo(mx - 6 * e, my + 4 * e);
+      c.bezierCurveTo(mx - 6 * e, my - 5 * e, mx + 6 * e, my - 5 * e, mx + 6 * e, my + 4 * e);
+      c.closePath();
+    }, BLATT.gelb, 1.3);
+    umriss(c, () => c.rect(mx - 7 * e, my + 4 * e, 14 * e, 2.2 * e), BLATT.gelb, 1.3);
+    scheibe(c, mx, my + 1.5 * e, 1.8 * e, BLATT.schwarz, 0.8);
+    c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.9;
+    c.beginPath(); c.moveTo(mx, my - 5.2 * e); c.lineTo(mx, my - 7 * e); c.stroke();
+  }
+}
+
+/**
+ * Das fertige Kartenbild: obere Haelfte gemalt, untere gespiegelt, dazwischen
+ * die Trennlinie des doppeldeutschen Blattes.
+ */
 function paintCardArt(cv, art) {
   const c = cv.getContext('2d');
   const w = cv.width, h = cv.height;
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = true;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = BLATT.weiss;
+  c.fillRect(0, 0, w, h);
 
-  // Himmel
-  for (let y = 0; y < h; y++) {
-    const t = y / h;
-    c.fillStyle = t < 0.62 ? (t < 0.3 ? '#7ea8c4' : '#9cc0d2') : '#c9a772';
-    c.fillRect(0, y, w, 1);
-  }
+  const halb = h / 2;
 
-  const boden = Math.round(h * 0.72);
-  c.fillStyle = '#c09a63';
-  c.fillRect(0, boden, w, h - boden);
-  c.fillStyle = '#a8824f';
-  c.fillRect(0, h - 6, w, 6);
+  c.save();
+  c.beginPath(); c.rect(0, 0, w, halb); c.clip();
+  zeichneMotiv(c, art, w, halb);
+  c.restore();
 
-  const stein = '#d6c8a8', steinDunkel = '#9c8c6d', steinSchatten = '#7d6f55';
+  c.save();
+  c.beginPath(); c.rect(0, halb, w, h - halb); c.clip();
+  c.translate(w, h);
+  c.rotate(Math.PI);
+  zeichneMotiv(c, art, w, halb);
+  c.restore();
 
-  if (art === 'mauer' || art === 'waldlaeufer' || art === 'bogen') {
-    const top = Math.round(h * 0.46);
-    c.fillStyle = steinDunkel; c.fillRect(0, top, w, boden - top + 4);
-    c.fillStyle = stein; c.fillRect(0, top, w, 6);
-    c.fillStyle = steinSchatten;
-    for (let x = 2; x < w; x += 11) c.fillRect(x, top + 8, 9, 1);
-    for (let y = top + 8; y < boden; y += 7) c.fillRect(0, y, w, 1);
-    for (let x = 0; x < w; x += 12) { c.fillStyle = stein; c.fillRect(x, top - 7, 7, 8); }
-    if (art !== 'mauer') {
-      const scale = 4;
-      const cx = Math.round(w / 2);
-      drawSprite(FIG_WACHE, cx, top + 2, scale, c);
-      // Gespannter Bogen beziehungsweise gezogener Pfeil
-      c.fillStyle = '#6b4a2a';
-      if (art === 'bogen') {
-        c.beginPath();
-        c.arc(cx - 14, top - 16, 13, -1.1, 1.1);
-        c.lineWidth = 3; c.strokeStyle = '#6b4a2a'; c.stroke();
-        c.fillStyle = '#e8e2d2'; c.fillRect(cx - 13, top - 17, 22, 2);
-        c.fillStyle = '#4a3a28'; c.fillRect(cx + 7, top - 19, 5, 5);
-      } else {
-        c.fillRect(cx + 9, top - 30, 3, 26);
-        c.fillStyle = '#5c7a30';
-        c.fillRect(cx + 6, top - 32, 9, 5);
-      }
-    }
-  } else if (art === 'turm') {
-    const bx = Math.round(w / 2) - 14, top = Math.round(h * 0.12);
-    c.fillStyle = steinDunkel; c.fillRect(bx, top, 28, boden - top + 4);
-    c.fillStyle = stein; c.fillRect(bx, top, 28, 5);
-    c.fillStyle = steinSchatten;
-    for (let y = top + 7; y < boden; y += 7) c.fillRect(bx, y, 28, 1);
-    c.fillRect(bx + 12, top + 12, 5, 9);
-    for (let x = bx; x < bx + 28; x += 9) { c.fillStyle = stein; c.fillRect(x, top - 7, 6, 8); }
-    c.fillStyle = '#2f5fa8'; c.fillRect(bx + 30, top + 2, 8, 10);
-    c.fillStyle = '#3a2c1c'; c.fillRect(bx + 29, top - 4, 1.5, 18);
-  } else if (art === 'wind') {
-    c.fillStyle = 'rgba(255,255,255,0.75)';
-    for (let i = 0; i < 5; i++) {
-      const y = 8 + i * 9;
-      c.fillRect(4 + i * 3, y, 40 - i * 4, 2);
-    }
-    for (let i = 0; i < 3; i++) {
-      const y = 14 + i * 13, x = w - 14 - i * 6;
-      c.fillStyle = '#e8e2d2'; c.fillRect(x - 22, y, 22, 2);
-      c.fillStyle = '#4a3a28';
-      c.fillRect(x, y - 2, 6, 6);
-    }
-  } else if (art === 'speer' || art === 'armbrust' || art === 'schleuder' || art === 'fackel') {
-    // Einheit auf der Brustwehr, je nach Waffe anders in der Hand
-    const top = Math.round(h * 0.46);
-    c.fillStyle = steinDunkel; c.fillRect(0, top, w, boden - top + 4);
-    c.fillStyle = stein; c.fillRect(0, top, w, 6);
-    c.fillStyle = steinSchatten;
-    for (let y = top + 8; y < boden; y += 7) c.fillRect(0, y, w, 1);
-    for (let x = 0; x < w; x += 12) { c.fillStyle = stein; c.fillRect(x, top - 7, 7, 8); }
-    const cx = Math.round(w / 2);
-    drawSprite(FIG_WACHE, cx, top + 2, 4, c);
-    if (art === 'speer') {
-      c.fillStyle = '#6b4a2a'; c.fillRect(cx + 10, top - 34, 3, 32);
-      c.fillStyle = '#cfd6dc';
-      c.beginPath(); c.moveTo(cx + 11.5, top - 42); c.lineTo(cx + 16, top - 32);
-      c.lineTo(cx + 7, top - 32); c.closePath(); c.fill();
-    } else if (art === 'armbrust') {
-      c.fillStyle = '#6b4a2a'; c.fillRect(cx - 16, top - 18, 30, 4);
-      c.fillRect(cx - 4, top - 24, 4, 14);
-      c.fillStyle = '#cfd6dc'; c.fillRect(cx - 18, top - 26, 3, 16); c.fillRect(cx + 13, top - 26, 3, 16);
-      c.fillStyle = '#e8e2d2'; c.fillRect(cx - 15, top - 20, 28, 2);
-    } else if (art === 'schleuder') {
-      c.strokeStyle = '#8a7a5c'; c.lineWidth = 2;
-      c.beginPath(); c.arc(cx + 8, top - 26, 11, 0.2, 4.4); c.stroke();
-      c.fillStyle = '#6e6149'; c.fillRect(cx + 15, top - 30, 6, 6);
-    } else {
-      c.fillStyle = '#6b4a2a'; c.fillRect(cx + 10, top - 30, 3, 27);
-      c.fillStyle = '#e0503c'; c.fillRect(cx + 7, top - 39, 9, 10);
-      c.fillStyle = '#ffd166'; c.fillRect(cx + 9, top - 37, 5, 6);
-      c.fillStyle = 'rgba(255,180,60,0.35)'; c.fillRect(cx + 4, top - 43, 15, 16);
-    }
-  } else if (art === 'bergfried' || art === 'doppelturm' || art === 'graben') {
-    const top = Math.round(h * (art === 'bergfried' ? 0.06 : 0.18));
-    const bauen = (bx, bw, bt) => {
-      c.fillStyle = steinDunkel; c.fillRect(bx, bt, bw, boden - bt + 4);
-      c.fillStyle = stein; c.fillRect(bx, bt, bw, 5);
-      c.fillStyle = steinSchatten;
-      for (let y = bt + 7; y < boden; y += 7) c.fillRect(bx, y, bw, 1);
-      c.fillRect(bx + Math.round(bw / 2) - 2, bt + 11, 4, 8);
-      for (let x = bx; x < bx + bw; x += 8) { c.fillStyle = stein; c.fillRect(x, bt - 6, 5, 7); }
-    };
-    if (art === 'doppelturm') { bauen(8, 22, top + 8); bauen(w - 32, 22, top); }
-    else if (art === 'graben') {
-      bauen(Math.round(w / 2) - 13, 26, top);
-      c.fillStyle = '#3b6b86'; c.fillRect(0, boden + 2, w, 9);
-      c.fillStyle = '#5d97b4'; c.fillRect(0, boden + 2, w, 3);
-      c.fillStyle = 'rgba(255,255,255,0.25)';
-      for (let x = 3; x < w; x += 13) c.fillRect(x, boden + 5, 6, 1);
-    } else {
-      bauen(Math.round(w / 2) - 17, 34, top);
-      c.fillStyle = '#8e3f34';
-      c.beginPath(); c.moveTo(Math.round(w / 2) - 20, top - 6);
-      c.lineTo(Math.round(w / 2) + 20, top - 6); c.lineTo(Math.round(w / 2), top - 22);
-      c.closePath(); c.fill();
-    }
-  } else if (art === 'oel' || art === 'feuer') {
-    const cx = Math.round(w / 2);
-    if (art === 'oel') {
-      c.fillStyle = '#3a3a42'; c.fillRect(cx - 17, Math.round(h * 0.3), 34, 17);
-      c.fillStyle = '#55555f'; c.fillRect(cx - 17, Math.round(h * 0.3), 34, 4);
-      c.fillStyle = '#2a2a30'; c.fillRect(cx - 20, Math.round(h * 0.3) - 3, 40, 4);
-      for (let i = 0; i < 5; i++) {
-        c.fillStyle = i % 2 ? '#e0a63c' : '#c07a1e';
-        c.fillRect(cx - 14 + i * 7, Math.round(h * 0.3) + 18, 4, 12 + (i % 3) * 4);
-      }
-    } else {
-      c.fillStyle = 'rgba(60,20,10,0.5)'; c.fillRect(0, Math.round(h * 0.2), w, boden - Math.round(h * 0.2));
-      for (let i = 0; i < 7; i++) {
-        const fx = 5 + i * 16, fh = 16 + (i % 3) * 9;
-        c.fillStyle = '#c0392b'; c.fillRect(fx, boden - fh, 8, fh);
-        c.fillStyle = '#e07b30'; c.fillRect(fx + 1, boden - fh + 5, 6, fh - 5);
-        c.fillStyle = '#ffd166'; c.fillRect(fx + 2, boden - fh + 11, 4, fh - 11);
-      }
-    }
-  } else if (art === 'horn' || art === 'fahne') {
-    if (art === 'horn') {
-      const cx = Math.round(w / 2), cy = Math.round(h * 0.5);
-      c.strokeStyle = '#c9a15a'; c.lineWidth = 7; c.lineCap = 'round';
-      c.beginPath(); c.arc(cx, cy + 6, 15, 3.5, 5.8); c.stroke();
-      c.fillStyle = '#e0c184';
-      c.beginPath(); c.moveTo(cx + 13, cy - 8); c.lineTo(cx + 25, cy - 16);
-      c.lineTo(cx + 25, cy + 1); c.closePath(); c.fill();
-      c.fillStyle = 'rgba(255,240,200,0.5)';
-      for (let i = 0; i < 3; i++) c.fillRect(cx - 30 + i * 4, cy - 12 - i * 4, 14 - i * 3, 2);
-    } else {
-      c.fillStyle = '#3a2c1c'; c.fillRect(Math.round(w / 2) - 16, 6, 3, h - 12);
-      c.fillStyle = '#8c2230';
-      c.fillRect(Math.round(w / 2) - 13, 8, 30, 26);
-      c.fillStyle = '#b0364a'; c.fillRect(Math.round(w / 2) - 13, 8, 30, 8);
-      c.fillStyle = '#e3b552';
-      c.fillRect(Math.round(w / 2) - 4, 16, 8, 8);
-      c.fillStyle = '#8c2230';
-      c.beginPath(); c.moveTo(Math.round(w / 2) - 13, 34); c.lineTo(Math.round(w / 2) + 2, 27);
-      c.lineTo(Math.round(w / 2) + 17, 34); c.closePath(); c.fill();
-    }
-  } else if (art === 'kette' || art === 'hammer') {
-    const cx = Math.round(w / 2), cy = Math.round(h * 0.48);
-    if (art === 'kette') {
-      c.strokeStyle = '#7d848c'; c.lineWidth = 3;
-      for (let i = 0; i < 5; i++) {
-        c.beginPath(); c.arc(cx - 32 + i * 16, cy + (i % 2 ? 5 : -5), 7, 0, 6.3); c.stroke();
-      }
-      c.fillStyle = 'rgba(220,230,240,0.3)'; c.fillRect(0, cy + 14, w, 2);
-    } else {
-      c.fillStyle = '#6b4a2a'; c.fillRect(cx - 3, cy - 6, 5, 26);
-      c.fillStyle = '#7d848c'; c.fillRect(cx - 16, cy - 16, 32, 13);
-      c.fillStyle = '#aab2ba'; c.fillRect(cx - 16, cy - 16, 32, 4);
-      c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(cx + 6, cy - 14, 4, 3);
-    }
-  } else if (art === 'beutel') {
-    const cx = Math.round(w / 2), cy = Math.round(h * 0.55);
-    c.fillStyle = '#7a5a34';
-    c.beginPath(); c.ellipse(cx, cy + 4, 17, 14, 0, 0, 6.3); c.fill();
-    c.fillStyle = '#9a7448'; c.fillRect(cx - 8, cy - 12, 16, 8);
-    c.fillStyle = '#5c4326'; c.fillRect(cx - 9, cy - 6, 18, 3);
-    for (const [dx, dy] of [[-22, 6], [20, 9], [-14, 14]]) {
-      c.fillStyle = '#e3b552'; c.beginPath(); c.arc(cx + dx, cy + dy, 5, 0, 6.3); c.fill();
-      c.fillStyle = '#fff0b8'; c.fillRect(cx + dx - 2, cy + dy - 3, 4, 2);
-    }
-  } else if (art === 'nacht') {
-    for (let y = 0; y < h; y++) { c.fillStyle = y < h * 0.75 ? '#1d2540' : '#141a2c'; c.fillRect(0, y, w, 1); }
-    for (let i = 0; i < 22; i++) {
-      const sx = Math.round(noise(i, 3) * w), sy = Math.round(noise(i * 2, 7) * h * 0.7);
-      c.fillStyle = i % 4 ? 'rgba(255,248,214,0.8)' : '#fff0b8';
-      c.fillRect(sx, sy, 1 + (i % 3 === 0 ? 1 : 0), 1);
-    }
-    c.fillStyle = '#f2e6bb'; c.beginPath(); c.arc(w - 18, 15, 8, 0, 6.3); c.fill();
-    c.fillStyle = '#1d2540'; c.beginPath(); c.arc(w - 22, 12, 8, 0, 6.3); c.fill();
-    c.fillStyle = '#2a2338';
-    c.beginPath(); c.moveTo(0, h); c.lineTo(0, h - 18); c.lineTo(16, h - 26);
-    c.lineTo(30, h - 14); c.lineTo(46, h - 22); c.lineTo(w, h - 12); c.lineTo(w, h); c.closePath(); c.fill();
-  } else if (art === 'balliste') {
-    const top = Math.round(h * 0.42);
-    c.fillStyle = steinDunkel; c.fillRect(0, boden - 6, w, 10);
-    const cx = Math.round(w / 2);
-    c.fillStyle = '#6b4a2a';
-    c.fillRect(cx - 24, top + 16, 48, 5);
-    c.fillRect(cx - 16, top + 20, 5, 14); c.fillRect(cx + 11, top + 20, 5, 14);
-    c.fillStyle = '#8a6238'; c.fillRect(cx - 30, top + 4, 60, 5);
-    c.fillStyle = '#cfd6dc'; c.fillRect(cx - 32, top - 2, 4, 16); c.fillRect(cx + 28, top - 2, 4, 16);
-    c.fillStyle = '#e8e2d2'; c.fillRect(cx - 29, top + 6, 58, 2);
-    c.fillStyle = '#4a3a28'; c.fillRect(cx - 2, top - 6, 5, 22);
-    c.fillStyle = '#cfd6dc';
-    c.beginPath(); c.moveTo(cx + 0.5, top - 14); c.lineTo(cx + 5, top - 5); c.lineTo(cx - 4, top - 5);
-    c.closePath(); c.fill();
-  } else if (art === 'krone') {
-    for (let y = 0; y < h; y++) { c.fillStyle = y < h * 0.7 ? '#3b2f4d' : '#2a2136'; c.fillRect(0, y, w, 1); }
-    const cx = Math.round(w / 2), by = Math.round(h * 0.64);
-    c.fillStyle = '#b8891f'; c.fillRect(cx - 22, by, 44, 9);
-    c.fillStyle = '#e3b552'; c.fillRect(cx - 22, by, 44, 4);
-    for (let i = 0; i < 5; i++) {
-      const x = cx - 22 + i * 10;
-      c.fillStyle = '#e3b552'; c.fillRect(x, by - 11, 5, 11);
-      c.fillStyle = '#fff0b8'; c.fillRect(x, by - 14, 5, 4);
-    }
-    c.fillStyle = '#c0392b'; c.fillRect(cx - 3, by + 2, 6, 5);
-    c.fillStyle = '#2f5fa8'; c.fillRect(cx - 15, by + 2, 5, 5); c.fillRect(cx + 10, by + 2, 5, 5);
-  }
-
-  // Vignette
-  c.fillStyle = 'rgba(40,28,14,0.18)';
-  c.fillRect(0, 0, w, 2); c.fillRect(0, h - 2, w, 2);
-  c.fillRect(0, 0, 2, h); c.fillRect(w - 2, 0, 2, h);
+  c.fillStyle = BLATT.schwarz;
+  c.fillRect(0, halb - 1, w, 2);
 }
 
 // ============================================================
@@ -4509,39 +4662,50 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
 
   const el = document.createElement('div');
   el.className = 'card' + (disabled ? ' disabled' : '') + (selected ? ' selected' : '');
-  const [hell, dunkel] = FARBTON[card.type] || ['#8a7a5c', '#5a4a30'];
-  el.style.setProperty('--farbe-hell', hell);
-  el.style.setProperty('--farbe', dunkel);
-  // Rahmen und Fussband tragen die Seltenheit, die Kartenfarbe bleibt an
-  // der linken Kante und im Zeichen oben rechts.
+  // Die Seltenheit sitzt auf dem Namensband und der inneren Linie. Die
+  // Kartenfarbe steht im Eckzeichen, so wie die Farbe im echten Blatt.
   const stufeSel = card.sel || 'gewoehnlich';
   const sel = SELTENHEIT[stufeSel];
   el.classList.add('sel-' + stufeSel);
   el.style.setProperty('--sel-rand', sel.rand);
   el.style.setProperty('--sel-band', sel.band);
 
-  // Kostenstein und Kartenfarbe in einer Zeile, der Name darunter ueber die
-  // volle Breite. Sonst schiebt ein langer Name das Zeichen aus der Karte.
-  const head = document.createElement('div');
-  head.className = 'card-head';
-  head.innerHTML = '<span class="cost"></span><span class="card-suit"></span>';
-  head.firstChild.textContent = card.cost;
-  head.lastChild.textContent = card.suit;
-  el.appendChild(head);
-
-  const nameZeile = document.createElement('div');
-  nameZeile.className = 'card-name' + (card.name.length > 10 ? ' lang' : '');
-  nameZeile.textContent = card.name;
-  el.appendChild(nameZeile);
+  // Eckzeichen wie im doppeldeutschen Blatt: Wert und Farbe oben links,
+  // dieselbe Ecke unten rechts, um 180 Grad gedreht.
+  const ecke = (klasse) => {
+    const e = document.createElement('div');
+    e.className = 'card-ecke ' + klasse;
+    const z = document.createElement('b');
+    z.textContent = card.cost;
+    const f = document.createElement('canvas');
+    f.className = 'card-farbe';
+    f.width = 32; f.height = 32;
+    zeichneFarbe(f, card.suit);
+    e.appendChild(z);
+    e.appendChild(f);
+    return e;
+  };
+  el.appendChild(ecke('oben'));
 
   const fassung = document.createElement('div');
   fassung.className = 'card-art-frame';
   const art = document.createElement('canvas');
   art.className = 'card-art';
-  art.width = 116; art.height = 58;
+  art.width = 116; art.height = 104;
   paintCardArt(art, card.art);
   fassung.appendChild(art);
+
+  // Namensband auf der Trennlinie, wie die Figurennamen im Blatt
+  const band = document.createElement('div');
+  band.className = 'card-band' + (card.name.length > 15 ? ' lang' : '');
+  band.textContent = card.name;
+  fassung.appendChild(band);
   el.appendChild(fassung);
+
+  const typ = document.createElement('div');
+  typ.className = 'card-typ';
+  typ.textContent = card.type;
+  el.appendChild(typ);
 
   const werte = kartenWerte(card);
   if (werte.length) {
@@ -4556,23 +4720,22 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
     el.appendChild(leiste);
   }
 
+  const unten = document.createElement('div');
+  unten.className = 'card-unten';
   const regel = karteRegel(card);
   if (regel) {
     const rz = document.createElement('div');
     rz.className = 'card-rule';
     rz.textContent = regel;
-    el.appendChild(rz);
+    unten.appendChild(rz);
   }
-
   const txt = document.createElement('div');
   txt.className = 'card-text';
   txt.textContent = card.text;
-  el.appendChild(txt);
+  unten.appendChild(txt);
+  el.appendChild(unten);
 
-  const badge = document.createElement('div');
-  badge.className = 'card-badge';
-  badge.textContent = card.type;
-  el.appendChild(badge);
+  el.appendChild(ecke('unten'));
 
   // Karte neigt sich zum Zeiger, wie ein Stueck Pappe in der Hand
   if (!disabled && !wenigerBewegung) {
