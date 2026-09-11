@@ -202,6 +202,9 @@
   /* Die Hand liegt aufgefaechert wie ein echtes Blatt: die Karten ueberlappen
      und die angefasste kommt nach vorn. */
   #hand { display: flex; gap: 0; justify-content: center; min-width: min-content; padding: 0 10px; }
+  /* In der Hand sind alle Karten gleich hoch, sonst wird der Faecher schief.
+     Der Spruch darf dafuer angeschnitten werden, die Regel steht darueber. */
+  #hand .card { height: 210px; min-height: 0; overflow: hidden; }
   #hand .card-slot { margin-right: -14px; }
   #hand .card-slot:last-child { margin-right: 0; }
   #hand .card-slot:nth-child(1) { z-index: 1; }
@@ -405,6 +408,17 @@
   .pill.reich   { color: #2f5fa8; border-color: rgba(47,95,168,0.4); background: rgba(47,95,168,0.1); }
   .pill.leben   { color: #4a5c2b; border-color: rgba(74,92,43,0.4); background: rgba(74,92,43,0.1); }
   .pill.hoehe   { color: #8a6116; border-color: rgba(138,97,22,0.4); background: rgba(138,97,22,0.12); }
+
+  /* Was die Karte tut, klein und nuechtern ueber dem Spruch */
+  .card-rule {
+    font-family: var(--fliess);
+    font-size: 9.5px; line-height: 1.25;
+    padding: 4px 9px 0 13px;
+    color: #4a3a24;
+    font-weight: 600;
+  }
+  .pill.platz  { color: #6b4a86; border-color: rgba(107,74,134,0.4); background: rgba(107,74,134,0.1); }
+  .pill.durch  { color: #a8541e; border-color: rgba(168,84,30,0.4); background: rgba(168,84,30,0.12); }
 
   .card-text {
     font-family: var(--fliess);
@@ -628,9 +642,11 @@
     .card-art-frame { margin: 0 4px 0 8px; border-width: 1.5px; }
     .card-art { height: 34px; }
     .card-stats { display: none; }
+    .card-rule { display: none; }
     .card-text { display: none; }
     .card-badge { margin: 4px 4px 0 8px; font-size: 8px; padding: 2px 0 1px; letter-spacing: 0.03em; }
 
+    #hand .card { height: 112px; }
     #hand .card-slot { margin-right: -18px; }
     #tray { padding: 0 5px 5px; gap: 3px; }
     #minimap-panel { padding: 3px; border-width: 1px; margin-bottom: 2px; }
@@ -650,6 +666,8 @@
     .reward-box p { font-size: 11px; }
     #reward-cards .card-slot { width: 88px; }
     #reward-cards .card { min-height: 132px; }
+    #reward-cards .card-rule, #station-karten .card-rule {
+      display: block; font-size: 7.5px; padding: 2px 5px 0 8px; }
     #reward-cards .card-text { display: block; font-size: 8px; padding: 3px 5px 4px 9px; }
     .station-box { padding: 10px 12px 12px; width: 100%; }
     .station-box.weit { width: 100%; }
@@ -788,20 +806,197 @@
 // ============================================================
 const COLS = 20, ROWS = 15;
 
+/**
+ * Alle Karten des Spiels. Jede ist im Lauf kaufbar, es gibt keinen gesperrten
+ * Teil des Stapels.
+ *
+ * Felder: `cost` Tatendrang. Gebaeude haben `hp`, `rangeBonus` (Hoehe, die
+ * die Reichweite der Besatzung verlaengert) und `plaetze`. Einheiten haben
+ * `dmg`, `range`, dazu `zaeh` (haertet den Turm) und `durchschlag` (die Salve
+ * reisst weiter). Faehigkeiten tragen `plus` fuer eine Einheit oder `sofort`
+ * fuer eine einmalige Wirkung. Maechte tragen `macht` und halten bis zum Ende
+ * der Station.
+ */
 const CARD_POOL = [
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
-    text: 'Hoch genug, dass Pfeile weiter tragen.' },
+  // ---------------- Gebaeude ----------------
   { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer', sel: 'gewoehnlich',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
+  { id: 'erdwall', name: 'Erdwall', type: 'Gebäude', suit: '🌰', cost: 1, hp: 6, art: 'mauer', sel: 'gewoehnlich',
+    text: 'Hält lange. Sehen tut man von dort oben wenig.' },
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
+    text: 'Hoch genug, dass Pfeile weiter tragen.' },
+  { id: 'schanze', name: 'Schanze', type: 'Gebäude', suit: '🌰', cost: 2, hp: 10, art: 'mauer', sel: 'gewoehnlich',
+    text: 'Aufgeworfen in einer Nacht, gehalten über Wochen.' },
+  { id: 'wehrgang', name: 'Wehrgang', type: 'Gebäude', suit: '🌰', cost: 2, hp: 5, rangeBonus: 3, art: 'mauer', sel: 'gewoehnlich',
+    text: 'Ein Gang aus Brettern, und plötzlich reicht der Blick weit.' },
+  { id: 'bollwerk', name: 'Bollwerk', type: 'Gebäude', suit: '🌰', cost: 2, hp: 8, rangeBonus: 1, art: 'mauer', sel: 'gewoehnlich',
+    sofort: { heileBurg: 3 },
+    text: 'Was hier steht, muss die Burg nicht mehr tragen.' },
+  { id: 'steinturm', name: 'Steinturm', type: 'Gebäude', suit: '🌰', cost: 3, hp: 12, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
+    text: 'Der Mörtel ist noch feucht, die Mauer schon dick.' },
+  { id: 'lugaus', name: 'Lugaus', type: 'Gebäude', suit: '🌰', cost: 1, hp: 2, rangeBonus: 3, art: 'turm', sel: 'selten',
+    text: 'Dünn wie ein Mast. Aber man sieht bis zur Grenze.' },
+  { id: 'pechnase', name: 'Pechnase', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 1, art: 'oel', sel: 'selten',
+    sofort: { flaeche: 2 },
+    text: 'Beim Aufsetzen schwappt schon etwas über den Rand.' },
+  { id: 'turmwache', name: 'Turm der Wache', type: 'Gebäude', suit: '🌰', cost: 2, hp: 7, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
+    sofort: { ziehe: 1 },
+    text: 'Von oben sieht man, was als Nächstes gebraucht wird.' },
+  { id: 'alterturm', name: 'Der alte Turm', type: 'Gebäude', suit: '🌰', cost: 3, hp: 9, rangeBonus: 2, art: 'turm', sel: 'selten',
+    sofort: { tatendrang: 1 },
+    text: 'Er stand schon hier. Ihr habt nur das Dach gerichtet.' },
+  { id: 'doppelturm', name: 'Doppelturm', type: 'Gebäude', suit: '🌰', cost: 3, hp: 8, rangeBonus: 2, plaetze: 2, art: 'doppelturm', sel: 'selten',
+    text: 'Zwei Stuben, zwei Schießscharten, ein Dach.' },
+  { id: 'zwinger', name: 'Zwinger', type: 'Gebäude', suit: '🌰', cost: 3, hp: 11, rangeBonus: 1, plaetze: 2, art: 'doppelturm', sel: 'selten',
+    text: 'Wer hier hineinläuft, kommt selten wieder heraus.' },
+  { id: 'hoherhorst', name: 'Hoher Horst', type: 'Gebäude', suit: '🌰', cost: 4, hp: 7, rangeBonus: 4, art: 'turm', sel: 'selten',
+    text: 'Der Wind pfeift, und die Pfeile fliegen mit ihm.' },
+  { id: 'wallgraben', name: 'Wallgraben', type: 'Gebäude', suit: '🌰', cost: 2, hp: 7, art: 'graben', sel: 'selten',
+    macht: { dornen: 1 },
+    text: 'Unten stehen Pfähle. Man sieht sie erst zu spät.' },
+  { id: 'bergfried', name: 'Bergfried', type: 'Gebäude', suit: '🌰', cost: 4, hp: 17, rangeBonus: 3, art: 'bergfried', sel: 'selten',
+    text: 'Der letzte Ort, an dem man sich noch wehrt.' },
+  { id: 'trutzburg', name: 'Trutzburg', type: 'Gebäude', suit: '🌰', cost: 4, hp: 14, rangeBonus: 1, art: 'bergfried', sel: 'kostbar',
+    macht: { turmLeben: 2 },
+    text: 'Ihr Anblick richtet auch die anderen Mauern auf.' },
+  { id: 'grenzfeste', name: 'Grenzfeste', type: 'Gebäude', suit: '🌰', cost: 5, hp: 21, rangeBonus: 3, plaetze: 2, art: 'bergfried', sel: 'kostbar',
+    text: 'Keine Nacht reicht, um so etwas zu bauen. Ihr habt es doch getan.' },
+
+  // ---------------- Einheiten ----------------
   { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer', sel: 'gewoehnlich',
     text: 'Braucht festen Boden unter den Füßen.' },
+  { id: 'speertraeger', name: 'Speerträger', type: 'Einheit', suit: '❤', cost: 1, dmg: 3, range: 1, zaeh: 2, art: 'speer', sel: 'gewoehnlich',
+    text: 'Er weicht nicht. Das ist seine ganze Kunst.' },
+  { id: 'schleuderer', name: 'Schleuderer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 4, art: 'schleuder', sel: 'gewoehnlich',
+    text: 'Steine gibt es genug, und er trifft mit jedem zweiten.' },
+  { id: 'wachmann', name: 'Wachmann', type: 'Einheit', suit: '❤', cost: 1, dmg: 1, range: 2, zaeh: 4, art: 'speer', sel: 'gewoehnlich',
+    text: 'Schlägt selten zu, fällt aber auch nicht um.' },
+  { id: 'kundschafter', name: 'Kundschafter', type: 'Einheit', suit: '❤', cost: 1, dmg: 1, range: 5, art: 'waldlaeufer', sel: 'gewoehnlich',
+    sofort: { ziehe: 1 },
+    text: 'Er bringt mit, was er unterwegs aufgeschnappt hat.' },
   { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5, art: 'bogen', sel: 'gewoehnlich',
     text: 'Zielt, wo andere zögern.' },
-  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'wind', sel: 'selten',
+  { id: 'armbrustmann', name: 'Armbruster', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 4, art: 'armbrust', sel: 'gewoehnlich',
+    text: 'Langsam im Laden, endgültig im Treffen.' },
+  { id: 'soeldner', name: 'Söldner', type: 'Einheit', suit: '❤', cost: 2, dmg: 5, range: 2, art: 'speer', sel: 'gewoehnlich',
+    text: 'Fragt nicht nach dem Grund, nur nach dem Lohn.' },
+  { id: 'wurfaxt', name: 'Axtwerfer', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 2, zaeh: 1, art: 'speer', sel: 'gewoehnlich',
+    text: 'Die Axt kommt zurück. Meistens.' },
+  { id: 'waldhueter', name: 'Waldhüter', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 3, art: 'bogen', sel: 'gewoehnlich',
+    text: 'Er kennt jeden Pfad, auf dem sie kommen.' },
+  { id: 'zweibrueder', name: 'Zwei Brüder', type: 'Einheit', suit: '❤', cost: 2, dmg: 2, range: 4, art: 'bogen', sel: 'gewoehnlich',
+    sofort: { ziehe: 1 },
+    text: 'Der eine schießt, der andere redet. Beide nützlich.' },
+  { id: 'turmschmied', name: 'Turmschmied', type: 'Einheit', suit: '❤', cost: 2, dmg: 2, range: 3, zaeh: 3, art: 'hammer', sel: 'gewoehnlich',
+    text: 'Er schlägt Nägel ein, solange keiner schießt.' },
+  { id: 'jaeger', name: 'Jäger', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 6, art: 'bogen', sel: 'gewoehnlich',
+    text: 'Wartet, bis der Schuss sich lohnt.' },
+  { id: 'fackeltraeger', name: 'Fackelträger', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 2, art: 'fackel', sel: 'gewoehnlich',
+    sofort: { flaeche: 1 },
+    text: 'Beim Aufsteigen streift die Fackel mehr als gewollt.' },
+  { id: 'feuerpfeil', name: 'Feuerschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 4, durchschlag: 1, art: 'fackel', sel: 'selten',
+    text: 'Ein Pfeil, zwei Feuer.' },
+  { id: 'spaeherin', name: 'Späherin', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 4, art: 'waldlaeufer', sel: 'gewoehnlich',
+    sofort: { tatendrang: 1 },
+    text: 'Sie ist schon oben, bevor die Leiter steht.' },
+  { id: 'blindschuetze', name: 'Der blinde Schütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 6, range: 3, art: 'bogen', sel: 'gewoehnlich',
+    text: 'Er hört, wo sie stehen. Das genügt ihm.' },
+  { id: 'veteran', name: 'Veteran', type: 'Einheit', suit: '❤', cost: 3, dmg: 4, range: 5, zaeh: 3, art: 'armbrust', sel: 'selten',
+    text: 'Dritter Feldzug. Er zählt nicht mehr mit.' },
+  { id: 'mauerwacht', name: 'Mauerwacht', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 2, zaeh: 5, art: 'speer', sel: 'gewoehnlich',
+    text: 'Sie stemmt sich gegen die Ramme, bis der Stein hält.' },
+  { id: 'altegarde', name: 'Alte Garde', type: 'Einheit', suit: '❤', cost: 3, dmg: 3, range: 3, zaeh: 6, art: 'speer', sel: 'selten',
+    text: 'Sie standen schon hier, als die Burg neu war.' },
+  { id: 'scharfschuetze', name: 'Scharfschütze', type: 'Einheit', suit: '❤', cost: 3, dmg: 5, range: 7, art: 'armbrust', sel: 'selten',
+    text: 'Er schießt einmal. Danach wird gezählt.' },
+  { id: 'steinschleuder', name: 'Schleudertrupp', type: 'Einheit', suit: '❤', cost: 3, dmg: 4, range: 5, durchschlag: 2, art: 'schleuder', sel: 'selten',
+    text: 'Drei Schleudern, ein Kommando, viele blaue Flecken.' },
+  { id: 'hauptmann', name: 'Hauptmann', type: 'Einheit', suit: '❤', cost: 3, dmg: 4, range: 4, art: 'armbrust', sel: 'kostbar',
+    macht: { alleSchaden: 1 },
+    text: 'Wo er steht, trifft plötzlich jeder besser.' },
+  { id: 'balliste', name: 'Balliste', type: 'Einheit', suit: '❤', cost: 4, dmg: 8, range: 6, art: 'balliste', sel: 'kostbar',
+    text: 'Kein Mann, ein Gerät. Es braucht drei zum Spannen.' },
+  { id: 'grenzritter', name: 'Ritter der Grenze', type: 'Einheit', suit: '❤', cost: 4, dmg: 6, range: 4, zaeh: 5, art: 'speer', sel: 'kostbar',
+    text: 'Er reitet die Grenze ab, seit niemand mehr zählt.' },
+
+  // ---------------- Faehigkeiten ----------------
+  { id: 'zielen', name: 'Zielen', type: 'Fähigkeit', suit: '🍃', cost: 0, plus: { range: 2 }, art: 'wind', sel: 'gewoehnlich',
+    text: 'Einmal tief durchatmen, bevor der Finger loslässt.' },
+  { id: 'schleifstein', name: 'Schleifstein', type: 'Fähigkeit', suit: '🍃', cost: 1, plus: { dmg: 2 }, art: 'hammer', sel: 'gewoehnlich',
+    text: 'Scharf war sie schon. Jetzt ist sie schärfer.' },
+  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, plus: { dmg: 1, range: 1 }, art: 'wind', sel: 'selten',
     text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
-  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3, art: 'krone', sel: 'kostbar',
+  { id: 'durchbruch', name: 'Durchschlag', type: 'Fähigkeit', suit: '🍃', cost: 2, plus: { dmg: 1, durchschlag: 1 }, art: 'wind', sel: 'selten',
+    text: 'Was einen trifft, trifft auch den dahinter.' },
+  { id: 'brandpfeil', name: 'Brandpfeil', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { schaden: 4 }, art: 'fackel', sel: 'gewoehnlich',
+    text: 'Er brennt schon, bevor er ankommt.' },
+  { id: 'pechguss', name: 'Pechguss', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { schaden: 6 }, art: 'oel', sel: 'gewoehnlich',
+    text: 'Heiß genug, dass niemand mehr an die Leiter denkt.' },
+  { id: 'ausfall', name: 'Ausfall', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { schaden: 10 }, art: 'speer', sel: 'selten',
+    text: 'Das Tor geht auf, und für einen Augenblick seid ihr draußen.' },
+  { id: 'steinregen', name: 'Steinregen', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { flaeche: 3 }, art: 'schleuder', sel: 'gewoehnlich',
+    text: 'Es hagelt über das ganze Feld.' },
+  { id: 'heissersand', name: 'Heißer Sand', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { flaeche: 4 }, art: 'feuer', sel: 'selten',
+    text: 'Er findet jede Ritze in der Rüstung.' },
+  { id: 'fallgrube', name: 'Fallgrube', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { fessel: 1 }, art: 'graben', sel: 'gewoehnlich',
+    text: 'Ein Brett, etwas Laub, und schon fehlt einer.' },
+  { id: 'wurfnetz', name: 'Wurfnetz', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { fessel: 2 }, art: 'kette', sel: 'selten',
+    text: 'Je mehr er sich wehrt, desto fester sitzt es.' },
+  { id: 'kettenzug', name: 'Kettenzug', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { stoss: 3 }, art: 'kette', sel: 'gewoehnlich',
+    text: 'Ein Ruck, und der Weg ist wieder lang.' },
+  { id: 'ausbessern', name: 'Ausbessern', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { flicke: 6 }, art: 'hammer', sel: 'gewoehnlich',
+    text: 'Ein paar Steine zurück an ihren Platz.' },
+  { id: 'maurerkelle', name: 'Maurerkelle', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { turmSchild: 4 }, art: 'hammer', sel: 'gewoehnlich',
+    text: 'Nicht geflickt, sondern verstärkt. Das hält länger.' },
+  { id: 'feldscher', name: 'Feldscher', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { heileBurg: 4 }, art: 'horn', sel: 'gewoehnlich',
+    text: 'Er ist keiner von den Guten, aber der Einzige hier.' },
+  { id: 'doppeltewacht', name: 'Doppelte Wacht', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { ziehe: 2 }, art: 'horn', sel: 'gewoehnlich',
+    text: 'Zwei Augenpaare sehen zwei Dinge.' },
+  { id: 'hornsignal', name: 'Hornsignal', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { tatendrang: 2 }, art: 'horn', sel: 'gewoehnlich',
+    text: 'Ein Stoß, und der ganze Wall ist wach.' },
+  { id: 'kriegsrat', name: 'Kriegsrat', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { ziehe: 3 }, art: 'nacht', sel: 'selten',
+    text: 'Kurz gesprochen, lange gewirkt.' },
+  { id: 'beutezug', name: 'Beutezug', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { sold: 30 }, art: 'beutel', sel: 'gewoehnlich',
+    text: 'Was der Gefallene trug, trägt jetzt ihr.' },
+  { id: 'letztesaufgebot', name: 'Letztes Aufgebot', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { ziehe: 2, heileBurg: 2 }, art: 'horn', sel: 'kostbar',
+    text: 'Auch die Köchin nimmt jetzt einen Bogen.' },
+
+  // ---------------- Maechte ----------------
+  { id: 'banner', name: 'Banner der Grenze', type: 'Macht', suit: '🔔', cost: 2, macht: { alleSchaden: 1 }, art: 'fahne', sel: 'selten',
+    text: 'Solange es weht, zielt jeder eine Spur genauer.' },
+  { id: 'hohewarte', name: 'Hohe Warte', type: 'Macht', suit: '🔔', cost: 2, macht: { alleReichweite: 1 }, art: 'turm', sel: 'selten',
+    text: 'Von hier oben ist die Grenze auf einmal nah.' },
+  { id: 'trommelschlag', name: 'Trommelschlag', type: 'Macht', suit: '🔔', cost: 2, macht: { handKarten: 1 }, art: 'horn', sel: 'selten',
+    text: 'Der Takt sagt, wann gezogen und wann gespannt wird.' },
+  { id: 'eisernerwille', name: 'Eiserner Wille', type: 'Macht', suit: '🔔', cost: 2, macht: { turmLeben: 3 }, art: 'fahne', sel: 'selten',
+    text: 'Nichts daran ist neu. Es hält nur länger.' },
+  { id: 'dornenwall', name: 'Dornenwall', type: 'Macht', suit: '🔔', cost: 2, macht: { dornen: 2 }, art: 'graben', sel: 'selten',
+    text: 'Wer die Mauer schlägt, schlägt in Pfähle.' },
+  { id: 'wachtbeinacht', name: 'Wacht bei Nacht', type: 'Macht', suit: '🔔', cost: 3, macht: { alleReichweite: 2 }, art: 'nacht', sel: 'kostbar',
+    text: 'Im Dunkeln hört man weiter, als man sieht.' },
+  { id: 'sturmglocke', name: 'Sturmglocke', type: 'Macht', suit: '🔔', cost: 3, macht: { alleSchaden: 2 }, art: 'horn', sel: 'kostbar',
+    text: 'Sie läutet nur einmal im Leben einer Burg.' },
+  { id: 'langeratem', name: 'Der lange Atem', type: 'Macht', suit: '🔔', cost: 3, macht: { tatendrangDauer: 1 }, art: 'nacht', sel: 'kostbar',
+    text: 'Jeder Zug hat von nun an einen Handgriff mehr.' },
+  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3, macht: { allePlaetze: 1 }, art: 'krone', sel: 'kostbar',
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
+  { id: 'erlass', name: 'Königlicher Erlass', type: 'Macht', suit: '🔔', cost: 4, macht: { allePlaetze: 1, alleSchaden: 1 }, art: 'krone', sel: 'kostbar',
+    text: 'Ein Siegel, und die Grenze ist plötzlich Sache des Königs.' },
+  { id: 'schwur', name: 'Schwur der Grenze', type: 'Macht', suit: '🔔', cost: 3, macht: { turmLeben: 2, alleSchaden: 1 }, art: 'fahne', sel: 'kostbar',
+    text: 'Gesprochen wird er einmal, gehalten den ganzen Tag.' },
+  { id: 'marschbefehl', name: 'Marschbefehl', type: 'Macht', suit: '🔔', cost: 2, macht: { handKarten: 1 }, art: 'fahne', sel: 'kostbar',
+    text: 'Kurz, laut, und keiner fragt nach.' },
 ];
+
+// Der Stapel wird beim Laden einmal gegen dieselbe Regel geprueft.
+for (const karte of CARD_POOL) {
+  const vorher = karte.cost;
+  bezahlbarkeitSichern(karte);
+  if (karte.cost !== vorher) {
+    console.warn('Castle Master: ' + karte.id + ' war netto umsonst und zieht nach. Kosten auf ' +
+      karte.cost + ' gesetzt.');
+  }
+}
 
 const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 35 };
 
@@ -879,6 +1074,8 @@ const STARTER_DECK = [
   ['bogenschuetze', 2], ['sturmwind', 1], ['krone', 1],
 ];
 const HAND_SIZE = 5;
+/** Wie viele Karten ein Zug bringt, samt anhaltender Maechte. */
+const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0);
 const ATTACK_COST = 1;
 
 /**
@@ -980,6 +1177,7 @@ let state = {
   haendler: [],      // Auslage des Marketenders
   ereignis: null,    // laufende Begegnung
   letzterSold: 0,    // was die letzte Station eingebracht hat
+  maechte: {},       // anhaltende Wirkungen, gelten nur fuer diese Station
   draw: [], hand: [], discard: [],
   pendingCard: null,
   selectedTower: null,   // Turm, der schiessen soll
@@ -999,11 +1197,10 @@ function shuffle(cards) {
 
 function buildStarterDeck() {
   const deck = [];
-  let serial = 0;
   for (const [id, count] of STARTER_DECK) {
     const proto = CARD_POOL.find(c => c.id === id);
     if (!proto) continue;
-    for (let i = 0; i < count; i++) deck.push({ ...proto, uid: id + '#' + (++serial) });
+    for (let i = 0; i < count; i++) deck.push(neueKarte(proto));
   }
   return shuffle(deck);
 }
@@ -1166,7 +1363,7 @@ function enemyPlan(e) {
   return {
     turm, ziel, zielPunkt, abstand,
     istBurg: !turm,
-    aktion: abstand <= e.reach ? 'angriff' : 'vorruecken',
+    aktion: e.gefesselt > 0 ? 'gefesselt' : (abstand <= e.reach ? 'angriff' : 'vorruecken'),
   };
 }
 
@@ -1174,16 +1371,18 @@ function currentIntentText() {
   if (state.castleHp <= 0) return 'Die Belagerung ist entschieden.';
   if (!state.enemies.length) return 'Kein Gegner auf dem Feld. Nutze die Ruhe zum Bauen.';
 
-  let schlagbereit = 0;
+  let schlagbereit = 0, gefesselt = 0;
   const ziele = new Set();
   for (const e of state.enemies) {
     const plan = enemyPlan(e);
-    if (plan.aktion === 'angriff') { schlagbereit++; ziele.add(plan.istBurg ? 'die Burg' : plan.turm.name); }
+    if (plan.aktion === 'gefesselt') gefesselt++;
+    else if (plan.aktion === 'angriff') { schlagbereit++; ziele.add(plan.istBurg ? 'die Burg' : plan.turm.name); }
   }
   const teile = [];
   if (schlagbereit) teile.push('⚔ ' + schlagbereit + ' schlagen zu (' + [...ziele].join(', ') + ')');
-  const vorrueckend = state.enemies.length - schlagbereit;
+  const vorrueckend = state.enemies.length - schlagbereit - gefesselt;
   if (vorrueckend) teile.push('➤ ' + vorrueckend + ' rücken vor');
+  if (gefesselt) teile.push('✖ ' + gefesselt + ' stehen fest');
   return teile.join(' · ');
 }
 
@@ -1204,7 +1403,7 @@ function towerReach(t) {
  * also gemeinsam, ein Waldlaeufer bleibt auf grosse Entfernung aussen vor.
  */
 function towerDamageAt(t, d) {
-  return towerUnits(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + u.dmg, 0);
+  return towerUnits(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + unitDmg(u), 0);
 }
 
 function towerHasFired(t) { return t.attackedKey === state.runde + ':' + state.zug; }
@@ -1216,7 +1415,12 @@ function distanceTo(tower, enemy) {
 }
 
 /** Die Hoehe des Turms verlaengert die Reichweite seiner Besatzung. */
-function unitRange(tower, unit) { return unit.range + (tower.rangeBonus || 0); }
+function unitRange(tower, unit) {
+  return unit.range + (tower.rangeBonus || 0) + (state.maechte.alleReichweite || 0);
+}
+
+/** Schaden einer einzelnen Einheit, samt anhaltender Maechte. */
+function unitDmg(unit) { return Math.max(0, unit.dmg + (state.maechte.alleSchaden || 0)); }
 
 function enemyInRange(tower, enemy) { return Boolean(enemy) && distanceTo(tower, enemy) <= towerReach(tower); }
 
@@ -1563,6 +1767,122 @@ function drawMerlons(col, row, w, h, height, col3) {
   }
   spots.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
   for (const [c, r] of spots) drawBlock(c, r, s, s, hoehe, col3, height);
+}
+
+// ============================================================
+//  Die Zier-Mauer
+// ============================================================
+// Sobald der erste Turm steht, schliesst sich eine Mauer um Burg und Tuerme.
+// Sie haelt nichts auf und hat keine Lebenspunkte: Gegner laufen weiter auf
+// den naechsten Turm zu. Sie ist reine Zier und kostet nichts.
+//
+// Gebaut wird sie so: Um alle Grundflaechen wird die konvexe Huelle gelegt,
+// alle Felder darin bilden den Hof. Die Mauer laeuft ueber jede Kante eines
+// Hoffeldes, hinter der kein Hof mehr liegt. Kanten an Bauwerken bleiben frei,
+// dort ist das Bauwerk selbst die Mauer.
+
+const MAUER_DICKE = 0.26;         // Bruchteil eines Feldes
+const MAUER_HOEHE = 18;           // niedrig genug, dass nichts dahinter verschwindet
+const MAUER_WACHSEN = 0.42;       // Sekunden, in denen ein neues Stueck aufsteigt
+const MAUER = { oben: '#bfb08c', links: '#5f5442', rechts: '#8b7d5f' };
+
+let mauerWerk = { schluessel: '', stuecke: [] };
+
+/** Konvexe Huelle einer Punktwolke, Andrews monotone Kette. */
+function konvexeHuelle(punkte) {
+  const pts = punkte.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+  const kreuz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const bauen = (liste) => {
+    const raus = [];
+    for (const pt of liste) {
+      while (raus.length >= 2 && kreuz(raus[raus.length - 2], raus[raus.length - 1], pt) <= 0) raus.pop();
+      raus.push(pt);
+    }
+    raus.pop();
+    return raus;
+  };
+  return bauen(pts).concat(bauen(pts.slice().reverse()));
+}
+
+function imPolygon(x, y, poly) {
+  let drin = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) drin = !drin;
+  }
+  return drin;
+}
+
+/**
+ * Rechnet die Mauerstuecke neu aus. Das geschieht nur, wenn sich die Bauwerke
+ * geaendert haben: Jeden Bildaufbau die Huelle zu legen waere Verschwendung.
+ */
+function pruefeMauer() {
+  const schluessel = state.towers.length === 0 ? ''
+    : state.towers.map(t => t.id + '@' + t.col + ',' + t.row).sort().join('|');
+  if (schluessel === mauerWerk.schluessel) return;
+
+  const alt = new Set(mauerWerk.stuecke.map(m => m.schluessel));
+  mauerWerk = { schluessel, stuecke: [] };
+  if (!schluessel) return;
+
+  const bauten = [CASTLE, ...state.towers];
+  const ecken = [];
+  for (const b of bauten) {
+    ecken.push([b.col, b.row], [b.col + b.w, b.row], [b.col + b.w, b.row + b.h], [b.col, b.row + b.h]);
+  }
+  const huelle = konvexeHuelle(ecken);
+  if (huelle.length < 3) return;
+
+  const hof = new Set();
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (imPolygon(c + 0.5, r + 0.5, huelle)) hof.add(c + ',' + r);
+    }
+  }
+  // Bauwerke gehoeren immer dazu, auch wenn ihre Mitte knapp danebenliegt.
+  for (const b of bauten) {
+    for (let c = b.col; c < b.col + b.w; c++) for (let r = b.row; r < b.row + b.h; r++) hof.add(c + ',' + r);
+  }
+
+  const bebaut = (c, r) => bauten.some(b => cellInsideRect(c, r, b));
+  const seiten = [
+    { dc: 0, dr: -1, rect: (c, r) => [c, r, 1, MAUER_DICKE] },                    // Nord
+    { dc: 0, dr: 1, rect: (c, r) => [c, r + 1 - MAUER_DICKE, 1, MAUER_DICKE] },   // Sued
+    { dc: -1, dr: 0, rect: (c, r) => [c, r, MAUER_DICKE, 1] },                    // West
+    { dc: 1, dr: 0, rect: (c, r) => [c + 1 - MAUER_DICKE, r, MAUER_DICKE, 1] },   // Ost
+  ];
+
+  for (const feld of hof) {
+    const [c, r] = feld.split(',').map(Number);
+    if (bebaut(c, r)) continue;                 // dort steht schon Mauerwerk
+    for (const s of seiten) {
+      if (hof.has((c + s.dc) + ',' + (r + s.dr))) continue;
+      const [mc, mr, mw, mh] = s.rect(c, r);
+      const sch = c + ',' + r + ':' + s.dc + ',' + s.dr;
+      mauerWerk.stuecke.push({
+        schluessel: sch, col: mc, row: mr, w: mw, h: mh,
+        // Neue Stuecke wachsen auf, bekannte stehen schon.
+        wachsen: alt.has(sch) ? MAUER_WACHSEN : 0,
+        zinne: true,
+      });
+    }
+  }
+}
+
+/** Ein Stueck Mauer samt Schatten und Zinne. */
+function drawMauerstueck(m) {
+  const f = wenigerBewegung ? 1 : Math.min(1, m.wachsen / MAUER_WACHSEN);
+  if (f <= 0.01) return;
+  const H = MAUER_HOEHE * ueberschwingen(f);
+  drawBlock(m.col, m.row, m.w, m.h, H, MAUER);
+  if (m.zinne && f > 0.7) {
+    const s = 0.3;
+    const zc = m.col + (m.w > m.h ? 0.35 : (m.w - s) / 2);
+    const zr = m.row + (m.h > m.w ? 0.35 : (m.h - s) / 2);
+    drawBlock(zc, zr, s, s, 6, MAUER, H);
+  }
 }
 
 const STEIN = { oben: '#cbbc98', links: '#6e6149', rechts: '#9a8a68' };
@@ -1935,9 +2255,11 @@ function drawTower(t) {
   const H = Math.max(2, 34 * gewachsen - (t.rueckstoss || 0) * 4);
   const sel = getSelectedTower();
   const ausgewaehlt = sel && sel.id === t.id;
+  const zielArtJetzt = state.pendingCard ? zielArt(state.pendingCard) : null;
   const zielbar = state.pendingCard && (
-    (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
-    (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
+    (zielArtJetzt === 'turmFrei' && t.slots.some(s => s === null)) ||
+    (zielArtJetzt === 'einheit' && t.slots.some(s => s)) ||
+    (zielArtJetzt === 'turm')
   );
 
   drawBauSchatten(t.col, t.row, t.w, t.h, H);
@@ -1992,6 +2314,13 @@ function drawTower(t) {
 }
 
 function drawEnemy(e, geist = false) {
+  // Zielt eine Karte auf Gegner, bekommen alle einen Ring, damit klar ist,
+  // worauf der naechste Klick geht.
+  if (!geist && state.pendingCard && zielArt(state.pendingCard) === 'gegner') {
+    const puls = wenigerBewegung ? 0.5 : 0.35 + Math.sin(animZeit * 6) * 0.18;
+    fillDiamond(Math.round(e.vx === undefined ? e.col : e.vx),
+      Math.round(e.vy === undefined ? e.row : e.vy), 'rgba(227,181,82,' + puls.toFixed(2) + ')');
+  }
   const t = ENEMY_TYPES[e.typ];
   const plan = enemyPlan(e);
   if (geist) ctx.globalAlpha = 0.55;
@@ -2033,7 +2362,8 @@ function drawEnemy(e, geist = false) {
   drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
 
   // Was der Gegner im naechsten Zug vorhat
-  if (plan.aktion === 'angriff') drawBadge(cx, cy + 5, '⚔ ' + e.dmg, '#ffb3a7', '#8c2230');
+  if (plan.aktion === 'gefesselt') drawBadge(cx, cy + 5, '✖ ' + e.gefesselt, '#a8c4e0', '#2f5fa8');
+  else if (plan.aktion === 'angriff') drawBadge(cx, cy + 5, '⚔ ' + e.dmg, '#ffb3a7', '#8c2230');
   else drawBadge(cx, cy + 5, '➤ ' + e.move, '#cfc0a0', '#6b5535');
 
   if (geist) { ctx.globalAlpha = 1; return; }
@@ -2322,7 +2652,7 @@ function drawHover() {
 }
 
 function drawPlacementPreview() {
-  if (!state.pendingCard || state.pendingCard.type !== 'Gebäude' || !state.hoverCell) return;
+  if (!state.pendingCard || zielArt(state.pendingCard) !== 'feld' || !state.hoverCell) return;
   const { col, row } = state.hoverCell;
   const ok = isValidTowerPlacement(col, row, 2, 2);
   for (let r = row; r < row + 2; r++) {
@@ -2394,6 +2724,11 @@ function updateAnimations(dt) {
       }
     }
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
+  }
+
+  pruefeMauer();
+  for (const m of mauerWerk.stuecke) {
+    if (m.wachsen < MAUER_WACHSEN) m.wachsen = Math.min(MAUER_WACHSEN, m.wachsen + dt);
   }
 
   for (const e of state.enemies) {
@@ -2496,6 +2831,12 @@ function draw() {
       w: 1, h: 1, rect: gegnerRect(e),
       zeichne: () => drawEnemy(e),
       geist: () => drawEnemy(e, true),
+    });
+  }
+  for (const m of mauerWerk.stuecke) {
+    objekte.push({
+      art: 'mauer', col: m.col, row: m.row, w: m.w, h: m.h,
+      zeichne: () => drawMauerstueck(m),
     });
   }
   for (const d of DEKO) objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
@@ -2635,6 +2976,150 @@ function paintCardArt(cv, art) {
       c.fillStyle = '#4a3a28';
       c.fillRect(x, y - 2, 6, 6);
     }
+  } else if (art === 'speer' || art === 'armbrust' || art === 'schleuder' || art === 'fackel') {
+    // Einheit auf der Brustwehr, je nach Waffe anders in der Hand
+    const top = Math.round(h * 0.46);
+    c.fillStyle = steinDunkel; c.fillRect(0, top, w, boden - top + 4);
+    c.fillStyle = stein; c.fillRect(0, top, w, 6);
+    c.fillStyle = steinSchatten;
+    for (let y = top + 8; y < boden; y += 7) c.fillRect(0, y, w, 1);
+    for (let x = 0; x < w; x += 12) { c.fillStyle = stein; c.fillRect(x, top - 7, 7, 8); }
+    const cx = Math.round(w / 2);
+    drawSprite(FIG_WACHE, cx, top + 2, 4, c);
+    if (art === 'speer') {
+      c.fillStyle = '#6b4a2a'; c.fillRect(cx + 10, top - 34, 3, 32);
+      c.fillStyle = '#cfd6dc';
+      c.beginPath(); c.moveTo(cx + 11.5, top - 42); c.lineTo(cx + 16, top - 32);
+      c.lineTo(cx + 7, top - 32); c.closePath(); c.fill();
+    } else if (art === 'armbrust') {
+      c.fillStyle = '#6b4a2a'; c.fillRect(cx - 16, top - 18, 30, 4);
+      c.fillRect(cx - 4, top - 24, 4, 14);
+      c.fillStyle = '#cfd6dc'; c.fillRect(cx - 18, top - 26, 3, 16); c.fillRect(cx + 13, top - 26, 3, 16);
+      c.fillStyle = '#e8e2d2'; c.fillRect(cx - 15, top - 20, 28, 2);
+    } else if (art === 'schleuder') {
+      c.strokeStyle = '#8a7a5c'; c.lineWidth = 2;
+      c.beginPath(); c.arc(cx + 8, top - 26, 11, 0.2, 4.4); c.stroke();
+      c.fillStyle = '#6e6149'; c.fillRect(cx + 15, top - 30, 6, 6);
+    } else {
+      c.fillStyle = '#6b4a2a'; c.fillRect(cx + 10, top - 30, 3, 27);
+      c.fillStyle = '#e0503c'; c.fillRect(cx + 7, top - 39, 9, 10);
+      c.fillStyle = '#ffd166'; c.fillRect(cx + 9, top - 37, 5, 6);
+      c.fillStyle = 'rgba(255,180,60,0.35)'; c.fillRect(cx + 4, top - 43, 15, 16);
+    }
+  } else if (art === 'bergfried' || art === 'doppelturm' || art === 'graben') {
+    const top = Math.round(h * (art === 'bergfried' ? 0.06 : 0.18));
+    const bauen = (bx, bw, bt) => {
+      c.fillStyle = steinDunkel; c.fillRect(bx, bt, bw, boden - bt + 4);
+      c.fillStyle = stein; c.fillRect(bx, bt, bw, 5);
+      c.fillStyle = steinSchatten;
+      for (let y = bt + 7; y < boden; y += 7) c.fillRect(bx, y, bw, 1);
+      c.fillRect(bx + Math.round(bw / 2) - 2, bt + 11, 4, 8);
+      for (let x = bx; x < bx + bw; x += 8) { c.fillStyle = stein; c.fillRect(x, bt - 6, 5, 7); }
+    };
+    if (art === 'doppelturm') { bauen(8, 22, top + 8); bauen(w - 32, 22, top); }
+    else if (art === 'graben') {
+      bauen(Math.round(w / 2) - 13, 26, top);
+      c.fillStyle = '#3b6b86'; c.fillRect(0, boden + 2, w, 9);
+      c.fillStyle = '#5d97b4'; c.fillRect(0, boden + 2, w, 3);
+      c.fillStyle = 'rgba(255,255,255,0.25)';
+      for (let x = 3; x < w; x += 13) c.fillRect(x, boden + 5, 6, 1);
+    } else {
+      bauen(Math.round(w / 2) - 17, 34, top);
+      c.fillStyle = '#8e3f34';
+      c.beginPath(); c.moveTo(Math.round(w / 2) - 20, top - 6);
+      c.lineTo(Math.round(w / 2) + 20, top - 6); c.lineTo(Math.round(w / 2), top - 22);
+      c.closePath(); c.fill();
+    }
+  } else if (art === 'oel' || art === 'feuer') {
+    const cx = Math.round(w / 2);
+    if (art === 'oel') {
+      c.fillStyle = '#3a3a42'; c.fillRect(cx - 17, Math.round(h * 0.3), 34, 17);
+      c.fillStyle = '#55555f'; c.fillRect(cx - 17, Math.round(h * 0.3), 34, 4);
+      c.fillStyle = '#2a2a30'; c.fillRect(cx - 20, Math.round(h * 0.3) - 3, 40, 4);
+      for (let i = 0; i < 5; i++) {
+        c.fillStyle = i % 2 ? '#e0a63c' : '#c07a1e';
+        c.fillRect(cx - 14 + i * 7, Math.round(h * 0.3) + 18, 4, 12 + (i % 3) * 4);
+      }
+    } else {
+      c.fillStyle = 'rgba(60,20,10,0.5)'; c.fillRect(0, Math.round(h * 0.2), w, boden - Math.round(h * 0.2));
+      for (let i = 0; i < 7; i++) {
+        const fx = 5 + i * 16, fh = 16 + (i % 3) * 9;
+        c.fillStyle = '#c0392b'; c.fillRect(fx, boden - fh, 8, fh);
+        c.fillStyle = '#e07b30'; c.fillRect(fx + 1, boden - fh + 5, 6, fh - 5);
+        c.fillStyle = '#ffd166'; c.fillRect(fx + 2, boden - fh + 11, 4, fh - 11);
+      }
+    }
+  } else if (art === 'horn' || art === 'fahne') {
+    if (art === 'horn') {
+      const cx = Math.round(w / 2), cy = Math.round(h * 0.5);
+      c.strokeStyle = '#c9a15a'; c.lineWidth = 7; c.lineCap = 'round';
+      c.beginPath(); c.arc(cx, cy + 6, 15, 3.5, 5.8); c.stroke();
+      c.fillStyle = '#e0c184';
+      c.beginPath(); c.moveTo(cx + 13, cy - 8); c.lineTo(cx + 25, cy - 16);
+      c.lineTo(cx + 25, cy + 1); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,240,200,0.5)';
+      for (let i = 0; i < 3; i++) c.fillRect(cx - 30 + i * 4, cy - 12 - i * 4, 14 - i * 3, 2);
+    } else {
+      c.fillStyle = '#3a2c1c'; c.fillRect(Math.round(w / 2) - 16, 6, 3, h - 12);
+      c.fillStyle = '#8c2230';
+      c.fillRect(Math.round(w / 2) - 13, 8, 30, 26);
+      c.fillStyle = '#b0364a'; c.fillRect(Math.round(w / 2) - 13, 8, 30, 8);
+      c.fillStyle = '#e3b552';
+      c.fillRect(Math.round(w / 2) - 4, 16, 8, 8);
+      c.fillStyle = '#8c2230';
+      c.beginPath(); c.moveTo(Math.round(w / 2) - 13, 34); c.lineTo(Math.round(w / 2) + 2, 27);
+      c.lineTo(Math.round(w / 2) + 17, 34); c.closePath(); c.fill();
+    }
+  } else if (art === 'kette' || art === 'hammer') {
+    const cx = Math.round(w / 2), cy = Math.round(h * 0.48);
+    if (art === 'kette') {
+      c.strokeStyle = '#7d848c'; c.lineWidth = 3;
+      for (let i = 0; i < 5; i++) {
+        c.beginPath(); c.arc(cx - 32 + i * 16, cy + (i % 2 ? 5 : -5), 7, 0, 6.3); c.stroke();
+      }
+      c.fillStyle = 'rgba(220,230,240,0.3)'; c.fillRect(0, cy + 14, w, 2);
+    } else {
+      c.fillStyle = '#6b4a2a'; c.fillRect(cx - 3, cy - 6, 5, 26);
+      c.fillStyle = '#7d848c'; c.fillRect(cx - 16, cy - 16, 32, 13);
+      c.fillStyle = '#aab2ba'; c.fillRect(cx - 16, cy - 16, 32, 4);
+      c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(cx + 6, cy - 14, 4, 3);
+    }
+  } else if (art === 'beutel') {
+    const cx = Math.round(w / 2), cy = Math.round(h * 0.55);
+    c.fillStyle = '#7a5a34';
+    c.beginPath(); c.ellipse(cx, cy + 4, 17, 14, 0, 0, 6.3); c.fill();
+    c.fillStyle = '#9a7448'; c.fillRect(cx - 8, cy - 12, 16, 8);
+    c.fillStyle = '#5c4326'; c.fillRect(cx - 9, cy - 6, 18, 3);
+    for (const [dx, dy] of [[-22, 6], [20, 9], [-14, 14]]) {
+      c.fillStyle = '#e3b552'; c.beginPath(); c.arc(cx + dx, cy + dy, 5, 0, 6.3); c.fill();
+      c.fillStyle = '#fff0b8'; c.fillRect(cx + dx - 2, cy + dy - 3, 4, 2);
+    }
+  } else if (art === 'nacht') {
+    for (let y = 0; y < h; y++) { c.fillStyle = y < h * 0.75 ? '#1d2540' : '#141a2c'; c.fillRect(0, y, w, 1); }
+    for (let i = 0; i < 22; i++) {
+      const sx = Math.round(noise(i, 3) * w), sy = Math.round(noise(i * 2, 7) * h * 0.7);
+      c.fillStyle = i % 4 ? 'rgba(255,248,214,0.8)' : '#fff0b8';
+      c.fillRect(sx, sy, 1 + (i % 3 === 0 ? 1 : 0), 1);
+    }
+    c.fillStyle = '#f2e6bb'; c.beginPath(); c.arc(w - 18, 15, 8, 0, 6.3); c.fill();
+    c.fillStyle = '#1d2540'; c.beginPath(); c.arc(w - 22, 12, 8, 0, 6.3); c.fill();
+    c.fillStyle = '#2a2338';
+    c.beginPath(); c.moveTo(0, h); c.lineTo(0, h - 18); c.lineTo(16, h - 26);
+    c.lineTo(30, h - 14); c.lineTo(46, h - 22); c.lineTo(w, h - 12); c.lineTo(w, h); c.closePath(); c.fill();
+  } else if (art === 'balliste') {
+    const top = Math.round(h * 0.42);
+    c.fillStyle = steinDunkel; c.fillRect(0, boden - 6, w, 10);
+    const cx = Math.round(w / 2);
+    c.fillStyle = '#6b4a2a';
+    c.fillRect(cx - 24, top + 16, 48, 5);
+    c.fillRect(cx - 16, top + 20, 5, 14); c.fillRect(cx + 11, top + 20, 5, 14);
+    c.fillStyle = '#8a6238'; c.fillRect(cx - 30, top + 4, 60, 5);
+    c.fillStyle = '#cfd6dc'; c.fillRect(cx - 32, top - 2, 4, 16); c.fillRect(cx + 28, top - 2, 4, 16);
+    c.fillStyle = '#e8e2d2'; c.fillRect(cx - 29, top + 6, 58, 2);
+    c.fillStyle = '#4a3a28'; c.fillRect(cx - 2, top - 6, 5, 22);
+    c.fillStyle = '#cfd6dc';
+    c.beginPath(); c.moveTo(cx + 0.5, top - 14); c.lineTo(cx + 5, top - 5); c.lineTo(cx - 4, top - 5);
+    c.closePath(); c.fill();
   } else if (art === 'krone') {
     for (let y = 0; y < h; y++) { c.fillStyle = y < h * 0.7 ? '#3b2f4d' : '#2a2136'; c.fillRect(0, y, w, 1); }
     const cx = Math.round(w / 2), by = Math.round(h * 0.64);
@@ -2692,7 +3177,7 @@ canvas.addEventListener('mousemove', (evt) => {
   const p = canvasPoint(evt);
   state.hoverCell = cellFromPoint(p);
   const treffer = pickAt(p);
-  canvas.style.cursor = treffer || (state.pendingCard && state.pendingCard.type === 'Gebäude')
+  canvas.style.cursor = treffer || (state.pendingCard && zielArt(state.pendingCard) === 'feld')
     ? 'pointer' : 'default';
 });
 
@@ -2709,11 +3194,20 @@ canvas.addEventListener('click', (evt) => {
   if (!state.pendingCard) { handleSelectionClick(treffer, cell); return; }
 
   state.selectedTower = null;
+  const ziel = zielArt(state.pendingCard);
 
-  if (state.pendingCard.type === 'Gebäude') {
+  if (ziel === 'feld') {
     if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) placeTower(cell.col, cell.row);
     else setMessage('Hier kann kein Turm stehen.');
     renderAll();
+    return;
+  }
+
+  if (ziel === 'gegner') {
+    const gegner = treffer && treffer.art === 'enemy' ? treffer.ref
+      : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
+    if (!gegner) { setMessage('Dort steht kein Gegner.'); renderAll(); return; }
+    wendeKarteAn({ gegner });
     return;
   }
 
@@ -2721,14 +3215,16 @@ canvas.addEventListener('click', (evt) => {
     : state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
   if (!tower) return;
 
-  if (state.pendingCard.type === 'Einheit') {
+  if (ziel === 'turmFrei') {
     const slotIdx = tower.slots.findIndex(s => s === null);
     if (slotIdx === -1) { setMessage('Dieser Turm hat keinen freien Platz.'); renderAll(); return; }
     placeUnit(tower, slotIdx);
-  } else if (state.pendingCard.type === 'Fähigkeit') {
+  } else if (ziel === 'einheit') {
     const slotIdx = tower.slots.findIndex(s => s !== null);
     if (slotIdx === -1) { setMessage('Auf diesem Turm steht keine Einheit.'); renderAll(); return; }
-    applyAbility(tower, slotIdx);
+    wendeKarteAn({ turm: tower, einheit: tower.slots[slotIdx] });
+  } else if (ziel === 'turm') {
+    wendeKarteAn({ turm: tower });
   }
 });
 
@@ -2829,51 +3325,261 @@ function attackWithTower(tower, enemy) {
   staub(ex, ey, 5, '#e8d5a8');
   klang('schuss');
 
-  if (enemy.hp <= 0) {
-    leichen.push({ vx: ex, vy: ey, typ: enemy.typ, t: 0, dauer: 0.65 });
-    state.enemies = state.enemies.filter(e => e !== enemy);
-    setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
-    if (rundeGewonnen()) { beginneBelohnung(); return; }
-  } else {
-    setMessage(tower.name + ' trifft ' + enemy.name + ' für ' + schaden + ' Schaden' + salve +
+  const gefallen = raeumeGefallene(enemy);
+  if (gefallen) setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
+  else setMessage(tower.name + ' trifft ' + enemy.name + ' für ' + schaden + ' Schaden' + salve +
       ' (' + enemy.hp + '/' + enemy.maxHp + ' LP übrig).');
+
+  // Durchschlag: Die Salve reisst weiter, wenn eine Einheit darauf aus ist.
+  const durch = towerUnits(tower).reduce((m, u) => Math.max(m, u.durchschlag || 0), 0);
+  if (durch > 0) {
+    const streu = Math.max(1, Math.floor(schaden / 2));
+    const weitere = state.enemies
+      .filter(e => e !== enemy && distanceTo(tower, e) <= towerReach(tower))
+      .sort((a, b) => distanceTo(tower, a) - distanceTo(tower, b))
+      .slice(0, durch);
+    for (const w of weitere) treffeGegner(w, streu, tower.name);
   }
+
+  if (rundeGewonnen()) { beginneBelohnung(); return; }
   renderAll();
+}
+
+/**
+ * Nimmt einem Gegner Lebenspunkte, zeigt es an und raeumt ihn weg, wenn er
+ * faellt. Alles, was Schaden macht, laeuft hier durch: Salven, Karten, Feuer.
+ */
+function treffeGegner(e, schaden, quelle) {
+  if (schaden <= 0 || !state.enemies.includes(e)) return false;
+  e.hp -= schaden;
+  e.blitz = 1;
+  e.stoss = 1;
+  const ex = e.vx === undefined ? e.col : e.vx;
+  const ey = e.vy === undefined ? e.row : e.vy;
+  zeigeZahl(ex, ey, '-' + schaden, '#ffd166');
+  staub(ex, ey, 4, '#e8d5a8');
+  return raeumeGefallene(e);
+}
+
+/** Traegt einen Gegner aus, wenn seine Lebenspunkte aufgebraucht sind. */
+function raeumeGefallene(e) {
+  if (e.hp > 0) return false;
+  const ex = e.vx === undefined ? e.col : e.vx;
+  const ey = e.vy === undefined ? e.row : e.vy;
+  leichen.push({ vx: ex, vy: ey, typ: e.typ, t: 0, dauer: 0.65 });
+  state.enemies = state.enemies.filter(x => x !== e);
+  return true;
 }
 
 // ============================================================
 //  Spielzuege
 // ============================================================
+/**
+ * Wohin eine Karte zielt. Der Kartentyp allein reicht nicht mehr: Eine
+ * Fähigkeit kann eine Einheit verstärken, einen Turm flicken oder einem
+ * Gegner wehtun. Null heisst: wirkt sofort, ohne Ziel.
+ */
+function zielArt(card) {
+  if (card.type === 'Gebäude') return 'feld';
+  if (card.type === 'Einheit') return 'turmFrei';
+  const w = card.sofort || {};
+  if (w.schaden || w.stoss || w.fessel) return 'gegner';
+  if (w.flicke) return 'turm';
+  if (card.plus) return 'einheit';
+  return null;
+}
+
+/** Gibt es ueberhaupt ein Ziel fuer diese Karte? */
+function hatZiel(card) {
+  switch (zielArt(card)) {
+    case 'feld': return freiesBaufeld();
+    case 'turmFrei': return anyTowerWithFreeSlot();
+    case 'turm': return state.towers.length > 0;
+    case 'einheit': return anyTowerWithUnit();
+    case 'gegner': return state.enemies.length > 0;
+    default:
+      // Eine Macht, die Tuerme verstaerkt, braucht wenigstens einen.
+      const m = card.macht || {};
+      if (m.allePlaetze || m.turmLeben) return state.towers.length > 0;
+      return true;
+  }
+}
+
+/** Steht irgendwo noch Platz fuer einen Turm? */
+function freiesBaufeld() {
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) if (isValidTowerPlacement(c, r, 2, 2)) return true;
+  }
+  return false;
+}
+
+function spielbar(card) {
+  return state.phase === 'kampf' && state.castleHp > 0 &&
+    state.tatendrang >= card.cost && hatZiel(card);
+}
+
+const ZIEL_TEXT = {
+  feld: 'Wähle ein freies Feld.',
+  turmFrei: 'Wähle einen Turm mit freiem Platz.',
+  turm: 'Wähle einen Turm.',
+  einheit: 'Wähle eine Turm-Einheit.',
+  gegner: 'Wähle einen Gegner.',
+};
+
 function playCard(card) {
-  if (card.type === 'Gebäude') {
+  if (state.tatendrang < card.cost) { setMessage('Nicht genug Tatendrang für ' + card.name + '.'); return; }
+  if (!hatZiel(card)) { setMessage(card.name + ' findet gerade kein Ziel.'); return; }
+
+  const ziel = zielArt(card);
+  if (ziel) {
     state.pendingCard = card;
-    setMessage('Wähle eine Position für ' + card.name + ' auf dem Feld.');
-  } else if (card.type === 'Einheit') {
-    if (!anyTowerWithFreeSlot()) { setMessage('Braucht einen Turm mit freiem Platz!'); return; }
-    state.pendingCard = card;
-    setMessage('Wähle einen Turm für ' + card.name + '.');
-  } else if (card.type === 'Fähigkeit') {
-    if (!anyTowerWithUnit()) { setMessage('Keine Einheit auf dem Feld, die verstärkt werden könnte.'); return; }
-    state.pendingCard = card;
-    setMessage('Wähle eine Turm-Einheit für ' + card.name + '.');
-  } else if (card.type === 'Macht') {
-    if (state.towers.length === 0) { setMessage('Kein Turm errichtet, den die Krone erhöhen könnte.'); return; }
-    state.tatendrang -= card.cost;
-    state.towers.forEach(t => t.slots.push(null));
+    setMessage(card.name + ': ' + ZIEL_TEXT[ziel]);
+  } else {
+    bezahle(card);
+    const bericht = wirke(card, null);
     removeFromHand(card);
-    setMessage(card.name + ' wirkt: alle Türme erhalten einen zusätzlichen Platz.');
+    state.pendingCard = null;
+    setMessage(card.name + (bericht ? ': ' + bericht : ' wirkt.'));
+    if (rundeGewonnen()) { beginneBelohnung(); return; }
   }
   renderAll();
 }
 
+function bezahle(card) { state.tatendrang -= card.cost; }
+
+/**
+ * Loest alles aus, was eine Karte an Wirkung mitbringt, und gibt einen Satz
+ * zurueck, der in der Meldezeile landet. `ziel` ist ein Turm, eine Einheit
+ * oder ein Gegner, je nach zielArt.
+ */
+function wirke(card, ziel) {
+  const w = card.sofort || {};
+  const m = card.macht || null;
+  const teile = [];
+
+  if (w.ziehe) {
+    const { drawn, reshuffled } = drawCards(w.ziehe);
+    teile.push(drawn + ' nachgezogen' + (reshuffled ? ', Ablage gemischt' : ''));
+  }
+  if (w.tatendrang) {
+    state.tatendrang += w.tatendrang;
+    teile.push('+' + w.tatendrang + ' Tatendrang');
+  }
+  if (w.heileBurg) {
+    const g = heileBurg(w.heileBurg);
+    teile.push(g > 0 ? '+' + g + ' Burg' : 'die Burg steht schon fest');
+  }
+  if (w.sold) { state.sold += w.sold; teile.push('+' + w.sold + ' Sold'); }
+
+  if (w.flicke && ziel && ziel.turm) {
+    const t = ziel.turm;
+    const vorher = t.hp;
+    t.hp = Math.min(t.maxHp, t.hp + w.flicke);
+    staub(t.col + 1, t.row + 1, 8, '#d8c4a0');
+    teile.push(t.name + ' +' + (t.hp - vorher) + ' LP');
+  }
+  if (w.turmSchild && ziel && ziel.turm) {
+    ziel.turm.maxHp += w.turmSchild;
+    ziel.turm.hp += w.turmSchild;
+    teile.push(ziel.turm.name + ' hält ' + w.turmSchild + ' mehr aus');
+  }
+
+  if (w.schaden && ziel && ziel.gegner) {
+    const g = ziel.gegner;
+    const name = g.name;
+    zeigePfeil(CASTLE.col + CASTLE.w, CASTLE.row + CASTLE.h / 2,
+      g.vx === undefined ? g.col : g.vx, g.vy === undefined ? g.row : g.vy, '#ffb347');
+    const tot = treffeGegner(g, w.schaden, card.name);
+    teile.push(tot ? name + ' fällt' : name + ' nimmt ' + w.schaden + ' Schaden');
+  }
+  if (w.flaeche) {
+    let getroffen = 0, gefallen = 0;
+    for (const e of state.enemies.slice()) {
+      getroffen++;
+      if (treffeGegner(e, w.flaeche, card.name)) gefallen++;
+    }
+    teile.push(getroffen + ' Gegner getroffen' + (gefallen ? ', ' + gefallen + ' gefallen' : ''));
+    ruetteln(6);
+  }
+  if (w.stoss && ziel && ziel.gegner) {
+    const weit = stosseZurueck(ziel.gegner, w.stoss);
+    teile.push(weit > 0 ? ziel.gegner.name + ' weicht ' + weit + ' Felder zurück'
+      : ziel.gegner.name + ' steht fest');
+  }
+  if (w.fessel && ziel && ziel.gegner) {
+    ziel.gegner.gefesselt = (ziel.gegner.gefesselt || 0) + w.fessel;
+    teile.push(ziel.gegner.name + ' setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
+  }
+
+  if (card.plus && ziel && ziel.einheit) {
+    const u = ziel.einheit;
+    if (card.plus.dmg) u.dmg += card.plus.dmg;
+    if (card.plus.range) u.range += card.plus.range;
+    if (card.plus.durchschlag) u.durchschlag = (u.durchschlag || 0) + card.plus.durchschlag;
+    u.boosted = true;
+    const p = [];
+    if (card.plus.dmg) p.push('+' + card.plus.dmg + ' Schaden');
+    if (card.plus.range) p.push('+' + card.plus.range + ' Reichweite');
+    if (card.plus.durchschlag) p.push('Durchschlag');
+    teile.push(u.name + ' ' + p.join(', '));
+  }
+
+  if (m) teile.push(wendeMachtAn(m));
+  return teile.filter(Boolean).join(' · ');
+}
+
+/** Traegt eine anhaltende Macht ein und wendet sie auf das an, was schon steht. */
+function wendeMachtAn(m) {
+  const teile = [];
+  for (const k in m) state.maechte[k] = (state.maechte[k] || 0) + m[k];
+
+  if (m.allePlaetze) {
+    for (const t of state.towers) for (let i = 0; i < m.allePlaetze; i++) t.slots.push(null);
+    teile.push('alle Türme +' + m.allePlaetze + ' Platz');
+  }
+  if (m.turmLeben) {
+    for (const t of state.towers) { t.maxHp += m.turmLeben; t.hp += m.turmLeben; }
+    teile.push('alle Türme +' + m.turmLeben + ' LP');
+  }
+  if (m.tatendrangDauer) {
+    state.maxTatendrang += m.tatendrangDauer;
+    state.tatendrang += m.tatendrangDauer;
+    teile.push('+' + m.tatendrangDauer + ' Tatendrang je Zug');
+  }
+  if (m.alleSchaden) teile.push('alle Einheiten +' + m.alleSchaden + ' Schaden');
+  if (m.alleReichweite) teile.push('alle Einheiten +' + m.alleReichweite + ' Reichweite');
+  if (m.handKarten) teile.push('+' + m.handKarten + ' Karte je Zug');
+  if (m.dornen) teile.push('Dornen ' + state.maechte.dornen);
+  return teile.join(' · ');
+}
+
+/** Schiebt einen Gegner nach hinten, so weit freier Boden das zulaesst. */
+function stosseZurueck(e, felder) {
+  let weit = 0;
+  for (let i = 0; i < felder; i++) {
+    const ziel = e.col + 1;
+    if (ziel >= COLS || blockiert(ziel, e.row) ||
+        state.enemies.some(x => x !== e && x.col === ziel && x.row === e.row)) break;
+    e.col = ziel;
+    weit++;
+  }
+  if (weit) { e.stoss = 1; staub(e.col, e.row, 5, '#cbb896'); }
+  return weit;
+}
+
 function placeTower(col, row) {
   const card = state.pendingCard;
-  state.tatendrang -= card.cost;
-  state.towers.push({
+  bezahle(card);
+  const plaetze = (card.plaetze || 1) + (state.maechte.allePlaetze || 0);
+  const turm = {
     id: state.nextTowerId++, name: card.name, col, row, w: 2, h: 2,
-    hp: card.hp, maxHp: card.hp, rangeBonus: card.rangeBonus || 0, slots: [null],
+    hp: card.hp + (state.maechte.turmLeben || 0),
+    maxHp: card.hp + (state.maechte.turmLeben || 0),
+    rangeBonus: card.rangeBonus || 0,
+    slots: new Array(plaetze).fill(null),
     bauZeit: wenigerBewegung ? BAU_DAUER : 0, rueckstoss: 0,
-  });
+  };
+  state.towers.push(turm);
   staub(col + 1, row + 1, 18, '#d8c4a0');
   ruetteln(4);
   klang('bau');
@@ -2881,29 +3587,41 @@ function placeTower(col, row) {
   state.pendingCard = null;
   state.hoverCell = null;
   state.selectedTower = null;
-  setMessage(card.name + ' errichtet.');
+  const zusatz = wirke(card, { turm });
+  setMessage(card.name + ' errichtet' + (zusatz ? ': ' + zusatz : '.'));
+  if (rundeGewonnen()) { beginneBelohnung(); return; }
   renderAll();
 }
 
 function placeUnit(tower, slotIdx) {
   const card = state.pendingCard;
-  state.tatendrang -= card.cost;
-  tower.slots[slotIdx] = { name: card.name, dmg: card.dmg, range: card.range, boosted: false };
+  bezahle(card);
+  const einheit = {
+    name: card.name, dmg: card.dmg, range: card.range,
+    durchschlag: card.durchschlag || 0, boosted: false,
+  };
+  tower.slots[slotIdx] = einheit;
+  if (card.zaeh) { tower.maxHp += card.zaeh; tower.hp += card.zaeh; }
   removeFromHand(card);
   state.pendingCard = null;
-  setMessage(card.name + ' bezieht Stellung auf ' + tower.name + '.');
+  const zusatz = wirke(card, { turm: tower, einheit });
+  setMessage(card.name + ' bezieht Stellung auf ' + tower.name +
+    (card.zaeh ? ' und verstärkt ihn um ' + card.zaeh + ' LP' : '') +
+    (zusatz ? ': ' + zusatz : '.'));
+  if (rundeGewonnen()) { beginneBelohnung(); return; }
   renderAll();
 }
 
-function applyAbility(tower, slotIdx) {
+/** Eine Fähigkeit auf ein gewaehltes Ziel anwenden. */
+function wendeKarteAn(ziel) {
   const card = state.pendingCard;
-  const unit = tower.slots[slotIdx];
-  state.tatendrang -= card.cost;
-  unit.dmg += 1;
-  unit.boosted = true;
+  bezahle(card);
   removeFromHand(card);
   state.pendingCard = null;
-  setMessage(card.name + ' verstärkt ' + unit.name + ' (+1 Schaden).');
+  const bericht = wirke(card, ziel);
+  klang('karte');
+  setMessage(card.name + (bericht ? ': ' + bericht : ' wirkt.'));
+  if (rundeGewonnen()) { beginneBelohnung(); return; }
   renderAll();
 }
 
@@ -2944,6 +3662,14 @@ function resolveEnemyTurn() {
   const meldungen = [];
 
   for (const e of [...state.enemies]) {
+    // Gefesselt heisst: Der Gegner steht und tut in diesem Zug gar nichts.
+    if (e.gefesselt > 0) {
+      e.gefesselt--;
+      staub(e.col, e.row, 3, '#9fb6d0');
+      meldungen.push(e.name + ' kommt nicht vom Fleck');
+      continue;
+    }
+
     const plan = enemyPlan(e);
 
     // Bewegen oder schlagen, nie beides in derselben Runde.
@@ -2963,6 +3689,12 @@ function resolveEnemyTurn() {
       const turm = plan.turm;
       turm.hp -= e.dmg;
       zeigeZahl(turm.col + turm.w / 2, turm.row + turm.h / 2, '-' + e.dmg, '#ff8b6b');
+      // Dornen: Wer sich am Mauerwerk vergreift, zahlt dafuer.
+      if (state.maechte.dornen) {
+        if (treffeGegner(e, state.maechte.dornen, 'Dornen')) {
+          meldungen.push(e.name + ' verblutet an den Dornen');
+        }
+      }
       staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, '#cbbc98');
       ruetteln(3);
       klang('treffer');
@@ -3021,7 +3753,9 @@ function betreteKnoten(id) {
   leichen.length = 0;
   projektile.length = 0;
   staubkoerner.length = 0;
+  mauerWerk = { schluessel: '', stuecke: [] };
 
+  state.maechte = {};
   state.maxTatendrang = maxTatendrangFuer(state.runde);
   state.tatendrang = state.maxTatendrang;
   state.zug = 1;
@@ -3037,7 +3771,7 @@ function betreteKnoten(id) {
     state.lagerStaerke = k.typ;
     state.lager = buildRoster(state.runde, k.typ);
     state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
-    drawCards(HAND_SIZE);
+    drawCards(handGroesse());
     deployFromLager();
     zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
     klang('runde');
@@ -3104,6 +3838,7 @@ function neuerFeldzug(stufe) {
   leichen.length = 0;
   projektile.length = 0;
   state.route = baueRoute();
+  state.maechte = {};
   state.letzterSold = 0;
   state.letztesEreignis = null;
   state.haendler = [];
@@ -3186,9 +3921,17 @@ function nimmBelohnung(proto) {
   weiterAufDerRoute();
 }
 
-/** Erzeugt ein Exemplar einer Karte mit eigener Kennung. */
+/**
+ * Erzeugt ein Exemplar einer Karte mit eigener Kennung. `sofort`, `macht` und
+ * `plus` werden mitkopiert: Sonst zeigten alle Exemplare auf dasselbe Objekt
+ * und ein einziges Schaerfen wuerde den ganzen Stapel veraendern.
+ */
 function neueKarte(proto) {
-  return { ...proto, uid: proto.id + '#' + (state.nextCardId = (state.nextCardId || 0) + 1), stufe: proto.stufe || 0 };
+  const karte = { ...proto, uid: proto.id + '#' + (state.nextCardId = (state.nextCardId || 0) + 1), stufe: proto.stufe || 0 };
+  if (proto.sofort) karte.sofort = { ...proto.sofort };
+  if (proto.macht) karte.macht = { ...proto.macht };
+  if (proto.plus) karte.plus = { ...proto.plus };
+  return karte;
 }
 
 // ============================================================
@@ -3222,12 +3965,52 @@ function schaerfeKarte(c) {
   if (!kannSchaerfen(c)) return c;
   c.stufe = (c.stufe || 0) + 1;
   let verbessert = false;
-  if (c.dmg) { c.dmg += 1; verbessert = true; }
-  if (c.hp) { c.hp += 2; verbessert = true; }
-  if (c.range) { c.range += 1; verbessert = true; }
-  if (c.rangeBonus) { c.rangeBonus += 1; verbessert = true; }
-  if (!verbessert && c.cost > 0) c.cost -= 1;
+  const hebe = (obj, feld, um) => {
+    if (obj && obj[feld]) { obj[feld] += um; verbessert = true; }
+  };
+
+  if (c.type === 'Macht') {
+    // Eine Macht um einen Punkt zu heben waere zu viel. Sie wird billiger.
+    if (c.cost > 0) { c.cost -= 1; verbessert = true; }
+    else { hebe(c.macht, 'alleSchaden', 1); hebe(c.macht, 'handKarten', 1); }
+  } else {
+    hebe(c, 'dmg', 1);
+    hebe(c, 'hp', 2);
+    hebe(c, 'range', 1);
+    hebe(c, 'rangeBonus', 1);
+    hebe(c, 'zaeh', 1);
+    hebe(c, 'durchschlag', 1);
+    hebe(c.plus, 'dmg', 1);
+    hebe(c.plus, 'range', 1);
+    hebe(c.sofort, 'schaden', 2);
+    hebe(c.sofort, 'flaeche', 1);
+    hebe(c.sofort, 'flicke', 3);
+    hebe(c.sofort, 'turmSchild', 2);
+    hebe(c.sofort, 'heileBurg', 2);
+    hebe(c.sofort, 'ziehe', 1);
+    hebe(c.sofort, 'tatendrang', 1);
+    hebe(c.sofort, 'sold', 15);
+    hebe(c.sofort, 'fessel', 1);
+    hebe(c.sofort, 'stoss', 2);
+  }
+
+  if (!verbessert && c.cost > 0) { c.cost -= 1; verbessert = true; }
+  bezahlbarkeitSichern(c);
   if (!c.name.endsWith('+')) c.name += '+';
+  return c;
+}
+
+/**
+ * Wer nachzieht, muss dafuer bezahlen. Eine Karte, die sich ihren eigenen
+ * Tatendrang zurueckgibt und dabei zieht, holt sich nach dem Mischen selbst
+ * wieder auf die Hand: Der Zug hoerte dann nie auf. Diese Sicherung gilt fuer
+ * jede Karte, auch fuer spaeter hinzugefuegte.
+ */
+function bezahlbarkeitSichern(c) {
+  const zieht = (c.sofort && c.sofort.ziehe) || (c.macht && c.macht.handKarten);
+  if (!zieht || c.dmg || c.hp) return c;
+  const netto = c.cost - ((c.sofort && c.sofort.tatendrang) || 0);
+  if (netto < 1) c.cost += 1 - netto;
   return c;
 }
 
@@ -3600,7 +4383,7 @@ function endTurn() {
   const abgelegt = state.hand.length;
   state.discard.push(...state.hand);
   state.hand = [];
-  const { drawn, reshuffled } = drawCards(HAND_SIZE);
+  const { drawn, reshuffled } = drawCards(handGroesse());
 
   state.zug += 1;
   state.tatendrang = state.maxTatendrang;
@@ -3668,6 +4451,57 @@ const FARBTON = {
   'Macht':     ['#d9a435', '#96690f'],
 };
 
+/**
+ * Die harten Zahlen einer Karte als Pillen. Abgeleitet statt abgeschrieben:
+ * So kann der Text nie von der Wirkung abweichen, auch nach dem Schaerfen.
+ */
+function kartenWerte(card) {
+  const werte = [];
+  if (card.dmg) werte.push(['schaden', '\u2694 ' + card.dmg]);
+  if (card.range) werte.push(['reich', '\u27a4 ' + card.range]);
+  if (card.hp) werte.push(['leben', '\u2665 ' + card.hp]);
+  if (card.rangeBonus) werte.push(['hoehe', '\u25b2 +' + card.rangeBonus]);
+  if (card.plaetze > 1) werte.push(['platz', '\u2302 ' + card.plaetze]);
+  if (card.zaeh) werte.push(['leben', '\u271a ' + card.zaeh]);
+  if (card.durchschlag) werte.push(['durch', '\u21c9 ' + card.durchschlag]);
+  return werte;
+}
+
+/** Was die Karte tut, in einem Satz. */
+function karteRegel(card) {
+  const teile = [];
+  const w = card.sofort || {};
+  const m = card.macht || {};
+  const p = card.plus || {};
+
+  if (p.dmg) teile.push('Einheit +' + p.dmg + ' Schaden');
+  if (p.range) teile.push('Einheit +' + p.range + ' Reichweite');
+  if (p.durchschlag) teile.push('Einheit erhält Durchschlag');
+
+  if (w.schaden) teile.push(w.schaden + ' Schaden auf einen Gegner');
+  if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
+  if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
+  if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
+  if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
+  if (w.turmSchild) teile.push('Turm +' + w.turmSchild + ' Leben dauerhaft');
+  if (w.heileBurg) teile.push('Burg +' + w.heileBurg);
+  if (w.ziehe) teile.push('zieht ' + w.ziehe + ' Karte' + (w.ziehe === 1 ? '' : 'n'));
+  if (w.tatendrang) teile.push('+' + w.tatendrang + ' Tatendrang');
+  if (w.sold) teile.push('+' + w.sold + ' Sold');
+
+  if (m.alleSchaden) teile.push('alle Einheiten +' + m.alleSchaden + ' Schaden');
+  if (m.alleReichweite) teile.push('alle Einheiten +' + m.alleReichweite + ' Reichweite');
+  if (m.allePlaetze) teile.push('alle Türme +' + m.allePlaetze + ' Platz');
+  if (m.turmLeben) teile.push('alle Türme +' + m.turmLeben + ' Leben');
+  if (m.handKarten) teile.push('+' + m.handKarten + ' Karte je Zug');
+  if (m.tatendrangDauer) teile.push('+' + m.tatendrangDauer + ' Tatendrang je Zug');
+  if (m.dornen) teile.push('Angreifer nehmen ' + m.dornen + ' Schaden');
+
+  if (!teile.length) return '';
+  const satz = teile.join(', ');
+  return satz.charAt(0).toUpperCase() + satz.slice(1) + '.';
+}
+
 /** Baut die Darstellung einer Karte samt Halter. */
 function cardElement(card, { disabled = false, selected = false, onClick = null } = {}) {
   const slot = document.createElement('div');
@@ -3709,16 +4543,25 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   fassung.appendChild(art);
   el.appendChild(fassung);
 
-  const werte = [];
-  if (card.dmg) werte.push(['schaden', '⚔ ' + card.dmg]);
-  if (card.range) werte.push(['reich', '➤ ' + card.range]);
-  if (card.hp) werte.push(['leben', '♥ ' + card.hp]);
-  if (card.rangeBonus) werte.push(['hoehe', '▲ +' + card.rangeBonus]);
+  const werte = kartenWerte(card);
   if (werte.length) {
     const leiste = document.createElement('div');
     leiste.className = 'card-stats';
-    leiste.innerHTML = werte.map(([k, t]) => '<span class="pill ' + k + '">' + t + '</span>').join('');
+    for (const [k, t] of werte) {
+      const pille = document.createElement('span');
+      pille.className = 'pill ' + k;
+      pille.textContent = t;
+      leiste.appendChild(pille);
+    }
     el.appendChild(leiste);
+  }
+
+  const regel = karteRegel(card);
+  if (regel) {
+    const rz = document.createElement('div');
+    rz.className = 'card-rule';
+    rz.textContent = regel;
+    el.appendChild(rz);
   }
 
   const txt = document.createElement('div');
@@ -3756,11 +4599,7 @@ function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   state.hand.forEach((card, i) => {
-    const canAfford = state.tatendrang >= card.cost;
-    let disabled = !canAfford || state.castleHp <= 0 || state.phase !== 'kampf';
-    if (card.type === 'Einheit' && !anyTowerWithFreeSlot()) disabled = true;
-    if (card.type === 'Fähigkeit' && !anyTowerWithUnit()) disabled = true;
-    if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
+    const disabled = !spielbar(card);
 
     const el = cardElement(card, {
       disabled,

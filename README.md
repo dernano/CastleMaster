@@ -194,25 +194,60 @@ Lebenspunkte und mindestens einen Platz für eine Einheit.
 
 ## Karten
 
-| Farbe | Typ | Wirkung |
-| --- | --- | --- |
-| 🌰 Eichel | Gebäude | Turm auf ein freies Feld, bringt Lebenspunkte und Reichweite mit |
-| ❤ Herz | Einheit | besetzt einen Turmplatz, hat Schaden und Reichweite |
-| 🍃 Blatt | Fähigkeit | verstärkt eine Einheit um 1 Schaden |
-| 🔔 Schellen | Macht | globaler Effekt, gibt allen Türmen einen Platz |
+75 Karten, alle im Lauf kaufbar. Es gibt keinen gesperrten Teil des Stapels und
+keine sichtbare Einteilung in Spielrichtungen: Womit du skalierst, entscheidest
+du selbst.
 
-| Karte | Typ | Kosten | Werte |
+| Farbe | Zeichen | Typ | Anzahl |
 | --- | --- | --- | --- |
-| Wachturm | Gebäude | 2 | 6 Turm-LP, +2 Reichweite |
-| Palisade | Gebäude | 1 | 3 Turm-LP, +1 Reichweite |
-| Waldläufer | Einheit | 1 | 2 Schaden, Reichweite 3 |
-| Bogenschütze | Einheit | 2 | 3 Schaden, Reichweite 5 |
-| Sturmwind | Fähigkeit | 1 | +1 Schaden auf eine Einheit |
-| Krone der Belagerung | Macht | 3 | ein Platz für jeden Turm |
+| Eichel | 🌰 | Gebäude | 18 |
+| Herz | ❤ | Einheit | 25 |
+| Blatt | 🍃 | Fähigkeit | 20 |
+| Schellen | 🔔 | Macht | 12 |
 
-Die Höhe des Gebäudes verlängert die Reichweite seiner Besatzung. Ein
-Bogenschütze auf einem Wachturm kommt auf 7, auf einer Palisade nur auf 6. Wo
-eine Einheit steht, ist deshalb genauso wichtig wie welche Einheit es ist.
+**Gebäude** werden auf ein freies Feld gesetzt. Sie haben Lebenspunkte, oft
+eine Höhe (`rangeBonus`), die die Reichweite ihrer Besatzung verlängert, und
+manche zwei Plätze statt einem.
+
+**Einheiten** beziehen einen freien Platz auf einem Turm. Neben Schaden und
+Reichweite können sie den Turm härten (`zaeh`) oder Durchschlag mitbringen:
+Dann reißt die Salve auch den nächststehenden Gegner mit, für halben Schaden.
+
+**Fähigkeiten** verstärken entweder eine Einheit dauerhaft oder wirken einmalig:
+Schaden auf einen Gegner oder auf alle, einen Gegner fesseln oder zurückstoßen,
+einen Turm flicken oder verstärken, nachziehen, Tatendrang oder Sold.
+
+**Mächte** halten bis zum Ende der Station: mehr Schaden oder Reichweite für
+alle Einheiten, ein zusätzlicher Platz oder mehr Leben auf allen Türmen, eine
+Karte oder ein Tatendrang mehr je Zug, oder Dornen, an denen sich jeder
+Angreifer verletzt.
+
+Was eine Karte tut, steht als Regelzeile auf ihr und wird aus ihren Feldern
+abgeleitet, nicht danebengeschrieben. Nach dem Schärfen stimmt sie deshalb
+weiter.
+
+### Eine Karte, die nachzieht, muss etwas kosten
+
+Eine Karte, die sich ihren eigenen Tatendrang zurückgibt und dabei nachzieht,
+holt sich nach dem Mischen des Ablagestapels selbst wieder auf die Hand. Der
+Zug endet dann nie. `bezahlbarkeitSichern` erzwingt deshalb für jede Karte
+Nettokosten von mindestens einem Tatendrang, sowohl beim Laden des Stapels als
+auch nach jedem Schärfen.
+
+## Die Zier-Mauer
+
+Sobald der erste Turm steht, schließt sich eine Mauer um Burg und Türme. Sie
+kostet nichts, hat keine Lebenspunkte und hält niemanden auf: Gegner laufen
+weiterhin auf den nächsten Turm zu und danach weiter. Sie ist reine Zier.
+
+Gebaut wird sie so: Um alle Grundflächen wird die konvexe Hülle gelegt, alle
+Felder darin bilden den Hof. Über jede Kante eines Hoffeldes, hinter der kein
+Hof mehr liegt, läuft ein Stück Mauer. Kanten an Bauwerken bleiben frei, dort
+ist das Bauwerk selbst die Mauer. Kommt ein Turm dazu, wächst die Mauer von
+selbst dorthin; die neuen Stücke steigen aus dem Boden auf wie die Türme.
+
+Gerechnet wird nur, wenn sich die Türme geändert haben, nicht bei jedem
+Bildaufbau.
 
 ## Angreifen
 
@@ -303,18 +338,15 @@ Zum Justieren stehen oben im Skript `STATIONEN`, `feldzugHaerte`,
 `belagerungsHp`, `belagerungsSchaden`, `SOLD_JE_STATION`, `SOLD_VORHUT`,
 `PREIS_ENTFERNEN` und `PREIS_SCHAERFEN`.
 
-Zwölf Testläufe mit einfacher Spielweise endeten viermal bestanden und sonst an
-den Stationen 6, 10, 10, 11, 13, 14, 15 und 15. Verloren wird fast immer an
-einer Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
+Vierzehn Testläufe mit einfacher Spielweise endeten fünfmal bestanden und sonst
+an den Stationen 7, 7, 7, 9, 10, 11, 12, 15 und 15. Verloren wird meist an einer
+Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 
 ## Was noch fehlt
 
-- **Kleiner Kartenpool.** Auslagen und Belohnungen bieten dieselben sechs
-  Karten an, die es auch im Startdeck gibt. Geplant sind 75, alle im Durchgang
-  kaufbar.
-- **Keine Zier-Mauer.** Sobald der erste Turm steht, soll sich automatisch eine
-  Mauer um Burg und Türme schließen. Sie hält nichts auf und hat keine
-  Lebenspunkte, sie soll nur hübsch aussehen.
+- **Wenig Ton.** Die neuen Kartenwirkungen klingen alle gleich.
+- **Keine eigenen Bilder.** Alles ist im Code gezeichnet; eingespielte Grafiken
+  und Klänge fehlen noch.
 - **Gegner weichen Mauern nur einfach aus.** Sie prüfen das nächste Feld, sie
   suchen keinen Weg um eine lange Mauer herum.
 
@@ -328,7 +360,10 @@ Spiellogik: `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 des Feldzugs, `betreteKnoten` und `weiterAufDerRoute` für den Ablauf einer
 Station, `oeffneHaendler`, `oeffneRast` und `oeffneEreignis` für die Stationen
 ohne Kampf, `EREIGNISSE` für die Begegnungen, `schaerfeKarte` und
-`entferneKarte` fürs Deck, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
+`entferneKarte` fürs Deck, `zielArt`, `playCard` und `wirke` für das Ausspielen
+einer Karte, `wendeMachtAn` für anhaltende Wirkungen, `treffeGegner` als
+gemeinsamer Weg für allen Schaden, `pruefeMauer` und `drawMauerstueck` für die
+Zier-Mauer, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
 `resolveEnemyTurn` für den Gegnerzug sowie `towerReach` und `towerDamageAt` für
 Reichweite und Salve eines Turms.
 
