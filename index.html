@@ -76,7 +76,9 @@
   .card-text { font-size: 0.68rem; font-style: italic; color: #55483a; margin-top: auto; line-height: 1.2; }
   .card-stats { font-size: 0.72rem; color: var(--walnut-dark); margin-bottom: 3px; }
 
-  footer { text-align: center; margin-top: 24px; font-size: 0.68rem; color: var(--disabled); }
+  footer { text-align: center; margin-top: 24px; font-size: 0.68rem; color: var(--disabled); line-height: 1.7; }
+  kbd { font-family: inherit; font-size: 0.64rem; background: rgba(255,255,255,0.5);
+    border: 1px solid var(--parchment-dark); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--eichel-dark); }
 </style>
 </head>
 <body>
@@ -103,7 +105,10 @@
 <div class="hand-label">Deine Hand <span id="hand-count"></span></div>
 <div class="hand" id="hand"></div>
 
-<footer>🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)</footer>
+<footer>
+  🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)<br>
+  Angreifen: Einheit auf einem Turm anklicken, dann den Gegner. Kostet 1 Tatendrang. <kbd>Esc</kbd> hebt die Auswahl auf.
+</footer>
 
 <script>
 const COLS = 20, ROWS = 15, CELL = 28;
@@ -139,6 +144,9 @@ const STARTER_DECK = [
 
 const HAND_SIZE = 5;
 
+// Ein Angriff ist eine aktive Aktion im eigenen Zug und kostet Tatendrang.
+const ATTACK_COST = 1;
+
 let state = {
   round: 1,
   tatendrang: 3, maxTatendrang: 3,
@@ -149,6 +157,7 @@ let state = {
   hand: [],
   discard: [], // Ablagestapel
   pendingCard: null,
+  selectedUnit: null, // { towerId, slotIdx } - Einheit, die angreifen soll
   nextTowerId: 1,
 };
 
@@ -247,6 +256,29 @@ function currentIntentText() {
 
 function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
 
+function findTowerById(id) { return state.towers.find(t => t.id === id) || null; }
+
+/** Die gerade ausgewaehlte Einheit samt ihrem Turm, oder null. */
+function getSelectedUnit() {
+  if (!state.selectedUnit) return null;
+  const tower = findTowerById(state.selectedUnit.towerId);
+  if (!tower) return null;
+  const unit = tower.slots[state.selectedUnit.slotIdx];
+  if (!unit) return null;
+  return { tower, unit };
+}
+
+/** Abstand vom Turm zum Gegner, gemessen wie die Bewegung des Gegners. */
+function distanceToEnemy(tower) {
+  if (!state.enemy) return Infinity;
+  const p = closestPointOnRect(state.enemy.col, state.enemy.row, tower);
+  return chebyshev(state.enemy.col, state.enemy.row, p.col, p.row);
+}
+
+function enemyInRange(tower, unit) {
+  return Boolean(state.enemy) && distanceToEnemy(tower) <= unit.range;
+}
+
 function anyTowerWithFreeSlot() { return state.towers.some(t => t.slots.some(s => s === null)); }
 function anyTowerWithUnit() { return state.towers.some(t => t.slots.some(s => s)); }
 
@@ -278,21 +310,16 @@ function draw() {
   ctx.fillText('🏰', (CASTLE.col + CASTLE.w / 2) * CELL, (CASTLE.row + CASTLE.h / 2) * CELL + 5);
   drawHpBar(CASTLE.col * CELL, CASTLE.row * CELL - 8, CASTLE.w * CELL, state.castleHp, CASTLE.maxHp, '#7c1f34');
 
-  // range indicators (drawn first, under everything else)
+  // Reichweite als Quadrat, weil Abstaende wie bei der Gegnerbewegung
+  // ueber die groessere der beiden Achsen gemessen werden.
+  const sel = getSelectedUnit();
   state.towers.forEach(t => {
     const defender = t.slots.find(s => s && s.range);
     if (!defender) return;
-    const cx = (t.col + t.w / 2) * CELL;
-    const cy = (t.row + t.h / 2) * CELL;
-    ctx.beginPath();
-    ctx.arc(cx, cy, defender.range * CELL, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(124,31,52,0.06)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(124,31,52,0.35)';
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.setLineDash([]);
+    const aktiv = sel && sel.tower.id === t.id;
+    drawRangeBox(t, aktiv ? sel.unit.range : defender.range,
+      aktiv ? 'rgba(74,92,43,0.85)' : 'rgba(124,31,52,0.28)',
+      aktiv ? 'rgba(74,92,43,0.10)' : 'rgba(124,31,52,0.04)');
   });
 
   state.towers.forEach(t => {
@@ -300,10 +327,12 @@ function draw() {
       (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
       (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
     );
-    ctx.fillStyle = targetable ? '#8a6a3a' : '#6b4e2a';
+    const ausgewaehlt = sel && sel.tower.id === t.id;
+    ctx.fillStyle = ausgewaehlt ? '#8a6a3a' : targetable ? '#8a6a3a' : '#6b4e2a';
     ctx.fillRect(t.col * CELL, t.row * CELL, t.w * CELL, t.h * CELL);
-    if (targetable) {
-      ctx.strokeStyle = '#4a5c2b'; ctx.lineWidth = 3;
+    if (targetable || ausgewaehlt) {
+      ctx.strokeStyle = ausgewaehlt ? '#a67818' : '#4a5c2b';
+      ctx.lineWidth = 3;
       ctx.strokeRect(t.col * CELL + 1, t.row * CELL + 1, t.w * CELL - 2, t.h * CELL - 2);
     }
     ctx.fillStyle = '#e9dcc0';
@@ -319,6 +348,14 @@ function draw() {
 
   if (state.enemy) {
     const e = state.enemy;
+    if (sel) {
+      const inReichweite = enemyInRange(sel.tower, sel.unit) && state.tatendrang >= ATTACK_COST;
+      ctx.beginPath();
+      ctx.arc(e.col * CELL + CELL / 2, e.row * CELL + CELL / 2, CELL / 2 + 2, 0, Math.PI * 2);
+      ctx.strokeStyle = inReichweite ? '#4a5c2b' : '#7c1f34';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
     ctx.fillStyle = '#2b2018';
     ctx.beginPath();
     ctx.arc(e.col * CELL + CELL / 2, e.row * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
@@ -330,6 +367,20 @@ function draw() {
   }
 
   ctx.textAlign = 'start';
+}
+
+function drawRangeBox(t, range, stroke, fill) {
+  const x = (t.col - range) * CELL;
+  const y = (t.row - range) * CELL;
+  const w = (t.w + range * 2) * CELL;
+  const h = (t.h + range * 2) * CELL;
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = stroke;
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
 }
 
 function drawHpBar(x, y, w, hp, maxHp, color) {
@@ -368,7 +419,12 @@ canvas.addEventListener('mousemove', (evt) => {
 
 canvas.addEventListener('click', (evt) => {
   const cell = canvasCellFromEvent(evt);
-  if (!state.pendingCard) return;
+  if (state.castleHp <= 0) return;
+
+  // Ohne ausgewaehlte Karte dient der Klick dem Angreifen.
+  if (!state.pendingCard) { handleSelectionClick(cell); return; }
+
+  state.selectedUnit = null;
 
   if (state.pendingCard.type === 'Gebäude') {
     if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) {
@@ -392,6 +448,88 @@ canvas.addEventListener('click', (evt) => {
     applyAbility(tower, slotIdx);
   }
 });
+
+/**
+ * Klick ohne Karte in der Hand: erst eine Einheit auf einem Turm auswaehlen,
+ * dann den Gegner anklicken. Ein zweiter Klick auf denselben Turm wechselt
+ * zur naechsten Einheit darauf.
+ */
+function handleSelectionClick(cell) {
+  if (state.enemy && cell.col === state.enemy.col && cell.row === state.enemy.row) {
+    const sel = getSelectedUnit();
+    if (!sel) {
+      setMessage('Wähle zuerst eine Einheit auf einem Turm, dann den Gegner.');
+      renderAll();
+      return;
+    }
+    attackEnemy(sel.tower, sel.unit);
+    return;
+  }
+
+  const tower = state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
+  if (tower) {
+    const besetzt = tower.slots.map((slot, i) => (slot ? i : -1)).filter(i => i >= 0);
+    if (besetzt.length === 0) {
+      state.selectedUnit = null;
+      setMessage('Auf diesem Turm steht keine Einheit.');
+      renderAll();
+      return;
+    }
+    let naechste = besetzt[0];
+    if (state.selectedUnit && state.selectedUnit.towerId === tower.id) {
+      const pos = besetzt.indexOf(state.selectedUnit.slotIdx);
+      naechste = besetzt[(pos + 1) % besetzt.length];
+    }
+    state.selectedUnit = { towerId: tower.id, slotIdx: naechste };
+    const unit = tower.slots[naechste];
+
+    if (!state.enemy) {
+      setMessage(unit.name + ' ausgewählt. Zurzeit ist kein Gegner auf dem Feld.');
+    } else {
+      const d = distanceToEnemy(tower);
+      if (d > unit.range) {
+        setMessage(unit.name + ' ausgewählt, aber der Gegner steht ' + d + ' Felder entfernt (Reichweite ' + unit.range + ').');
+      } else if (state.tatendrang < ATTACK_COST) {
+        setMessage(unit.name + ' ausgewählt, aber der Tatendrang reicht nicht für einen Angriff.');
+      } else {
+        setMessage(unit.name + ' ausgewählt. Klicke den Gegner an, um für ' + unit.dmg + ' Schaden anzugreifen (' + ATTACK_COST + ' Tatendrang).');
+      }
+    }
+    renderAll();
+    return;
+  }
+
+  if (state.selectedUnit) {
+    state.selectedUnit = null;
+    setMessage('Auswahl aufgehoben.');
+    renderAll();
+  }
+}
+
+/** Eine ausgewaehlte Einheit greift den Gegner an. Kostet Tatendrang. */
+function attackEnemy(tower, unit) {
+  if (!state.enemy) { setMessage('Kein Gegner auf dem Feld.'); renderAll(); return; }
+  if (state.tatendrang < ATTACK_COST) { setMessage('Nicht genug Tatendrang für einen Angriff.'); renderAll(); return; }
+
+  const d = distanceToEnemy(tower);
+  if (d > unit.range) {
+    setMessage(unit.name + ' reicht nicht so weit: ' + d + ' Felder entfernt, Reichweite ' + unit.range + '.');
+    renderAll();
+    return;
+  }
+
+  state.tatendrang -= ATTACK_COST;
+  state.enemy.hp -= unit.dmg;
+
+  if (state.enemy.hp <= 0) {
+    setMessage(unit.name + ' streckt den Gegner nieder!');
+    state.enemy = null;
+    state.selectedUnit = null;
+  } else {
+    setMessage(unit.name + ' trifft für ' + unit.dmg + ' Schaden (' + state.enemy.hp + '/' + state.enemy.maxHp + ' LP übrig).');
+  }
+  renderAll();
+}
 
 // ---------- Game actions ----------
 function playCard(card) {
@@ -426,6 +564,7 @@ function placeTower(col, row) {
   removeFromHand(card);
   state.pendingCard = null;
   state.hoverCell = null;
+  state.selectedUnit = null;
   setMessage(card.name + ' errichtet.');
   renderAll();
 }
@@ -554,7 +693,11 @@ function renderHand() {
 
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
-    el.onclick = () => !disabled && playCard(card);
+    el.onclick = () => {
+      if (disabled) return;
+      state.selectedUnit = null;
+      playCard(card);
+    };
 
     el.innerHTML = `
       <div class="card-top">
@@ -586,6 +729,16 @@ function renderAll() {
   draw();
   renderHand();
 }
+
+window.addEventListener('keydown', (evt) => {
+  if (evt.key !== 'Escape') return;
+  if (!state.pendingCard && !state.selectedUnit) return;
+  state.pendingCard = null;
+  state.selectedUnit = null;
+  state.hoverCell = null;
+  setMessage('Auswahl aufgehoben.');
+  renderAll();
+});
 
 // init
 state.draw = buildStarterDeck();

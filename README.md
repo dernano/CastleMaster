@@ -46,7 +46,11 @@ Lebenspunkte und mindestens einen Platz für eine Einheit.
 
 ## Rundenablauf
 
-`Tatendrang` ist die Ressource, drei Punkte pro Runde. Karten kosten davon.
+`Tatendrang` ist die Ressource, drei Punkte pro Runde. Karten kosten davon,
+und Angriffe ebenfalls.
+
+Der eigene Zug läuft wie in Slay the Spire: Du gibst Tatendrang aus, solange
+du willst, und beendest dann die Runde. Erst danach handelt der Gegner.
 
 `Runde beenden` löst zuerst den Gegnerzug aus: Der Gegner rückt bis zu vier
 Felder auf das nächstgelegene Ziel vor, sonst auf die Burg, und greift an,
@@ -57,6 +61,29 @@ Partie vorbei.
 Danach wandert die restliche Hand auf den Ablagestapel, der Tatendrang wird
 aufgefüllt und fünf Karten werden nachgezogen. Die Absichtszeile über dem Feld
 kündigt an, was der Gegner als Nächstes vorhat.
+
+## Angreifen
+
+Einheiten schießen nicht von selbst. Du setzt sie im eigenen Zug gezielt auf
+den Gegner an:
+
+1. Eine Einheit auf einem Turm anklicken. Ihre Reichweite wird als Quadrat um
+   den Turm gezeigt, der Gegner bekommt einen Ring: grün heißt in Reichweite,
+   rot heißt zu weit weg oder zu wenig Tatendrang.
+2. Den Gegner anklicken. Er nimmt den Schaden der Einheit.
+
+Ein Angriff kostet 1 Tatendrang, festgelegt als `ATTACK_COST`. Der Tatendrang
+ist die einzige Grenze, eine Einheit kann in derselben Runde also mehrfach
+angreifen, solange du bezahlst. Damit steht jede Runde dieselbe Frage: bauen
+oder schießen.
+
+Abstände werden über die größere der beiden Achsen gemessen, genau wie die
+Bewegung des Gegners. Deshalb ist die Reichweitenanzeige ein Quadrat und kein
+Kreis. Steht auf einem Turm mehr als eine Einheit, wechselt ein zweiter Klick
+auf denselben Turm zur nächsten. `Esc` hebt jede Auswahl auf.
+
+Zusätzlich schlägt eine Einheit weiterhin automatisch zurück, wenn der Gegner
+ihren Turm angreift. Das stammt aus v2 und ist unangetastet geblieben.
 
 ## Deck
 
@@ -80,9 +107,6 @@ Skript.
 
 ## Was noch fehlt
 
-- **Einheiten schießen nicht.** Die Reichweite wird auf der Karte genannt und
-  als Kreis gezeichnet, aber nirgends ausgewertet. Eine Einheit richtet nur
-  Schaden an, wenn der Gegner ihren Turm angreift.
 - **Kein Deckbuilding.** Das Deck zirkuliert, lässt sich während einer Partie
   aber nicht verändern. Es fehlt eine Möglichkeit, Karten zu erwerben.
 - **Kein Sieg.** Gegner erscheinen endlos, einer nach dem anderen. Verlieren
@@ -96,6 +120,7 @@ Skript.
 Alles steckt in `index.html`: Stil, Aufbau und Logik. Wichtige Stellen im
 Skript sind `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 `state` für den Spielzustand mit den Stapeln `draw`, `hand` und `discard`,
-`resolveEnemyTurn` für den Gegnerzug und `draw()` für die Canvas-Darstellung.
+`handleSelectionClick` und `attackEnemy` für das Angreifen, `resolveEnemyTurn`
+für den Gegnerzug und `draw()` für die Canvas-Darstellung.
 
 `scripts/serve.js` ist ein statischer Dev-Server ohne Abhängigkeiten.
