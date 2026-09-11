@@ -136,15 +136,23 @@
 
   #reward {
     position: absolute; inset: 0; z-index: 5;
-    display: grid; place-items: center;
+    display: flex; align-items: center; justify-content: center;
+    padding: 7px;
     background: rgba(8, 6, 5, 0.82);
     border-radius: 4px;
   }
-  .reward-box { padding: 16px 20px; text-align: center; max-width: 92%; }
+  .reward-box {
+    padding: 16px 20px; text-align: center; max-width: 92%;
+    max-height: 100%; display: flex; flex-direction: column;
+  }
+  .reward-box > h2, .reward-box > p, .reward-box > .ghost-btn { flex: none; }
   .reward-box h2 { margin: 0 0 4px; font-family: var(--pixel); font-size: 26px; font-weight: 700;
     color: var(--gold); letter-spacing: 0.03em; text-shadow: 0 3px 0 rgba(0,0,0,0.6); }
   .reward-box p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
-  #reward-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  #reward-cards {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px;
+    flex: 0 1 auto; min-height: 0; overflow-y: auto; padding: 2px; scrollbar-width: thin;
+  }
   .ghost-btn {
     background: var(--panel-2); color: var(--muted); border: 2px solid var(--frame);
     border-radius: 6px; padding: 8px 16px; font-family: var(--pixel); font-size: 14px; cursor: pointer;
@@ -334,8 +342,9 @@
   .card-head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
-    padding: 7px 8px 5px 13px;
+    padding: 7px 9px 1px 13px;
   }
 
   /* Kostenstein mit Facette */
@@ -353,16 +362,20 @@
   }
 
   .card-name {
-    flex: 1;
+    padding: 0 7px 4px 11px;
+    min-width: 0;
     font-family: var(--pixel);
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 600;
-    line-height: 1.05;
+    line-height: 1.1;
     letter-spacing: 0.01em;
     color: #2a1d12;
     text-shadow: 0 1px 0 rgba(255, 250, 235, 0.8);
+    overflow-wrap: anywhere;
   }
-  .card-suit { font-size: 15px; flex: none; filter: drop-shadow(0 1px 0 rgba(255,250,235,0.7)); }
+  .card-name.lang { font-size: 11.5px; line-height: 1.15; }
+  .card-suit { font-size: 15px; flex: none; line-height: 1;
+    filter: drop-shadow(0 1px 0 rgba(255,250,235,0.7)); }
 
   /* Bild in vertiefter Fassung */
   .card-art-frame {
@@ -433,6 +446,160 @@
   .hilfe-box li { margin-bottom: 3px; }
   .hilfe-box .farben { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 12px; }
 
+  /* ---------- Seltenheit: Rahmen und Band tragen die Farbe ---------- */
+  .card { border-color: var(--sel-rand, #37281a); }
+  .card-badge { background: linear-gradient(180deg, var(--sel-rand), var(--sel-band)); }
+  .card.sel-kostbar {
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 246, 214, 0.85),
+      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.55),
+      0 0 0 2px rgba(213, 154, 42, 0.45),
+      0 5px 0 #241a11,
+      0 9px 18px rgba(140, 92, 10, 0.4);
+  }
+  .card.sel-selten {
+    box-shadow:
+      inset 0 0 0 2px rgba(246, 250, 255, 0.8),
+      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.55),
+      0 5px 0 #241a11,
+      0 9px 16px rgba(0, 0, 0, 0.55);
+  }
+
+  /* ---------- Die Route des Feldzugs ---------- */
+  #route {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    background:
+      radial-gradient(120% 70% at 50% 100%, rgba(74, 56, 32, 0.5), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(255,235,190,0.018) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, #15100b, #0c0907 55%, #120d09);
+  }
+  #route-kopf {
+    margin: 8px 10px 4px; padding: 5px 12px;
+    display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+    font-family: var(--pixel); font-size: 13px; color: var(--muted);
+  }
+  #route-kopf b { color: var(--parchment); font-size: 15px; }
+  #route-kopf .burg b { color: #e9917f; }
+  #route-kopf .sold b { color: var(--gold); }
+
+  #route-rolle { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 6px; scrollbar-width: thin; }
+  #route-feld { position: relative; width: 100%; }
+  #route-feld svg { position: absolute; left: 0; top: 0; display: block; }
+  #route-feld line { stroke: rgba(120, 100, 70, 0.35); stroke-width: 2; stroke-dasharray: 3 5;
+    vector-effect: non-scaling-stroke; }
+  #route-feld line.begangen { stroke: rgba(214, 176, 104, 0.75); stroke-dasharray: none; stroke-width: 3; }
+  #route-feld line.offen { stroke: var(--gold); stroke-dasharray: none; stroke-width: 3; }
+
+  .route-knoten {
+    position: absolute; transform: translate(-50%, -50%);
+    width: 40px; height: 40px; padding: 0;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.55);
+    background: radial-gradient(circle at 36% 28%, rgba(255,255,255,0.22), transparent 60%),
+      linear-gradient(180deg, var(--knotenfarbe), rgba(0,0,0,0.45));
+    color: #fff4e0; font-size: 17px; line-height: 1; cursor: default;
+    filter: saturate(0.6) brightness(0.66);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  .route-knoten .zeichen { text-shadow: 0 2px 0 rgba(0,0,0,0.55); }
+  .route-knoten.erledigt { filter: saturate(0.35) brightness(0.55); opacity: 0.8; }
+  .route-knoten.erledigt::after {
+    content: "✓"; position: absolute; right: -3px; bottom: -3px;
+    width: 15px; height: 15px; display: grid; place-items: center;
+    font-size: 10px; color: #101a0c; background: var(--gold);
+    border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;
+  }
+  .route-knoten.hier {
+    filter: none; transform: translate(-50%, -50%) scale(1.12);
+    box-shadow: 0 0 0 3px rgba(227, 181, 82, 0.5), 0 3px 0 rgba(0,0,0,0.5);
+  }
+  .route-knoten.offen {
+    filter: none; cursor: pointer;
+    animation: knotenpuls 1.5s ease-in-out infinite;
+  }
+  .route-knoten.offen:hover { transform: translate(-50%, -50%) scale(1.18); }
+  @keyframes knotenpuls {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(227, 181, 82, 0.75), 0 3px 0 rgba(0,0,0,0.5); }
+    50%      { box-shadow: 0 0 0 7px rgba(227, 181, 82, 0.12), 0 3px 0 rgba(0,0,0,0.5); }
+  }
+  .route-name {
+    position: absolute; transform: translate(-50%, 0);
+    font-family: var(--pixel); font-size: 10px; color: var(--gold);
+    white-space: nowrap; pointer-events: none;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.95);
+  }
+  .route-marke {
+    position: absolute; left: 4px; transform: translateY(-50%);
+    font-family: var(--pixel); font-size: 10px; color: rgba(206, 184, 145, 0.45);
+    pointer-events: none;
+  }
+  #route-fuss {
+    padding: 5px 10px 9px; text-align: center;
+    font-family: var(--pixel); font-size: 11px; color: var(--muted);
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  #route-fuss span { display: inline-flex; align-items: center; gap: 3px; }
+  #route-fuss i { font-style: normal; font-size: 13px; }
+
+  /* ---------- Stationen ohne Kampf ---------- */
+  #station {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(110% 80% at 50% 10%, rgba(58, 44, 26, 0.55), transparent 70%),
+      rgba(9, 7, 5, 0.97);
+    padding: 7px;
+  }
+  .station-box {
+    padding: 14px 18px 16px; text-align: center; max-width: 94%; width: 620px;
+    max-height: 100%;
+    display: flex; flex-direction: column;
+  }
+  .station-box.weit { width: 860px; }
+  .station-box > h2, .station-box > p, #station-meldung, #station-knoepfe { flex: none; }
+  #station-wappen {
+    width: 40px; height: 40px; margin: 0 auto 6px; flex: none;
+    display: grid; place-items: center; border-radius: 50%;
+    font-size: 19px; color: #fff4e0;
+    border: 2px solid rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 36% 28%, rgba(255,255,255,0.25), transparent 60%),
+      linear-gradient(180deg, var(--wappenfarbe, #6b5535), rgba(0,0,0,0.45));
+    box-shadow: 0 3px 0 rgba(0,0,0,0.5), 0 0 0 4px rgba(227, 181, 82, 0.12);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.55);
+  }
+  .station-box h2 { margin: 0 0 4px; font-family: var(--pixel); font-size: 24px; font-weight: 700;
+    color: var(--gold); letter-spacing: 0.02em; text-shadow: 0 3px 0 rgba(0,0,0,0.6); }
+  .station-box > p { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  #station-karten {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px;
+    flex: 0 1 auto; min-height: 0; max-height: 340px;
+    overflow-y: auto; padding: 2px; scrollbar-width: thin;
+    /* Angeschnittene Reihen sollen nach mehr aussehen, nicht nach Fehler */
+    mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  }
+  #station-karten .card-slot { width: 106px; }
+  #station-karten .card { min-height: 172px; }
+  #station-karten .card-art { height: 48px; }
+  .station-ware { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .station-ware .preis {
+    font-family: var(--pixel); font-size: 12px; color: var(--gold);
+    background: rgba(16, 12, 9, 0.8); border: 1px solid #6b5535; border-radius: 4px;
+    padding: 2px 8px 1px;
+  }
+  .station-ware .preis.feil { color: #b6e08a; border-color: #5d7a3a; }
+  .station-ware .preis.weg { color: var(--disabled); border-color: #443c30; text-decoration: line-through; }
+  #station-meldung {
+    font-family: var(--pixel); font-size: 13px; color: var(--gold); margin-bottom: 8px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+  #station-knoepfe { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  #station-knoepfe button { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.15; }
+  #station-knoepfe button i { font-style: normal; font-size: 9.5px; font-family: var(--fliess);
+    opacity: 0.8; letter-spacing: 0; }
+  #station-knoepfe button:disabled { filter: grayscale(0.7) brightness(0.62); cursor: not-allowed; }
+
   /* Schmale Bildschirme: Die Hand bleibt im Bild, wird aber kompakt.
      Beschreibungstext und Werte entfallen, sie stehen ohnehin in der Hilfe. */
   @media (max-width: 860px) {
@@ -453,9 +620,10 @@
     .card-slot { width: 74px; }
     .card { min-height: 112px; border-width: 2px; border-radius: 6px; }
     .card::before { width: 5px; }
-    .card-head { padding: 4px 4px 3px 8px; gap: 3px; }
+    .card-head { padding: 4px 5px 0 8px; gap: 3px; }
     .cost { width: 17px; height: 17px; font-size: 11px; border-width: 1.5px; }
-    .card-name { font-size: 9px; line-height: 1; }
+    .card-name { font-size: 9px; line-height: 1.05; padding: 0 5px 2px 8px; }
+    .card-name.lang { font-size: 7.5px; }
     .card-suit { font-size: 10px; }
     .card-art-frame { margin: 0 4px 0 8px; border-width: 1.5px; }
     .card-art { height: 34px; }
@@ -483,6 +651,28 @@
     #reward-cards .card-slot { width: 88px; }
     #reward-cards .card { min-height: 132px; }
     #reward-cards .card-text { display: block; font-size: 8px; padding: 3px 5px 4px 9px; }
+    .station-box { padding: 10px 12px 12px; width: 100%; }
+    .station-box.weit { width: 100%; }
+    .station-box h2 { font-size: 17px; }
+    .station-box > p { font-size: 10.5px; margin-bottom: 7px; }
+    #station-karten { gap: 5px; max-height: none; }
+    #station-karten .card-slot { width: 76px; }
+    #station-karten .card { min-height: 116px; }
+    #station-karten .card-art { height: 32px; }
+    #station-wappen { width: 26px; height: 26px; font-size: 13px; margin-bottom: 3px; }
+    .station-ware .preis { font-size: 9px; padding: 1px 5px 0; }
+    #station-meldung { font-size: 10px; margin-bottom: 6px; }
+    #station-knoepfe { gap: 5px; }
+    #station-knoepfe button { padding: 5px 9px; font-size: 11px; border-radius: 5px; }
+    #station-knoepfe button i { font-size: 8px; }
+    #reward-cards { gap: 6px; }
+    #route-kopf { font-size: 10px; gap: 8px; margin: 5px 6px 2px; padding: 3px 8px; }
+    #route-kopf b { font-size: 12px; }
+    .route-knoten { width: 32px; height: 32px; font-size: 14px; }
+    .route-name { font-size: 8px; }
+    #route-fuss { font-size: 8.5px; gap: 6px; padding: 4px 6px 6px; }
+    #route-fuss i { font-size: 11px; }
+
     .hilfe-box { padding: 12px 14px; }
     .hilfe-box h2 { font-size: 17px; }
     .hilfe-box ul { font-size: 10.5px; line-height: 1.5; }
@@ -504,10 +694,14 @@
         <li><b>Angreifen:</b> Turm antippen, dann den Gegner. Kostet 1 Tatendrang, ein Schuss pro Turm und Zug.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
+        <li><b>Route:</b> 17 Stationen bis zum Belagerungsmeister. Du wählst nach jeder Station, wohin es weitergeht.</li>
+        <li><b>Türme:</b> Bleiben nie stehen. An jeder Station baust du von vorn.</li>
+        <li><b>Burg:</b> Ihre Lebenspunkte reitest du mit. Geheilt wird nur im Lager oder durch Begegnungen.</li>
+        <li><b>Sold:</b> Nach jedem Kampf, mehr bei einer Vorhut. Beim Marketender kaufst, streichst und schärfst du Karten.</li>
         <li><kbd>Esc</kbd> hebt jede Auswahl auf.</li>
       </ul>
       <p class="farben">🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht<br>
-        Testraster 20x15, Ziel später 80x60.</p>
+        Rahmen und Fußband zeigen die Seltenheit: grau, blau, golden.</p>
       <button type="button" class="ghost-btn" id="hilfe-zu">Weiter spielen</button>
     </div>
   </div>
@@ -530,6 +724,28 @@
     </div>
   </div>
 
+  <div id="route" class="hidden">
+    <div id="route-kopf" class="panel">
+      <b>Feldzug <span id="route-feldzug">1</span></b>
+      <span>Station <b id="route-station">1</b> von <span id="route-gesamt">17</span></span>
+      <span class="burg">🏰 <b id="route-hp">35</b></span>
+      <span class="sold">💰 <b id="route-sold">0</b></span>
+    </div>
+    <div id="route-rolle"><div id="route-feld"></div></div>
+    <div id="route-fuss"></div>
+  </div>
+
+  <div id="station" class="hidden">
+    <div class="station-box panel">
+      <div id="station-wappen"></div>
+      <h2 id="station-titel">Station</h2>
+      <p id="station-text"></p>
+      <div id="station-karten"></div>
+      <div id="station-meldung"></div>
+      <div id="station-knoepfe"></div>
+    </div>
+  </div>
+
   <div id="lines">
     <div id="message"></div>
     <div id="intent"></div>
@@ -548,13 +764,14 @@
   <div class="hud hud-left panel">
     <span class="chip tatendrang"><span class="ic">⚡</span> <b id="tatendrang-val">3</b>/<span id="tatendrang-max">3</span></span>
     <span class="chip burg"><span class="ic">🏰</span> <b id="castle-hp-val">35</b>/<span id="castle-hp-max">35</span></span>
+    <span class="chip sold"><span class="ic">💰</span> <b id="sold-val">0</b></span>
     <span class="chip dim" id="pile-draw"><span class="ic">🂠</span> <b id="draw-count">0</b></span>
     <span class="chip dim" id="pile-discard"><span class="ic">🗇</span> <b id="discard-count">0</b></span>
   </div>
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span class="swords">⚔</span> <span>Feldzug <b id="run-val">1</b> · Runde <b id="round-val">1</b>/<b id="round-max">12</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
+      <div class="wave-top"><span class="swords">⚔</span> <span>Feldzug <b id="run-val">1</b> · Station <b id="round-val">1</b>/<b id="round-max">17</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus">♪</button>
@@ -572,17 +789,17 @@
 const COLS = 20, ROWS = 15;
 
 const CARD_POOL = [
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm',
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
     text: 'Hoch genug, dass Pfeile weiter tragen.' },
-  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer',
+  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer', sel: 'gewoehnlich',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
-  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer',
+  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer', sel: 'gewoehnlich',
     text: 'Braucht festen Boden unter den Füßen.' },
-  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5, art: 'bogen',
+  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5, art: 'bogen', sel: 'gewoehnlich',
     text: 'Zielt, wo andere zögern.' },
-  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'wind',
+  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'wind', sel: 'selten',
     text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
-  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3, art: 'krone',
+  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3, art: 'krone', sel: 'kostbar',
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
 ];
 
@@ -610,22 +827,48 @@ const ENEMY_TYPES = {
 
 // Eine Runde ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
 // davon zaehlen Zuege: erst der Spieler, dann die Gegner.
-const RUNDEN_JE_FELDZUG = 12;       // so viele Runden bis zum Sieg
+const STATIONEN = 17;               // Laenge eines Feldzugs
+const ROUTE_SPALTEN = 5;            // Breite der Karte
+const ROUTE_PFADE = 5;              // so viele Wege werden gezogen, sie ueberlappen
+
+// Knotenarten auf der Route. `kampf` sagt, ob es eine Verteidigung gibt.
+const KNOTEN = {
+  gegner:   { id: 'gegner',   name: 'Angriff',     zeichen: '⚔', kampf: true,  farbe: '#b0364a' },
+  elite:    { id: 'elite',    name: 'Vorhut',      zeichen: '☠', kampf: true,  farbe: '#d9a435' },
+  haendler: { id: 'haendler', name: 'Marketender', zeichen: '⚖', kampf: false, farbe: '#4a86d8' },
+  lager:    { id: 'lager',    name: 'Lager',       zeichen: '⌂', kampf: false, farbe: '#6f8f3c' },
+  ereignis: { id: 'ereignis', name: 'Begegnung',   zeichen: '?', kampf: false, farbe: '#9b6ede' },
+  meister:  { id: 'meister',  name: 'Belagerungsmeister', zeichen: '♛', kampf: true, farbe: '#7d4a86' },
+};
+
+// Seltenheit steuert nur, wie oft etwas Starkes auftaucht, und den Preis.
+const SELTENHEIT = {
+  gewoehnlich: { name: 'Gewöhnlich', rand: '#6e6a63', band: '#4f4c46', gewicht: 62, preis: 45 },
+  selten:      { name: 'Selten',     rand: '#3f72c4', band: '#2f5fa8', gewicht: 30, preis: 80 },
+  kostbar:     { name: 'Kostbar',    rand: '#d59a2a', band: '#a8741a', gewicht: 8,  preis: 135 },
+};
+
+const SOLD_JE_STATION = 28;         // Grundlohn nach einem Kampf
+const SOLD_VORHUT = 55;             // Zuschlag fuer eine Vorhut
+const PREIS_ENTFERNEN = 70;         // eine Karte aus dem Deck streichen
+const PREIS_SCHAERFEN = 60;         // eine Karte verbessern
+
+const RUNDEN_JE_FELDZUG = STATIONEN; // Altname, damit nichts bricht
 const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
 
 // Jeder gewonnene Feldzug macht den naechsten haerter, wie die Aufstiegsstufen
 // in Slay the Spire.
 const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
 
-const rundenBudget = (runde) => Math.round((4 + runde * 2.9) * feldzugHaerte(state.feldzug || 1));
+const rundenBudget = (runde) => Math.round((5 + runde * 2.15) * feldzugHaerte(state.feldzug || 1));
 const einsatzProZug = (runde) => 1 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
 const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
 const MAX_GEGNER_AUF_DEM_FELD = 8;                   // wie viele gleichzeitig draussen stehen
 const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
 // Spaetere Runden schicken zaehere Gegner.
-const belagerungsHp = (runde) => (1 + 0.1 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
-const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 4);
+const belagerungsHp = (runde) => (1 + 0.06 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 5);
 
 // Das geschuetzte Lager liegt rechts neben dem Spielfeld.
 const LAGER_COL = COLS;
@@ -638,8 +881,92 @@ const STARTER_DECK = [
 const HAND_SIZE = 5;
 const ATTACK_COST = 1;
 
+/**
+ * Baut die Route eines Feldzugs. Es werden mehrere Wege von unten nach oben
+ * gezogen, die sich ueberlappen duerfen. Was dabei an Feldern beruehrt wird,
+ * sind die Knoten, die Wegstuecke dazwischen die Verbindungen. Das ergibt ein
+ * verzweigtes Netz, in dem jeder Weg durchgaengig begehbar ist.
+ */
+function baueRoute() {
+  const knoten = new Map();   // "ebene:spalte" -> Knoten
+  const schluessel = (e, sp) => e + ':' + sp;
+
+  function hole(e, sp) {
+    const k = schluessel(e, sp);
+    if (!knoten.has(k)) knoten.set(k, { id: k, ebene: e, spalte: sp, typ: null, weiter: [] });
+    return knoten.get(k);
+  }
+
+  for (let p = 0; p < ROUTE_PFADE; p++) {
+    let sp = Math.floor(Math.random() * ROUTE_SPALTEN);
+    let vorher = hole(0, sp);
+    for (let e = 1; e < STATIONEN; e++) {
+      if (e === STATIONEN - 1) {
+        // Alle Wege muenden im Belagerungsmeister
+        const ziel = hole(e, Math.floor(ROUTE_SPALTEN / 2));
+        if (!vorher.weiter.includes(ziel.id)) vorher.weiter.push(ziel.id);
+        vorher = ziel;
+        break;
+      }
+      const schritt = [-1, 0, 1][Math.floor(Math.random() * 3)];
+      sp = Math.max(0, Math.min(ROUTE_SPALTEN - 1, sp + schritt));
+      const ziel = hole(e, sp);
+      if (!vorher.weiter.includes(ziel.id)) vorher.weiter.push(ziel.id);
+      vorher = ziel;
+    }
+  }
+
+  const liste = [...knoten.values()];
+  const proEbene = (e) => liste.filter(k => k.ebene === e);
+
+  // Knotenarten vergeben
+  for (const k of liste) {
+    if (k.ebene === STATIONEN - 1) { k.typ = 'meister'; continue; }
+    if (k.ebene === 0) { k.typ = 'gegner'; continue; }          // milder Einstieg
+    if (k.ebene === STATIONEN - 2) { k.typ = 'lager'; continue; } // Atem vor dem Endkampf
+    if (k.ebene === 1) { k.typ = Math.random() < 0.5 ? 'gegner' : 'ereignis'; continue; }
+
+    const topf = [];
+    const wirf = (typ, gewicht) => { for (let i = 0; i < gewicht; i++) topf.push(typ); };
+    wirf('gegner', 42);
+    wirf('ereignis', 16);
+    wirf('haendler', 12);
+    wirf('lager', 10);
+    if (k.ebene >= 5) wirf('elite', 20);   // vor Station 6 waere sie eine Mauer
+    k.typ = topf[Math.floor(Math.random() * topf.length)];
+  }
+
+  // Auf jeder Ebene nicht dreimal dasselbe, sonst wirkt die Wahl leer
+  for (let e = 2; e < STATIONEN - 2; e++) {
+    const reihe = proEbene(e);
+    if (reihe.length > 1 && reihe.every(k => k.typ === reihe[0].typ)) {
+      reihe[reihe.length - 1].typ = reihe[0].typ === 'gegner' ? 'ereignis' : 'gegner';
+    }
+  }
+
+  // Mindestens zwei Marketender auf dem ganzen Weg
+  const haendler = liste.filter(k => k.typ === 'haendler');
+  if (haendler.length < 2) {
+    const kandidaten = liste.filter(k => k.typ === 'gegner' && k.ebene > 3 && k.ebene < STATIONEN - 3);
+    for (let i = 0; i < 2 - haendler.length && kandidaten.length; i++) {
+      const wahl = kandidaten.splice(Math.floor(Math.random() * kandidaten.length), 1)[0];
+      wahl.typ = 'haendler';
+    }
+  }
+
+  return {
+    knoten: liste,
+    start: proEbene(0).map(k => k.id),
+    aktuell: null,      // wo der Spieler steht
+    offen: proEbene(0).map(k => k.id),   // was als Naechstes waehlbar ist
+    erledigt: [],
+  };
+}
+
 let state = {
   feldzug: 1,        // wievielter Durchlauf, jeder haerter als der vorige
+  route: null,       // Karte des Feldzugs
+  sold: 0,           // Lohn der Krone, Waehrung beim Marketender
   runde: 1,          // Belagerungsrunde, also ein ganzer Kampf
   zug: 1,            // Zug innerhalb der Runde
   phase: 'kampf',    // 'kampf' | 'belohnung' | 'ende'
@@ -649,7 +976,10 @@ let state = {
   enemies: [],       // auf dem Feld
   lager: [],         // im geschuetzten Lager, dort unangreifbar
   rundenHp: 1,       // Gesamt-LP des Aufgebots, fuer die Anzeige
-  belohnung: [],     // Karten zur Auswahl nach gewonnener Runde
+  belohnung: [],     // Karten zur Auswahl nach gewonnener Station
+  haendler: [],      // Auslage des Marketenders
+  ereignis: null,    // laufende Begegnung
+  letzterSold: 0,    // was die letzte Station eingebracht hat
   draw: [], hand: [], discard: [],
   pendingCard: null,
   selectedTower: null,   // Turm, der schiessen soll
@@ -716,26 +1046,48 @@ function makeEnemy(typ, runde) {
  * Typen schalten sich erst ab einer bestimmten Runde frei. Alle warten
  * zunaechst im Lager und treten von dort Zug um Zug aufs Feld.
  */
-function buildRoster(runde) {
-  const endkampf = runde >= RUNDEN_JE_FELDZUG;
-  let budget = endkampf ? Math.round(rundenBudget(runde) * 0.55) : rundenBudget(runde);
+function buildRoster(runde, typ) {
+  const endkampf = typ === 'meister';
+  const vorhut = typ === 'elite';
+  let budget = rundenBudget(runde);
+  if (endkampf) budget = Math.round(budget * 0.5);
+  if (vorhut) budget = Math.round(budget * 1.3);
+
   const offen = Object.values(ENEMY_TYPES)
-    .filter(t => runde >= t.abRunde)
+    .filter(t => t.id !== 'meister' && runde >= t.abRunde)
     .sort((a, b) => b.punkte - a.punkte);
   const lager = [];
   if (endkampf) lager.push(makeEnemy('meister', runde));
+
   const gezaehlt = {};
   // Kein Typ soll mehr als die Haelfte des Aufgebots stellen, sonst
-  // bestehen spaete Runden nur noch aus Rammen.
-  const obergrenze = Math.max(2, Math.ceil(rundenBudget(runde) / 6));
+  // bestehen spaete Stationen nur noch aus Rammen.
+  const obergrenze = Math.max(2, Math.ceil(budget / 6));
   let schutz = 40;
   while (budget >= 2 && schutz-- > 0) {
-    const bezahlbar = offen.filter(t => t.punkte <= budget && (gezaehlt[t.id] || 0) < obergrenze);
+    let bezahlbar = offen.filter(t => t.punkte <= budget && (gezaehlt[t.id] || 0) < obergrenze);
     if (!bezahlbar.length) break;
+    // Eine Vorhut schickt lieber wenige Schwere als viel Fussvolk.
+    if (vorhut) {
+      const schwer = bezahlbar.filter(t => t.punkte >= 3);
+      if (schwer.length) bezahlbar = schwer;
+    }
     const wahl = bezahlbar[Math.floor(Math.random() * bezahlbar.length)];
     lager.push(makeEnemy(wahl.id, runde));
     gezaehlt[wahl.id] = (gezaehlt[wahl.id] || 0) + 1;
     budget -= wahl.punkte;
+  }
+
+  // Die Vorhut traegt bessere Ruestung als das gewoehnliche Aufgebot. Der
+  // Schlagkraft-Zuschlag kommt erst spaeter, sonst ist die erste Vorhut die
+  // Wand, an der jeder Feldzug endet.
+  if (vorhut) {
+    for (const e of lager) {
+      e.hp = Math.round(e.hp * 1.25);
+      e.maxHp = e.hp;
+      if (runde >= 8) e.dmg += 1;
+      e.vorhut = true;
+    }
   }
   return lager;
 }
@@ -2640,35 +2992,79 @@ function resolveEnemyTurn() {
     (meldungen.length > 3 ? ' · und ' + (meldungen.length - 3) + ' weitere' : ''));
 }
 
-/** Beginnt eine neue Belagerungsrunde mit frischem Aufgebot. */
-function startRunde(runde) {
-  state.runde = runde;
-  state.zug = 1;
-  state.phase = 'kampf';
-  state.lager = buildRoster(runde);
-  state.enemies = [];
-  state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
-  state.belohnung = [];
-  state.maxTatendrang = maxTatendrangFuer(runde);
-  state.tatendrang = state.maxTatendrang;
-  state.pendingCard = null;
-  state.selectedTower = null;
-  state.hoverCell = null;
+/** Der Knoten, auf dem der Spieler gerade steht. */
+function aktuellerKnoten() {
+  if (!state.route || !state.route.aktuell) return null;
+  return state.route.knoten.find(k => k.id === state.route.aktuell) || null;
+}
 
-  // Frische Hand fuer den neuen Kampf
+/**
+ * Betritt eine Station. Türme werden nie mitgenommen: Du reitest weiter und
+ * baust am neuen Ort von vorn. Burg-Lebenspunkte, Deck und Sold bleiben.
+ */
+function betreteKnoten(id) {
+  const k = state.route.knoten.find(n => n.id === id);
+  if (!k || !state.route.offen.includes(id)) return;
+
+  state.route.aktuell = id;
+  state.route.erledigt.push(id);
+  state.route.offen = [];
+  state.runde = k.ebene + 1;
+
+  // Frisches Feld an jeder Station
+  state.towers = [];
+  state.enemies = [];
+  state.lager = [];
+  state.selectedTower = null;
+  state.pendingCard = null;
+  state.hoverCell = null;
+  leichen.length = 0;
+  projektile.length = 0;
+  staubkoerner.length = 0;
+
+  state.maxTatendrang = maxTatendrangFuer(state.runde);
+  state.tatendrang = state.maxTatendrang;
+  state.zug = 1;
+
+  // Die Hand gehoert zur Station, nicht zum Ritt. Sie wandert immer zurueck
+  // ins Deck, damit an jeder Station frisch gezogen wird.
   state.discard.push(...state.hand);
   state.hand = [];
-  drawCards(HAND_SIZE);
 
-  deployFromLager();
-  zeigeBanner('Runde ' + runde, state.lager.length + state.enemies.length + ' Gegner im Lager');
-  klang('runde');
-  setMessage('Runde ' + runde + ': ' + (state.lager.length + state.enemies.length) +
-    ' Gegner im Lager. Sie treten Zug um Zug heraus.');
+  const art = KNOTEN[k.typ];
+  if (art.kampf) {
+    state.phase = 'kampf';
+    state.lagerStaerke = k.typ;
+    state.lager = buildRoster(state.runde, k.typ);
+    state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
+    drawCards(HAND_SIZE);
+    deployFromLager();
+    zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
+    klang('runde');
+    setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. Errichte einen Turm und besetze ihn.');
+  } else if (k.typ === 'haendler') {
+    oeffneHaendler();
+  } else if (k.typ === 'lager') {
+    oeffneRast();
+  } else if (k.typ === 'ereignis') {
+    oeffneEreignis();
+  }
   renderAll();
 }
 
-/** Ist das Aufgebot der Runde erledigt? */
+/** Gibt die Route wieder frei, nachdem eine Station abgeschlossen ist. */
+function weiterAufDerRoute() {
+  const k = aktuellerKnoten();
+  if (!k) return;
+  if (k.typ === 'meister') { feldzugGewonnen(); return; }
+  state.route.offen = k.weiter.slice();
+  state.phase = 'route';
+  state.pendingCard = null;
+  state.selectedTower = null;
+  renderAll();
+}
+
+/** Ist das Aufgebot der Station erledigt? */
 function rundeGewonnen() {
   return state.phase === 'kampf' && state.castleHp > 0 &&
     state.enemies.length === 0 && state.lager.length === 0;
@@ -2694,6 +3090,7 @@ function merkeRekord(aenderung) {
 function neuerFeldzug(stufe) {
   state.feldzug = Math.max(1, stufe);
   state.castleHp = CASTLE.maxHp;
+  state.sold = 0;
   state.towers = [];
   state.enemies = [];
   state.lager = [];
@@ -2702,10 +3099,20 @@ function neuerFeldzug(stufe) {
   state.discard = [];
   state.nextTowerId = 1;
   state.nextEnemyId = 1;
+  state.runde = 1;
+  state.zug = 1;
   leichen.length = 0;
   projektile.length = 0;
-  startRunde(1);
-  zeigeBanner('Feldzug ' + state.feldzug, 'Zwölf Runden bis zum Belagerungsmeister');
+  state.route = baueRoute();
+  state.letzterSold = 0;
+  state.letztesEreignis = null;
+  state.haendler = [];
+  stationsSicht = null;
+  routeBlick = null;
+  state.phase = 'route';
+  zeigeBanner('Feldzug ' + state.feldzug, STATIONEN + ' Stationen entlang der Grenze');
+  setMessage('Wähle deine erste Station.');
+  renderAll();
 }
 
 /** Der Feldzug ist geschafft. */
@@ -2713,8 +3120,7 @@ function feldzugGewonnen() {
   state.phase = 'sieg';
   state.pendingCard = null;
   state.selectedTower = null;
-  const r = merkeRekord({ runde: state.runde, feldzug: state.feldzug, sieg: true });
-  state.rekord = r;
+  state.rekord = merkeRekord({ runde: state.runde, feldzug: state.feldzug, sieg: true });
   zeigeBanner('Feldzug bestanden', 'Der Belagerungsmeister ist gefallen');
   schirmBlitz(1.4);
   klang('sieg');
@@ -2727,43 +3133,453 @@ function feldzugVerloren() {
   state.phase = 'ende';
   state.pendingCard = null;
   state.selectedTower = null;
-  const r = merkeRekord({ runde: state.runde, feldzug: state.feldzug });
-  state.rekord = r;
-  zeigeBanner('Die Burg ist gefallen', 'Runde ' + state.runde + ' von ' + RUNDEN_JE_FELDZUG);
+  state.rekord = merkeRekord({ runde: state.runde, feldzug: state.feldzug });
+  zeigeBanner('Die Burg ist gefallen', 'Station ' + state.runde + ' von ' + STATIONEN);
   schirmBlitz(1.2);
   klang('burg');
-  setMessage('Die Burg ist gefallen in Runde ' + state.runde + '.');
+  setMessage('Die Burg ist gefallen bei Station ' + state.runde + '.');
   renderAll();
 }
 
-/** Nach gewonnener Runde drei Karten zur Auswahl anbieten. */
+/** Nach gewonnenem Kampf: Sold, dann Karten zur Auswahl. */
 function beginneBelohnung() {
-  // Die letzte Runde beendet den Feldzug, statt eine Karte anzubieten.
-  if (state.runde >= RUNDEN_JE_FELDZUG) { feldzugGewonnen(); return; }
+  const k = aktuellerKnoten();
+  const vorhut = k && k.typ === 'elite';
+  const lohn = Math.round((SOLD_JE_STATION + (vorhut ? SOLD_VORHUT : 0)) * (1 + state.runde * 0.05));
+  state.sold += lohn;
+  state.letzterSold = lohn;
+
+  if (k && k.typ === 'meister') { feldzugGewonnen(); return; }
+
   state.phase = 'belohnung';
   state.pendingCard = null;
   state.selectedTower = null;
-  const topf = [...CARD_POOL];
-  state.belohnung = [];
-  for (let i = 0; i < BELOHNUNG_AUSWAHL && topf.length; i++) {
-    state.belohnung.push(topf.splice(Math.floor(Math.random() * topf.length), 1)[0]);
-  }
-  zeigeBanner('Runde ' + state.runde + ' überstanden', 'Wähle eine Karte für dein Deck');
-  schirmBlitz(1);
+  state.belohnung = ziehKarten(vorhut ? 3 : 3, vorhut ? 'selten' : null);
+  zeigeBanner('Station gehalten', '+' + lohn + ' Sold');
+  schirmBlitz(0.8);
   klang('sieg');
-  setMessage('Runde ' + state.runde + ' überstanden. Wähle eine Karte für dein Deck.');
+  setMessage('Station gehalten. +' + lohn + ' Sold. Wähle eine Karte für dein Deck.');
   renderAll();
 }
 
-/** Die gewaehlte Karte wandert auf den Ablagestapel und damit ins Deck. */
+/** Zieht Karten aus dem Topf, gewichtet nach Seltenheit. */
+function ziehKarten(anzahl, mindestens) {
+  const topf = [];
+  for (const c of CARD_POOL) {
+    let g = SELTENHEIT[c.sel || 'gewoehnlich'].gewicht;
+    if (mindestens === 'selten' && (c.sel || 'gewoehnlich') === 'gewoehnlich') g = Math.round(g * 0.4);
+    for (let i = 0; i < g; i++) topf.push(c);
+  }
+  const raus = [];
+  let schutz = 200;
+  while (raus.length < anzahl && schutz-- > 0) {
+    const c = topf[Math.floor(Math.random() * topf.length)];
+    if (!raus.includes(c)) raus.push(c);
+  }
+  return raus;
+}
+
+/** Die gewaehlte Karte wandert ins Deck, dann geht es auf der Route weiter. */
 function nimmBelohnung(proto) {
   if (state.phase !== 'belohnung') return;
-  if (proto) {
-    state.discard.push({ ...proto, uid: proto.id + '#r' + state.runde + '-' + Math.random().toString(36).slice(2, 6) });
+  if (proto) state.discard.push(neueKarte(proto));
+  weiterAufDerRoute();
+}
+
+/** Erzeugt ein Exemplar einer Karte mit eigener Kennung. */
+function neueKarte(proto) {
+  return { ...proto, uid: proto.id + '#' + (state.nextCardId = (state.nextCardId || 0) + 1), stufe: proto.stufe || 0 };
+}
+
+// ============================================================
+//  Deck ausserhalb des Kampfes
+// ============================================================
+/** Alle Karten, die dem Spieler gehoeren, egal auf welchem Stapel. */
+function deckKarten() { return state.draw.concat(state.hand, state.discard); }
+
+function protoVon(id) { return CARD_POOL.find(c => c.id === id) || CARD_POOL[0]; }
+
+/** Legt ein frisches Exemplar auf den Ablagestapel. */
+function gibKarte(proto) { state.discard.push(neueKarte(proto)); return state.discard[state.discard.length - 1]; }
+
+/** Streicht ein bestimmtes Exemplar aus dem Deck. */
+function entferneKarte(card) {
+  for (const stapel of [state.draw, state.hand, state.discard]) {
+    const i = stapel.findIndex(c => c.uid === card.uid);
+    if (i >= 0) { stapel.splice(i, 1); return true; }
   }
-  const naechste = state.runde + 1;
-  startRunde(naechste);
-  if (proto) setMessage('Runde ' + naechste + ' beginnt. ' + proto.name + ' liegt jetzt im Deck.');
+  return false;
+}
+
+/** Geschaerft wird jede Karte nur einmal. */
+function kannSchaerfen(c) { return (c.stufe || 0) < 1; }
+
+/**
+ * Schaerfen verbessert, was die Karte ohnehin tut: Schaden, Leben,
+ * Reichweite oder Hoehe. Wer nichts davon hat, wird billiger.
+ */
+function schaerfeKarte(c) {
+  if (!kannSchaerfen(c)) return c;
+  c.stufe = (c.stufe || 0) + 1;
+  let verbessert = false;
+  if (c.dmg) { c.dmg += 1; verbessert = true; }
+  if (c.hp) { c.hp += 2; verbessert = true; }
+  if (c.range) { c.range += 1; verbessert = true; }
+  if (c.rangeBonus) { c.rangeBonus += 1; verbessert = true; }
+  if (!verbessert && c.cost > 0) c.cost -= 1;
+  if (!c.name.endsWith('+')) c.name += '+';
+  return c;
+}
+
+/** Heilt die Burg und meldet, wie viel wirklich angekommen ist. */
+function heileBurg(n) {
+  const vorher = state.castleHp;
+  state.castleHp = Math.min(CASTLE.maxHp, state.castleHp + n);
+  return state.castleHp - vorher;
+}
+
+/** Ein Ereignis darf wehtun, aber nie die Burg stuerzen. */
+function schadeBurg(n) { state.castleHp = Math.max(1, state.castleHp - n); }
+
+// ============================================================
+//  Stationen ohne Kampf
+// ============================================================
+// Was gerade im Stationsfenster steht. Eine Ansicht beschreibt Titel,
+// Text, auslegbare Karten und Knoepfe; gezeichnet wird sie in renderStation.
+let stationsSicht = null;
+
+function zeigeStation(sicht) {
+  stationsSicht = sicht;
+  state.phase = 'station';
+  renderAll();
+}
+
+function schliesseStation() {
+  stationsSicht = null;
+  weiterAufDerRoute();
+}
+
+// ---------- Marketender ----------
+function oeffneHaendler() {
+  const angebot = ziehKarten(5).map(proto => ({
+    proto,
+    preis: Math.max(15, Math.round(SELTENHEIT[proto.sel || 'gewoehnlich'].preis * (0.85 + Math.random() * 0.3))),
+    weg: false,
+  }));
+  // Ein Stueck liegt immer guenstiger aus, sonst lohnt der Umweg selten.
+  const feil = angebot[Math.floor(Math.random() * angebot.length)];
+  feil.preis = Math.max(12, Math.round(feil.preis * 0.62));
+  feil.feilschen = true;
+
+  state.haendler = angebot;
+  zeigeStation(haendlerSicht(''));
+  zeigeBanner('Marketender', state.sold + ' Sold in der Truhe');
+  klang('karte');
+}
+
+function haendlerSicht(meldung) {
+  return {
+    titel: 'Marketender',
+    zeichen: KNOTEN.haendler.zeichen, farbe: KNOTEN.haendler.farbe,
+    unter: 'Der Tross zieht mit dem Feldzug. Was du hier nimmst, reitet mit.',
+    meldung: meldung,
+    eintraege: state.haendler.map(a => ({
+      card: a.proto,
+      preis: a.preis,
+      feilschen: a.feilschen,
+      verkauft: a.weg,
+      gesperrt: a.weg || state.sold < a.preis,
+      aktion: () => kaufeKarte(a),
+    })),
+    knoepfe: [
+      {
+        text: 'Karte streichen', hinweis: PREIS_ENTFERNEN + ' Sold',
+        gesperrt: state.sold < PREIS_ENTFERNEN || deckKarten().length <= 5,
+        aktion: () => oeffneDeckwahl('streichen', PREIS_ENTFERNEN,
+          (m) => haendlerSicht(m), () => haendlerSicht('')),
+      },
+      {
+        text: 'Karte schärfen', hinweis: PREIS_SCHAERFEN + ' Sold',
+        gesperrt: state.sold < PREIS_SCHAERFEN || !deckKarten().some(kannSchaerfen),
+        aktion: () => oeffneDeckwahl('schaerfen', PREIS_SCHAERFEN,
+          (m) => haendlerSicht(m), () => haendlerSicht('')),
+      },
+      { text: 'Weiterreiten', haupt: true, aktion: () => schliesseStation() },
+    ],
+  };
+}
+
+function kaufeKarte(a) {
+  if (a.weg || state.sold < a.preis) return;
+  state.sold -= a.preis;
+  a.weg = true;
+  gibKarte(a.proto);
+  klang('sieg');
+  schirmBlitz(0.35);
+  zeigeStation(haendlerSicht(a.proto.name + ' gekauft. Noch ' + state.sold + ' Sold.'));
+}
+
+// ---------- Karte aus dem eigenen Deck waehlen ----------
+/**
+ * Legt das ganze Deck aus, damit eine Karte gestrichen oder geschaerft
+ * werden kann. `nachher` und `zurueck` liefern die Ansicht, die danach
+ * wieder erscheint, damit dieselbe Auswahl an mehreren Stationen taugt.
+ */
+function oeffneDeckwahl(modus, preis, nachher, zurueck) {
+  const streichen = modus === 'streichen';
+  const karten = deckKarten().filter(c => streichen || kannSchaerfen(c));
+  zeigeStation({
+    titel: streichen ? 'Karte streichen' : 'Karte schärfen',
+    zeichen: streichen ? '\u2702' : '\u2692', farbe: streichen ? '#8a5a4a' : '#6b7f8f',
+    unter: streichen
+      ? 'Welche Karte lässt du am Wegrand zurück? Ein schlankes Deck zieht das Gute öfter.'
+      : 'Einmal geschärft, bleibt geschärft. Der Schmied bessert genau eine Karte aus.',
+    meldung: '',
+    eintraege: karten.map(c => ({
+      card: c,
+      aktion: () => {
+        if (preis) state.sold -= preis;
+        if (streichen) entferneKarte(c); else schaerfeKarte(c);
+        klang('sieg');
+        zeigeStation(nachher(streichen
+          ? c.name + ' bleibt zurück.'
+          : c.name + ' ist geschärft.'));
+      },
+    })),
+    knoepfe: [{ text: 'Doch nicht', aktion: () => zeigeStation(zurueck()) }],
+  });
+}
+
+/** Legt einige Karten zur Wahl aus, etwa als Fund eines Ereignisses. */
+function oeffneKartenwahl(titel, protos, nachher) {
+  zeigeStation({
+    titel: titel,
+    zeichen: '\u2727', farbe: '#8a6a3c',
+    unter: 'Eine davon reitet mit.',
+    meldung: '',
+    eintraege: protos.map(proto => ({
+      card: proto,
+      aktion: () => {
+        gibKarte(proto);
+        klang('sieg');
+        zeigeStation(nachher(proto.name + ' wandert in dein Deck.'));
+      },
+    })),
+    knoepfe: [{ text: 'Nichts nehmen', aktion: () => zeigeStation(nachher('Du lässt alles liegen.')) }],
+  });
+}
+
+// ---------- Lager ----------
+function oeffneRast() {
+  state.rastGenutzt = false;
+  zeigeStation(rastSicht(''));
+  zeigeBanner('Lager', 'Eine Nacht ohne Angriff');
+  klang('karte');
+}
+
+const RAST_HEILUNG = Math.max(6, Math.round(CASTLE.maxHp * 0.24));
+
+function rastSicht(meldung) {
+  const fertig = state.rastGenutzt;
+  return {
+    titel: 'Lager',
+    zeichen: KNOTEN.lager.zeichen, farbe: KNOTEN.lager.farbe,
+    unter: fertig
+      ? 'Der Morgen graut über der Grenze. Die Route wartet.'
+      : 'Ihr schlagt das Lager auf. Für eine Sache reicht die Nacht.',
+    meldung: meldung,
+    eintraege: [],
+    knoepfe: [
+      {
+        text: 'Mauern flicken', hinweis: '+' + RAST_HEILUNG + ' Burg',
+        gesperrt: fertig || state.castleHp >= CASTLE.maxHp,
+        aktion: () => {
+          const g = heileBurg(RAST_HEILUNG);
+          state.rastGenutzt = true;
+          klang('sieg');
+          zeigeStation(rastSicht('Die Burg steht wieder fester. +' + g + ' LP.'));
+        },
+      },
+      {
+        text: 'Waffen schärfen', hinweis: 'eine Karte',
+        gesperrt: fertig || !deckKarten().some(kannSchaerfen),
+        aktion: () => oeffneDeckwahl('schaerfen', 0,
+          (m) => { state.rastGenutzt = true; return rastSicht(m); },
+          () => rastSicht('')),
+      },
+      {
+        text: 'Ballast abwerfen', hinweis: 'eine Karte',
+        gesperrt: fertig || deckKarten().length <= 5,
+        aktion: () => oeffneDeckwahl('streichen', 0,
+          (m) => { state.rastGenutzt = true; return rastSicht(m); },
+          () => rastSicht('')),
+      },
+      { text: fertig ? 'Weiterreiten' : 'Ohne Rast weiter', haupt: true, aktion: () => schliesseStation() },
+    ],
+  };
+}
+
+// ---------- Begegnungen ----------
+/**
+ * Ereignisse sind reine Daten. `wirkung` gibt den Nachsatz zurueck, der
+ * unter dem Text erscheint, oder null, wenn sie selbst eine Ansicht
+ * geoeffnet hat (etwa eine Kartenwahl).
+ */
+const EREIGNISSE = [
+  {
+    id: 'barde', titel: 'Der fahrende Barde',
+    text: 'Am Wegrand stimmt ein Barde sein Instrument. "Ein Lied für die Mauern, Herr? Es hält die Wachen wach."',
+    wahlen: [
+      { text: 'Zuhören', hinweis: '20 Sold · +5 Burg',
+        bedingung: () => state.sold >= 20,
+        wirkung: () => { state.sold -= 20; const g = heileBurg(5); return 'Keiner nickt in dieser Nacht ein. +' + g + ' Burg-LP.'; } },
+      { text: 'Ihn anwerben', hinweis: 'Sturmwind ins Deck',
+        wirkung: () => { gibKarte(protoVon('sturmwind')); return 'Der Barde reitet mit. Sturmwind liegt auf dem Ablagestapel.'; } },
+      { text: 'Weiterreiten',
+        wirkung: () => 'Der Gesang verklingt hinter dir.' },
+    ],
+  },
+  {
+    id: 'schmiede', titel: 'Verlassene Schmiede',
+    text: 'Der Amboss ist kalt, das Werkzeug liegt noch da. Jemand ist in großer Eile aufgebrochen.',
+    wahlen: [
+      { text: 'Etwas schärfen', hinweis: 'umsonst',
+        bedingung: () => deckKarten().some(kannSchaerfen),
+        wirkung: () => {
+          oeffneDeckwahl('schaerfen', 0,
+            (m) => ereignisSicht(state.ereignis, m, true),
+            () => ereignisSicht(state.ereignis, '', false));
+          return null;
+        } },
+      { text: 'Werkzeug verkaufen', hinweis: '+45 Sold',
+        wirkung: () => { state.sold += 45; return 'Der Tross zahlt gut für gutes Eisen. +45 Sold.'; } },
+    ],
+  },
+  {
+    id: 'steinbruch', titel: 'Alter Steinbruch',
+    text: 'Quader liegen bereit, als habe man sie für dich gehauen. Nur schleppen muss sie jemand.',
+    wahlen: [
+      { text: 'Selbst schleppen', hinweis: '+6 Burg',
+        wirkung: () => { const g = heileBurg(6); return 'Frischer Stein in den Lücken. +' + g + ' Burg-LP.'; } },
+      { text: 'Fuhrleute bezahlen', hinweis: '35 Sold · +12 Burg',
+        bedingung: () => state.sold >= 35,
+        wirkung: () => { state.sold -= 35; const g = heileBurg(12); return 'Die Karren rollen die Nacht durch. +' + g + ' Burg-LP.'; } },
+    ],
+  },
+  {
+    id: 'grenzstein', titel: 'Der Grenzstein',
+    text: 'Ein moosbewachsener Stein, älter als die Burg. In einer Mulde liegen Münzen, die keiner anrührt.',
+    wahlen: [
+      { text: 'Opfern', hinweis: '40 Sold · Karte zur Wahl',
+        bedingung: () => state.sold >= 40,
+        wirkung: () => {
+          state.sold -= 40;
+          oeffneKartenwahl('Der Stein antwortet', ziehKarten(2, 'selten'),
+            (m) => ereignisSicht(state.ereignis, m, true));
+          return null;
+        } },
+      { text: 'Münzen nehmen', hinweis: '+55 Sold · −5 Burg',
+        wirkung: () => { state.sold += 55; schadeBurg(5); return 'In derselben Nacht bricht ein Stück Mauer weg. +55 Sold, −5 Burg-LP.'; } },
+      { text: 'Den Hut ziehen',
+        wirkung: () => 'Du reitest weiter, ohne den Stein zu stören.' },
+    ],
+  },
+  {
+    id: 'hohlweg', titel: 'Enger Hohlweg',
+    text: 'Der Weg verengt sich zwischen zwei Hängen. Oben bewegt sich etwas, das kein Wild ist.',
+    wahlen: [
+      { text: 'Durchbrechen', hinweis: '−6 Burg · +65 Sold',
+        wirkung: () => { schadeBurg(6); state.sold += 65; return 'Ihr kommt durch und nehmt mit, was liegen bleibt. +65 Sold, −6 Burg-LP.'; } },
+      { text: 'Umweg reiten', hinweis: 'ein Tag verloren',
+        wirkung: () => 'Der Umweg kostet Zeit, aber kein Blut.' },
+    ],
+  },
+  {
+    id: 'baumeister', titel: 'Wandernder Baumeister',
+    text: 'Er sieht deine Karten an wie ein Zimmermann ein schiefes Dach. "Da ist zu viel drin, Herr."',
+    wahlen: [
+      { text: 'Ausmisten lassen', hinweis: 'eine Karte streichen',
+        bedingung: () => deckKarten().length > 5,
+        wirkung: () => {
+          oeffneDeckwahl('streichen', 0,
+            (m) => ereignisSicht(state.ereignis, m, true),
+            () => ereignisSicht(state.ereignis, '', false));
+          return null;
+        } },
+      { text: 'Ihn abfinden', hinweis: '+40 Sold',
+        wirkung: () => { state.sold += 40; return 'Er nimmt Gold statt Einsicht. +40 Sold.'; } },
+    ],
+  },
+  {
+    id: 'ruine', titel: 'Der alte Wachturm',
+    text: 'Ein Turm aus einem früheren Krieg. Das Dach fehlt, die Treppe hält noch.',
+    wahlen: [
+      { text: 'Durchsuchen', hinweis: 'Karte zur Wahl',
+        wirkung: () => {
+          oeffneKartenwahl('Im Turm gefunden', ziehKarten(3),
+            (m) => ereignisSicht(state.ereignis, m, true));
+          return null;
+        } },
+      { text: 'Steine abtragen', hinweis: '+8 Burg',
+        wirkung: () => { const g = heileBurg(8); return 'Der Turm gibt her, was die Burg braucht. +' + g + ' Burg-LP.'; } },
+    ],
+  },
+  {
+    id: 'soeldner', titel: 'Söldner ohne Sold',
+    text: 'Drei Männer am Feuer. Die Waffen gut gepflegt, die Stiefel durchgelaufen.',
+    wahlen: [
+      { text: 'Anheuern', hinweis: '30 Sold · Karte zur Wahl',
+        bedingung: () => state.sold >= 30,
+        wirkung: () => {
+          state.sold -= 30;
+          oeffneKartenwahl('Sie treten an', ziehKarten(2, 'selten'),
+            (m) => ereignisSicht(state.ereignis, m, true));
+          return null;
+        } },
+      { text: 'Proviant teilen', hinweis: 'Karte zur Wahl',
+        wirkung: () => {
+          oeffneKartenwahl('Aus Dankbarkeit', ziehKarten(2),
+            (m) => ereignisSicht(state.ereignis, m, true));
+          return null;
+        } },
+      { text: 'Vorbeireiten',
+        wirkung: () => 'Das Feuer bleibt hinter dir zurück.' },
+    ],
+  },
+];
+
+function oeffneEreignis() {
+  // Zweimal dieselbe Begegnung hintereinander waere schade.
+  const tauglich = EREIGNISSE.filter(e => e.id !== state.letztesEreignis);
+  const e = tauglich[Math.floor(Math.random() * tauglich.length)] || EREIGNISSE[0];
+  state.ereignis = e;
+  state.letztesEreignis = e.id;
+  zeigeStation(ereignisSicht(e, '', false));
+  zeigeBanner('Begegnung', e.titel);
+  klang('karte');
+}
+
+function ereignisSicht(e, meldung, erledigt) {
+  return {
+    titel: e.titel,
+    zeichen: KNOTEN.ereignis.zeichen, farbe: KNOTEN.ereignis.farbe,
+    unter: e.text,
+    meldung: meldung,
+    eintraege: [],
+    knoepfe: erledigt
+      ? [{ text: 'Weiterreiten', haupt: true, aktion: () => schliesseStation() }]
+      : e.wahlen.map(w => ({
+          text: w.text,
+          hinweis: w.hinweis,
+          gesperrt: w.bedingung ? !w.bedingung() : false,
+          aktion: () => {
+            const nachsatz = w.wirkung();
+            if (nachsatz === null) return;   // die Wahl hat selbst ein Fenster geoeffnet
+            klang('sieg');
+            zeigeStation(ereignisSicht(e, nachsatz, true));
+          },
+        })),
+  };
 }
 
 /** Ein Zug innerhalb der Runde: Gegner handeln, dann Nachschub und Nachziehen. */
@@ -2862,13 +3678,27 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   const [hell, dunkel] = FARBTON[card.type] || ['#8a7a5c', '#5a4a30'];
   el.style.setProperty('--farbe-hell', hell);
   el.style.setProperty('--farbe', dunkel);
+  // Rahmen und Fussband tragen die Seltenheit, die Kartenfarbe bleibt an
+  // der linken Kante und im Zeichen oben rechts.
+  const stufeSel = card.sel || 'gewoehnlich';
+  const sel = SELTENHEIT[stufeSel];
+  el.classList.add('sel-' + stufeSel);
+  el.style.setProperty('--sel-rand', sel.rand);
+  el.style.setProperty('--sel-band', sel.band);
 
+  // Kostenstein und Kartenfarbe in einer Zeile, der Name darunter ueber die
+  // volle Breite. Sonst schiebt ein langer Name das Zeichen aus der Karte.
   const head = document.createElement('div');
   head.className = 'card-head';
-  head.innerHTML = '<span class="cost">' + card.cost + '</span>' +
-    '<span class="card-name">' + card.name + '</span>' +
-    '<span class="card-suit">' + card.suit + '</span>';
+  head.innerHTML = '<span class="cost"></span><span class="card-suit"></span>';
+  head.firstChild.textContent = card.cost;
+  head.lastChild.textContent = card.suit;
   el.appendChild(head);
+
+  const nameZeile = document.createElement('div');
+  nameZeile.className = 'card-name' + (card.name.length > 10 ? ' lang' : '');
+  nameZeile.textContent = card.name;
+  el.appendChild(nameZeile);
 
   const fassung = document.createElement('div');
   fassung.className = 'card-art-frame';
@@ -2953,13 +3783,13 @@ function renderSchluss() {
   document.getElementById('schluss-titel').textContent = sieg ? 'Feldzug bestanden' : 'Die Burg ist gefallen';
   document.getElementById('schluss-text').textContent = sieg
     ? 'Der Belagerungsmeister ist gefallen. Der nächste Feldzug wird härter.'
-    : 'Runde ' + state.runde + ' von ' + RUNDEN_JE_FELDZUG + '. Ein neuer Feldzug beginnt mit frischem Deck.';
+    : 'Station ' + state.runde + ' von ' + STATIONEN + '. Ein neuer Feldzug beginnt mit frischem Deck.';
 
   document.getElementById('schluss-zahlen').innerHTML =
-    '<span><b>' + state.runde + '</b>erreichte Runde</span>' +
+    '<span><b>' + state.runde + '</b>erreichte Station</span>' +
     '<span><b>' + (state.draw.length + state.hand.length + state.discard.length) + '</b>Karten im Deck</span>' +
     '<span><b>' + (r.siege || 0) + '</b>bestandene Feldzüge</span>' +
-    '<span><b>' + Math.max(r.runde || 0, state.runde) + '</b>beste Runde</span>';
+    '<span><b>' + Math.max(r.runde || 0, state.runde) + '</b>beste Station</span>';
 
   document.getElementById('schluss-btn').textContent = sieg
     ? 'Feldzug ' + (state.feldzug + 1) + ' beginnen'
@@ -2970,10 +3800,11 @@ function renderReward() {
   const box = document.getElementById('reward');
   if (state.phase !== 'belohnung') { box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
-  document.getElementById('reward-title').textContent = 'Runde ' + state.runde + ' überstanden';
+  document.getElementById('reward-title').textContent = 'Station ' + state.runde + ' gehalten';
   document.getElementById('reward-sub').textContent =
-    'Wähle eine Karte für dein Deck. Es liegen ' +
-    (state.draw.length + state.hand.length + state.discard.length) + ' Karten darin.';
+    '+' + (state.letzterSold || 0) + ' Sold, im Beutel sind ' + state.sold + '. ' +
+    'Wähle eine Karte für dein Deck, es liegen ' +
+    (state.draw.length + state.hand.length + state.discard.length) + ' darin.';
 
   const liste = document.getElementById('reward-cards');
   liste.innerHTML = '';
@@ -2984,10 +3815,156 @@ function renderReward() {
   });
 }
 
+// ---------- Die Route ----------
+const ROUTE_EBENE_H = 58;                       // Abstand zweier Stationen in Pixeln
+const routeX = (spalte) => 12 + spalte * 19;    // in Prozent der Breite
+let routeBlick = null;                          // bis wohin zuletzt gescrollt wurde
+
+function renderRoute() {
+  const box = document.getElementById('route');
+  if (state.phase !== 'route' || !state.route) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+
+  const r = state.route;
+  document.getElementById('route-feldzug').textContent = state.feldzug;
+  document.getElementById('route-station').textContent = Math.min(STATIONEN, r.erledigt.length + 1);
+  document.getElementById('route-gesamt').textContent = STATIONEN;
+  document.getElementById('route-hp').textContent = Math.max(0, state.castleHp);
+  document.getElementById('route-sold').textContent = state.sold;
+
+  const hoehe = STATIONEN * ROUTE_EBENE_H + 34;
+  const y = (ebene) => hoehe - 30 - ebene * ROUTE_EBENE_H;
+
+  // Wege zuerst, damit die Knoten darauf liegen
+  let linien = '';
+  for (const k of r.knoten) {
+    const i = r.erledigt.indexOf(k.id);
+    for (const zid of k.weiter) {
+      const z = r.knoten.find(n => n.id === zid);
+      if (!z) continue;
+      let klasse = '';
+      if (i >= 0 && r.erledigt[i + 1] === zid) klasse = ' begangen';
+      else if (r.aktuell === k.id && r.offen.includes(zid)) klasse = ' offen';
+      else if (r.aktuell === null && r.offen.includes(zid)) klasse = '';
+      linien += '<line x1="' + routeX(k.spalte) + '" y1="' + y(k.ebene) +
+        '" x2="' + routeX(z.spalte) + '" y2="' + y(z.ebene) + '" class="' + klasse.trim() + '"/>';
+    }
+  }
+
+  const feld = document.getElementById('route-feld');
+  feld.style.height = hoehe + 'px';
+  feld.innerHTML = '<svg viewBox="0 0 100 ' + hoehe + '" preserveAspectRatio="none" ' +
+    'style="width:100%;height:' + hoehe + 'px">' + linien + '</svg>';
+
+  // Stationsmarken am linken Rand geben dem Ritt ein Mass
+  for (let e = 0; e < STATIONEN; e += 4) {
+    const marke = document.createElement('div');
+    marke.className = 'route-marke';
+    marke.style.top = y(e) + 'px';
+    marke.textContent = (e + 1);
+    feld.appendChild(marke);
+  }
+
+  for (const k of r.knoten) {
+    const art = KNOTEN[k.typ];
+    const offen = r.offen.includes(k.id);
+    const erledigt = r.erledigt.includes(k.id);
+    const hier = r.aktuell === k.id;
+
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'route-knoten' + (offen ? ' offen' : '') + (erledigt ? ' erledigt' : '') + (hier ? ' hier' : '');
+    b.style.left = routeX(k.spalte) + '%';
+    b.style.top = y(k.ebene) + 'px';
+    b.style.setProperty('--knotenfarbe', art.farbe);
+    b.innerHTML = '<span class="zeichen">' + art.zeichen + '</span>';
+    b.title = art.name + ' \u00b7 Station ' + (k.ebene + 1);
+    if (offen) b.addEventListener('click', () => { klang('karte'); betreteKnoten(k.id); });
+    else b.disabled = true;
+    feld.appendChild(b);
+
+    if (offen) {
+      const name = document.createElement('div');
+      name.className = 'route-name';
+      name.style.left = routeX(k.spalte) + '%';
+      name.style.top = (y(k.ebene) + 23) + 'px';
+      name.textContent = art.name;
+      feld.appendChild(name);
+    }
+  }
+
+  document.getElementById('route-fuss').innerHTML =
+    Object.values(KNOTEN).map(a =>
+      '<span><i style="color:' + a.farbe + '">' + a.zeichen + '</i> ' + a.name + '</span>').join('');
+
+  // Nur beim Wechsel nachfuehren, sonst reisst es den Blick beim Klicken weg
+  const ebeneJetzt = r.offen.length
+    ? Math.min.apply(null, r.offen.map(id => r.knoten.find(n => n.id === id).ebene))
+    : 0;
+  if (routeBlick !== ebeneJetzt) {
+    routeBlick = ebeneJetzt;
+    const rolle = document.getElementById('route-rolle');
+    rolle.scrollTop = Math.max(0, y(ebeneJetzt) - rolle.clientHeight * 0.6);
+  }
+}
+
+// ---------- Stationen ohne Kampf ----------
+function renderStation() {
+  const box = document.getElementById('station');
+  if (state.phase !== 'station' || !stationsSicht) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+
+  const sicht = stationsSicht;
+  const eintraege = sicht.eintraege || [];
+  box.querySelector('.station-box').classList.toggle('weit', eintraege.length > 4);
+  const wappen = document.getElementById('station-wappen');
+  wappen.textContent = sicht.zeichen || KNOTEN.ereignis.zeichen;
+  wappen.style.setProperty('--wappenfarbe', sicht.farbe || KNOTEN.ereignis.farbe);
+  document.getElementById('station-titel').textContent = sicht.titel;
+  document.getElementById('station-text').textContent = sicht.unter || '';
+
+  const meldung = document.getElementById('station-meldung');
+  meldung.textContent = sicht.meldung || '';
+  meldung.classList.toggle('hidden', !sicht.meldung);
+
+  const reihe = document.getElementById('station-karten');
+  reihe.innerHTML = '';
+  reihe.classList.toggle('hidden', eintraege.length === 0);
+  eintraege.forEach((e, i) => {
+    const halter = document.createElement('div');
+    halter.className = 'station-ware';
+    const karte = cardElement(e.card, { disabled: Boolean(e.gesperrt), onClick: e.aktion });
+    karte.style.animationDelay = (50 + i * 65) + 'ms';
+    halter.appendChild(karte);
+    if (e.preis != null) {
+      const schild = document.createElement('div');
+      schild.className = 'preis' + (e.verkauft ? ' weg' : (e.feilschen ? ' feil' : ''));
+      schild.textContent = e.verkauft ? 'verkauft' : e.preis + ' Sold';
+      halter.appendChild(schild);
+    }
+    reihe.appendChild(halter);
+  });
+
+  const knoepfe = document.getElementById('station-knoepfe');
+  knoepfe.innerHTML = '';
+  (sicht.knoepfe || []).forEach(k => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = k.haupt ? 'endround' : 'ghost-btn';
+    b.disabled = Boolean(k.gesperrt);
+    b.innerHTML = '<span></span>' + (k.hinweis ? '<i></i>' : '');
+    b.firstChild.textContent = k.text;
+    if (k.hinweis) b.lastChild.textContent = k.hinweis;
+    if (!k.gesperrt) b.addEventListener('click', () => { klang('karte'); k.aktion(); });
+    knoepfe.appendChild(b);
+  });
+}
+
 function renderAll() {
   document.getElementById('run-val').textContent = state.feldzug;
   document.getElementById('round-val').textContent = state.runde;
-  document.getElementById('round-max').textContent = RUNDEN_JE_FELDZUG;
+  document.getElementById('round-max').textContent = STATIONEN;
+  document.getElementById('sold-val').textContent = state.sold;
   document.getElementById('turn-val').textContent = state.zug;
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
@@ -3004,10 +3981,12 @@ function renderAll() {
   bar.style.width = Math.max(0, Math.min(100, (restHp / state.rundenHp) * 100)) + '%';
   document.getElementById('enemy-count').textContent = state.enemies.length + state.lager.length;
 
-  setIntent(currentIntentText());
+  setIntent(state.phase === 'kampf' ? currentIntentText() : '');
   drawMinimap();
   renderHand();
   renderReward();
+  renderRoute();
+  renderStation();
   renderSchluss();
 }
 
@@ -3024,10 +4003,7 @@ requestAnimationFrame(frame);
 
 // init
 state.rekord = ladeRekord();
-state.draw = buildStarterDeck();
-startRunde(1);
-zeigeBanner('Feldzug 1', 'Zwölf Runden bis zum Belagerungsmeister');
-setMessage('Errichte einen Turm und besetze ihn, bevor die Gegner das Lager verlassen haben.');
+neuerFeldzug(1);
 
 </script>
 

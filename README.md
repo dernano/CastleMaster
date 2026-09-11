@@ -1,9 +1,11 @@
 # Castle Master
 
 Ein rundenbasiertes Deckbuilding-Spiel im Browser, im Aufbau an Slay the Spire
-angelehnt. Du errichtest Türme auf einem Raster, besetzt sie mit Einheiten und
-hältst damit ein Aufgebot von Angreifern von deiner Burg fern. Überstehst du
-eine Runde, suchst du dir eine neue Karte für dein Deck aus.
+angelehnt. Du reitest eine Route aus siebzehn Stationen entlang der Grenze. An
+jeder Kampfstation errichtest du Türme auf einem Raster, besetzt sie mit
+Einheiten und hältst damit ein Aufgebot von Angreifern von deiner Burg fern.
+Dazwischen liegen Marketender, Lager und Begegnungen. Am Ende der Route wartet
+der Belagerungsmeister.
 
 Die Kartenfarben folgen dem doppeldeutschen Blatt. Die Darstellung ist eine
 isometrische Pixel-Ansicht, vollständig im Code gezeichnet.
@@ -17,37 +19,99 @@ npm start          # http://localhost:5173
 Kein `npm install` nötig, das Projekt hat keine Abhängigkeiten. Alles steckt in
 `index.html`, ein Doppelklick auf die Datei funktioniert ebenfalls.
 
-## Feldzug
+## Feldzug und Route
 
-Ein **Feldzug** sind zwölf Runden. In der letzten wartet der
-**Belagerungsmeister**, ein Endgegner, der sonst nie im Aufgebot auftaucht.
-Fällt er, ist der Feldzug bestanden.
+Ein **Feldzug** ist ein Durchlauf von siebzehn **Stationen**. Die Route wird zu
+Beginn zufällig erzeugt: Fünf Wege werden von unten nach oben gezogen, sie
+überlappen und verzweigen sich und münden alle in der letzten Station. Was die
+Wege dabei berühren, sind die Knoten. Nach jeder Station wählst du, auf welchem
+Weg es weitergeht, wie in Slay the Spire.
 
-Danach beginnt sofort der nächste, eine Stufe härter: Aufgebote und
-Gegnerstärke steigen um 18 Prozent je bestandenem Feldzug, wie die
-Aufstiegsstufen in Slay the Spire.
+| Knoten | Zeichen | Was dort passiert |
+| --- | --- | --- |
+| Angriff | ⚔ | Ein gewöhnliches Aufgebot. |
+| Vorhut | ☠ | Zäheres Aufgebot, dafür mehr Sold. Ab Station 6. |
+| Marketender | ⚖ | Fünf Karten zum Kauf, dazu Streichen und Schärfen. |
+| Lager | ⌂ | Eine Nacht Ruhe: Mauern flicken, schärfen oder ausmisten. |
+| Begegnung | ? | Ein Ereignis mit zwei bis drei Entscheidungen. |
+| Belagerungsmeister | ♛ | Station 17, der Endgegner. |
 
-Fällt die Burg, endet der Lauf und ein neuer beginnt bei Stufe eins. In beiden
-Fällen wird alles zurückgesetzt: frisches Startdeck, keine Türme, volle Burg.
-Erreichte Runde, bestandene Feldzüge und die beste Runde bleiben gespeichert.
+Mindestens zwei Marketender liegen auf jedem Feldzug, Station 16 ist immer ein
+Lager, und die ersten beiden Stationen sind mild.
 
-## Runden und Züge
+Fällt der Belagerungsmeister, ist der Feldzug bestanden und der nächste beginnt
+eine Stufe härter: Aufgebote und Gegnerstärke steigen um 18 Prozent je
+bestandenem Feldzug. Fällt die Burg, endet der Lauf und ein neuer beginnt bei
+Stufe eins. In beiden Fällen wird alles zurückgesetzt. Erreichte Station,
+bestandene Feldzüge und die beste Station bleiben gespeichert.
 
-Eine **Runde** ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb davon
-zählen **Züge**: erst handelst du, dann die Gegner.
+### Was mitreitet und was nicht
 
-Das Aufgebot der Runde wartet zu Beginn vollständig im **Lager** rechts neben
-dem Spielfeld. Dort sind die Gegner geschützt, du kannst sie nicht angreifen,
+**Türme bleiben nie stehen.** An jeder Station baust du von vorn. Die
+eigentliche Fortschrittsachse ist damit das Deck, nicht das Feld.
+
+**Die Burg reitet mit.** Ihre 35 Lebenspunkte müssen den ganzen Feldzug tragen
+und heilen nicht von selbst. Geheilt wird nur im Lager oder durch eine
+Begegnung.
+
+**Deck und Sold reiten mit.** Was du kaufst, findest oder schärfst, bleibt bis
+zum Ende des Feldzugs.
+
+## Sold
+
+Nach jedem gewonnenen Kampf zahlt die Krone **Sold**, bei einer Vorhut deutlich
+mehr. Der Betrag wächst leicht mit der Station.
+
+| Posten | Preis |
+| --- | --- |
+| Karte beim Marketender, gewöhnlich | rund 45 |
+| Karte beim Marketender, selten | rund 80 |
+| Karte beim Marketender, kostbar | rund 135 |
+| Karte streichen | 70 |
+| Karte schärfen | 60 |
+
+Ein Stück der Auslage liegt immer günstiger aus, damit sich der Umweg zum
+Marketender auch bei schmalem Beutel lohnt.
+
+**Schärfen** verbessert, was eine Karte ohnehin tut: Schaden, Leben, Reichweite
+oder Höhe. Karten ohne solche Werte werden stattdessen um einen Tatendrang
+billiger. Jede Karte lässt sich nur einmal schärfen, danach trägt ihr Name ein
+`+`.
+
+## Seltenheit
+
+Jede Karte hat eine von drei Seltenheiten. Sie steuert, wie oft die Karte in
+Auslagen und Belohnungen auftaucht, und was sie kostet. Zu sehen ist sie am
+**Rahmen und am Fußband** der Karte; die Kartenfarbe bleibt an der linken Kante
+und im Zeichen oben rechts.
+
+| Seltenheit | Farbe | Anteil |
+| --- | --- | --- |
+| Gewöhnlich | grau | 62 |
+| Selten | blau | 30 |
+| Kostbar | goldorange | 8 |
+
+## Begegnungen
+
+Acht Ereignisse, jedes mit zwei bis drei Entscheidungen: der fahrende Barde,
+eine verlassene Schmiede, ein alter Steinbruch, der Grenzstein, ein enger
+Hohlweg, ein wandernder Baumeister, ein alter Wachturm und Söldner ohne Sold.
+Sie geben oder nehmen Sold, Burg-Lebenspunkte und Karten. Zweimal dieselbe
+Begegnung hintereinander kommt nicht vor.
+
+## Stationen und Züge
+
+Eine **Kampfstation** ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
+davon zählen **Züge**: erst handelst du, dann die Gegner.
+
+Das Aufgebot wartet zu Beginn vollständig im **Lager** rechts neben dem
+Spielfeld. Dort sind die Gegner geschützt, du kannst sie nicht angreifen,
 siehst aber von Anfang an, was auf dich zukommt. Zug um Zug treten einige von
 ihnen aufs Feld.
 
-Hast du alle Gegner einer Runde erschlagen, ist sie überstanden. Dann wählst du
-eine von drei Karten für dein Deck, oder überspringst die Auswahl, um das Deck
-schlank zu halten. Danach beginnt die nächste Runde mit einem stärkeren
-Aufgebot.
-
-Türme, Burgschaden und Deck bleiben über Runden hinweg bestehen. Die Burg heilt
-nicht, ihre 35 Lebenspunkte müssen den ganzen Feldzug tragen.
+Hast du alle Gegner erschlagen, ist die Station gehalten. Du bekommst Sold und
+wählst eine von drei Karten für dein Deck, oder überspringst die Auswahl, um
+das Deck schlank zu halten. Danach geht es zurück auf die Route.
 
 ## Bewegung und Darstellung
 
@@ -70,7 +134,8 @@ Spiel ist das unbrauchbar, deshalb werden verdeckte Gegner blass über das
 Mauerwerk gelegt und bleiben so sichtbar. Klicks bevorzugen Gegner gegenüber
 Bauwerken, sonst wäre ein verdecktes Ziel nicht anwählbar.
 
-Beim Rundenwechsel und nach gewonnener Runde fährt ein Banner über das Bild.
+Beim Betreten einer Station und nach gehaltener Station fährt ein Banner über
+das Bild.
 Karten fächern sich beim Nachziehen auf.
 
 ## Aufbau des Bildes
@@ -109,7 +174,7 @@ schweben sie unmerklich.
 
 Alle Geräusche werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
 Bogenschuss, Treffer, Turmbau, einstürzender Turm, Schlag gegen die Burg, ein
-kleiner Dreiklang nach gewonnener Runde. Der Schalter `♪` oben rechts schaltet
+kleiner Dreiklang nach gehaltener Station. Der Schalter `♪` oben rechts schaltet
 den Ton ab, die Einstellung bleibt gespeichert.
 
 Wer im System weniger Bewegung eingestellt hat, bekommt alles ohne Animation,
@@ -174,13 +239,13 @@ dass er in diesem Zug schon geschossen hat. `Esc` hebt jede Auswahl auf.
 
 ## Gegner
 
-| Gegner | LP | Schaden | Bewegung | Reichweite | Ab Runde |
+| Gegner | LP | Schaden | Bewegung | Reichweite | Ab Station |
 | --- | --- | --- | --- | --- | --- |
 | Späher | 4 | 1 | 5 | 1 | 1 |
 | Armbrustschütze | 6 | 2 | 2 | 4 | 2 |
 | Ritter | 14 | 3 | 3 | 1 | 3 |
 | Ramme | 20 | 5 | 2 | 1 | 5 |
-| Belagerungsmeister | 65 | 8 | 2 | 2 | nur Runde 12 |
+| Belagerungsmeister | 65 | 8 | 2 | 2 | nur Station 17 |
 
 Jeder Gegner hat eine eigene Angriffsreichweite. Ein Späher muss bis auf ein
 Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern und
@@ -211,37 +276,45 @@ neuen Nachziehstapel.
 | Sturmwind | 1 |
 | Krone der Belagerung | 1 |
 
-Fünf Karten pro Zug. Nach jeder gewonnenen Runde wächst das Deck um höchstens
-eine Karte.
+Fünf Karten pro Zug. Die Hand gehört zur Station, nicht zum Ritt: Beim Betreten
+einer Station wandert sie zurück ins Deck und wird frisch gezogen.
+
+Das Deck wächst über den Feldzug durch Belohnungen, Käufe beim Marketender und
+Funde bei Begegnungen. Streichen im Lager oder beim Marketender hält es wieder
+schlank.
 
 ## Schwierigkeit
 
-Das Aufgebot einer Runde wird aus einem Punktebudget zusammengestellt, das mit
-der Rundennummer wächst. Teure Gegnertypen schalten sich erst später frei. Kein
-Typ stellt mehr als einen Teil des Aufgebots, damit späte Runden nicht nur aus
-Rammen bestehen. Höchstens sechs Gegner stehen gleichzeitig auf dem Feld, der
-Rest wartet im Lager. Spätere Runden schicken zähere und stärkere Gegner.
+Das Aufgebot einer Station wird aus einem Punktebudget zusammengestellt, das mit
+der Stationsnummer wächst. Teure Gegnertypen schalten sich erst später frei.
+Kein Typ stellt mehr als einen Teil des Aufgebots, damit späte Stationen nicht
+nur aus Rammen bestehen. Höchstens acht Gegner stehen gleichzeitig auf dem Feld,
+der Rest wartet im Lager. Spätere Stationen schicken zähere und stärkere Gegner.
 
-Der Tatendrang wächst alle zwei Runden um einen Punkt bis höchstens acht.
+Eine **Vorhut** bekommt ein um ein Drittel größeres Budget, wählt bevorzugt
+schwere Typen, und ihre Gegner tragen ein Viertel mehr Lebenspunkte. Der
+Zuschlag auf den Schaden kommt erst ab Station 8, sonst wäre die erste Vorhut
+die Wand, an der jeder Feldzug endet.
 
-Zum Justieren stehen oben im Skript `RUNDEN_JE_FELDZUG`, `feldzugHaerte`,
-`rundenBudget`, `einsatzProZug`, `maxTatendrangFuer`,
-`MAX_GEGNER_AUF_DEM_FELD`, `belagerungsHp` und `belagerungsSchaden`. Vier
-Testläufe mit einfacher Spielweise endeten in Runde 7, 12 (bestanden), 5 und 7.
+Der Tatendrang wächst alle zwei Stationen um einen Punkt bis höchstens acht.
 
-Eine offene Frage: Türme bleiben zwischen den Runden stehen. Das passt zum
-Burgenbau, macht späte Runden aber leichter, weil man mit sechs besetzten
-Türmen hineingeht. In Slay the Spire beginnt jeder Kampf leer. Ein Zurücksetzen
-der Türme je Runde würde das Deck zur eigentlichen Fortschrittsachse machen.
+Zum Justieren stehen oben im Skript `STATIONEN`, `feldzugHaerte`,
+`rundenBudget`, `einsatzProZug`, `maxTatendrangFuer`, `MAX_GEGNER_AUF_DEM_FELD`,
+`belagerungsHp`, `belagerungsSchaden`, `SOLD_JE_STATION`, `SOLD_VORHUT`,
+`PREIS_ENTFERNEN` und `PREIS_SCHAERFEN`.
+
+Zwölf Testläufe mit einfacher Spielweise endeten viermal bestanden und sonst an
+den Stationen 6, 10, 10, 11, 13, 14, 15 und 15. Verloren wird fast immer an
+einer Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 
 ## Was noch fehlt
 
-- **Kleiner Kartenpool.** Die Belohnung bietet dieselben sechs Karten an, die es
-  auch im Startdeck gibt. Ein Deckbuilder lebt von neuen Karten mit eigenen
-  Effekten.
-- **Kein Ende nach oben.** Die Runden hören nie auf, es gibt keinen Sieg.
-- **Keine Erholung.** Die Burg heilt zwischen den Runden nicht, zerstörte Türme
-  sind weg.
+- **Kleiner Kartenpool.** Auslagen und Belohnungen bieten dieselben sechs
+  Karten an, die es auch im Startdeck gibt. Geplant sind 75, alle im Durchgang
+  kaufbar.
+- **Keine Zier-Mauer.** Sobald der erste Turm steht, soll sich automatisch eine
+  Mauer um Burg und Türme schließen. Sie hält nichts auf und hat keine
+  Lebenspunkte, sie soll nur hübsch aussehen.
 - **Gegner weichen Mauern nur einfach aus.** Sie prüfen das nächste Feld, sie
   suchen keinen Weg um eine lange Mauer herum.
 
@@ -250,9 +323,12 @@ der Türme je Runde würde das Deck zur eigentlichen Fortschrittsachse machen.
 Alles steckt in `index.html`: Stil, Aufbau und Logik.
 
 Spiellogik: `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
-`ENEMY_TYPES` für die Gegner, `buildRoster` für das Aufgebot einer Runde,
-`deployFromLager` für den Nachschub aus dem Lager, `startRunde`, `endTurn` und
-`nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
+`ENEMY_TYPES` für die Gegner, `buildRoster` für das Aufgebot einer Station,
+`deployFromLager` für den Nachschub aus dem Lager, `baueRoute` für die Karte
+des Feldzugs, `betreteKnoten` und `weiterAufDerRoute` für den Ablauf einer
+Station, `oeffneHaendler`, `oeffneRast` und `oeffneEreignis` für die Stationen
+ohne Kampf, `EREIGNISSE` für die Begegnungen, `schaerfeKarte` und
+`entferneKarte` fürs Deck, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
 `resolveEnemyTurn` für den Gegnerzug sowie `towerReach` und `towerDamageAt` für
 Reichweite und Salve eines Turms.
 
