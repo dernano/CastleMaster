@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Castle Master – Prototyp</title>
+<title>Castle Master – Prototyp v2</title>
 <style>
   :root {
     --parchment: #e9dcc0;
@@ -20,347 +20,95 @@
     --eichel-dark: #40300f;
     --disabled: #9c9184;
   }
-
   * { box-sizing: border-box; }
-
   body {
     margin: 0;
     min-height: 100vh;
     background: var(--parchment);
-    background-image:
-      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.03) 0, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(0,0,0,0.04) 0, transparent 45%);
     font-family: Georgia, 'Iowan Old Style', serif;
     color: var(--ink);
-    padding: 20px 16px 100px;
+    padding: 16px 16px 100px;
   }
+  h1 { text-align: center; font-size: 1.5rem; letter-spacing: 0.04em; margin: 0 0 2px; color: var(--walnut-dark); }
+  .subtitle { text-align: center; font-size: 0.8rem; color: var(--eichel); margin-bottom: 12px; font-style: italic; }
 
-  h1 {
-    text-align: center;
-    font-size: 1.6rem;
-    letter-spacing: 0.04em;
-    margin: 0 0 4px;
-    color: var(--walnut-dark);
-  }
-
-  .subtitle {
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--eichel);
-    margin-bottom: 18px;
-    font-style: italic;
-  }
-
-  .topbar {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
-  .tatendrang {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--walnut-dark);
-    color: var(--parchment);
-    padding: 8px 16px;
-    border-radius: 3px;
-    font-size: 1rem;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
-  }
-
-  .tatendrang .flame {
-    color: #e7b84f;
-    font-size: 1.2rem;
-  }
-
-  .piles {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-size: 0.82rem;
-    color: var(--eichel);
-  }
-
-  .pile {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.45);
-    border: 1px solid var(--parchment-dark);
-    border-radius: 3px;
-    padding: 6px 10px;
-  }
-
-  .pile b {
-    font-size: 1rem;
-    color: var(--walnut-dark);
-    min-width: 14px;
-    text-align: right;
-  }
-
-  .pile.empty { opacity: 0.5; }
-
-  .round-label {
-    font-size: 0.82rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--eichel);
-  }
-
-  button.endround {
-    background: var(--herz);
-    color: var(--parchment);
-    border: none;
-    padding: 8px 18px;
-    border-radius: 3px;
-    font-family: inherit;
-    font-size: 0.9rem;
-    letter-spacing: 0.03em;
-    cursor: pointer;
-    box-shadow: 0 2px 0 var(--herz-dark);
-  }
+  .topbar { display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+  .stat { display: flex; align-items: center; gap: 6px; background: var(--walnut-dark); color: var(--parchment);
+    padding: 6px 14px; border-radius: 3px; font-size: 0.9rem; box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+  .stat .icon { font-size: 1.1rem; }
+  .stat.castle-hp { background: var(--herz-dark); }
+  button.endround { background: var(--herz); color: var(--parchment); border: none; padding: 7px 16px;
+    border-radius: 3px; font-family: inherit; font-size: 0.88rem; letter-spacing: 0.03em; cursor: pointer;
+    box-shadow: 0 2px 0 var(--herz-dark); }
   button.endround:active { transform: translateY(1px); box-shadow: none; }
 
-  .message {
-    text-align: center;
-    min-height: 24px;
-    font-size: 0.9rem;
-    color: var(--herz-dark);
-    font-style: italic;
-    margin-bottom: 10px;
-  }
+  .message { text-align: center; min-height: 20px; font-size: 0.85rem; color: var(--herz-dark); font-style: italic; margin-bottom: 8px; }
+  .intent { text-align: center; min-height: 18px; font-size: 0.78rem; color: var(--eichel-dark); margin-bottom: 10px; }
 
-  /* Battlefield */
-  .battlefield {
-    max-width: 900px;
-    margin: 0 auto 30px;
-    border: 2px solid var(--walnut);
-    border-radius: 4px;
-    background: var(--parchment-dark);
-    padding: 20px;
-    min-height: 160px;
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-content: flex-start;
-  }
+  .field-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+  canvas { border: 2px solid var(--walnut); border-radius: 4px; background: var(--parchment-dark); max-width: 100%; touch-action: none; }
 
-  .battlefield.empty::before {
-    content: "Noch keine Türme errichtet. Spiele eine Gebäude-Karte.";
-    color: var(--disabled);
-    font-style: italic;
-    font-size: 0.9rem;
-    width: 100%;
-    text-align: center;
-    padding: 30px 0;
-  }
+  .hand-label { text-align: center; font-size: 0.78rem; color: var(--eichel); letter-spacing: 0.05em; margin-bottom: 8px; }
+  .hand { max-width: 950px; margin: 0 auto; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
-  .tower {
-    background: var(--parchment);
-    border: 2px solid var(--eichel);
-    border-radius: 4px;
-    width: 130px;
-    padding: 10px 8px;
-    text-align: center;
-  }
-
-  .tower-name {
-    font-size: 0.78rem;
-    color: var(--eichel-dark);
-    letter-spacing: 0.03em;
-    margin-bottom: 8px;
-  }
-
-  .slot {
-    border: 1.5px dashed var(--disabled);
-    border-radius: 3px;
-    min-height: 46px;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    padding: 4px;
-    background: rgba(255,255,255,0.4);
-  }
-
-  .slot.filled {
-    border-style: solid;
-    border-color: var(--herz);
-    background: rgba(124,31,52,0.08);
-    color: var(--herz-dark);
-    font-weight: bold;
-  }
-
-  .slot.targetable {
-    border-color: var(--blatt);
-    background: rgba(74,92,43,0.15);
-    cursor: pointer;
-    animation: pulse 1s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 rgba(74,92,43,0.4); }
-    50% { box-shadow: 0 0 6px rgba(74,92,43,0.6); }
-  }
-
-  .unit-boosted::after {
-    content: " ✦";
-    color: var(--schellen);
-  }
-
-  /* Hand */
-  .hand-label {
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--eichel);
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
-  }
-
-  .hand {
-    max-width: 950px;
-    margin: 0 auto;
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .card {
-    width: 140px;
-    min-height: 190px;
-    background: var(--parchment);
-    border: 2px solid var(--walnut);
-    border-radius: 6px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
-    position: relative;
-    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
-  }
-
-  .card:hover:not(.disabled) {
-    transform: translateY(-6px);
-    box-shadow: 0 8px 10px rgba(0,0,0,0.2);
-  }
-
-  .card.disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  .card.selected {
-    outline: 3px solid var(--schellen);
-    outline-offset: 2px;
-  }
-
-  .card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 6px;
-  }
-
-  .card-cost {
-    background: var(--walnut-dark);
-    color: var(--parchment);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-
-  .card-suit {
-    font-size: 1.3rem;
-    line-height: 1;
-  }
-
-  .card-name {
-    font-size: 0.92rem;
-    font-weight: bold;
-    margin-bottom: 4px;
-    color: var(--ink);
-  }
-
-  .card-type {
-    font-size: 0.62rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 8px;
-  }
-
+  .card { width: 128px; min-height: 172px; background: var(--parchment); border: 2px solid var(--walnut);
+    border-radius: 6px; padding: 9px; display: flex; flex-direction: column; cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease; position: relative; box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
+  .card:hover:not(.disabled) { transform: translateY(-5px); box-shadow: 0 7px 9px rgba(0,0,0,0.2); }
+  .card.disabled { opacity: 0.45; cursor: not-allowed; }
+  .card.selected { outline: 3px solid var(--schellen); outline-offset: 2px; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .card-cost { background: var(--walnut-dark); color: var(--parchment); border-radius: 50%; width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
+  .card-suit { font-size: 1.2rem; line-height: 1; }
+  .card-name { font-size: 0.86rem; font-weight: bold; margin-bottom: 3px; }
+  .card-type { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
   .card-type.Gebäude { color: var(--eichel); }
   .card-type.Einheit { color: var(--herz); }
   .card-type.Fähigkeit { color: var(--blatt); }
   .card-type.Macht { color: var(--schellen-dark); }
+  .card-text { font-size: 0.68rem; font-style: italic; color: #55483a; margin-top: auto; line-height: 1.2; }
+  .card-stats { font-size: 0.72rem; color: var(--walnut-dark); margin-bottom: 3px; }
 
-  .card-text {
-    font-size: 0.72rem;
-    font-style: italic;
-    color: #55483a;
-    margin-top: auto;
-    line-height: 1.25;
-  }
-
-  .card-stats {
-    font-size: 0.75rem;
-    color: var(--walnut-dark);
-    margin-bottom: 4px;
-  }
-
-  footer {
-    text-align: center;
-    margin-top: 30px;
-    font-size: 0.7rem;
-    color: var(--disabled);
-  }
+  footer { text-align: center; margin-top: 24px; font-size: 0.68rem; color: var(--disabled); }
 </style>
 </head>
 <body>
 
 <h1>🏰 Castle Master</h1>
-<div class="subtitle">Prototyp – Kern-Loop: Turm bauen → Einheit platzieren</div>
+<div class="subtitle">Prototyp v2 – Grid-Feld, frei platzierbare Türme, erster Gegner (Testraster 20x15)</div>
 
 <div class="topbar">
-  <div class="round-label">Runde <span id="round-val">1</span></div>
-  <div class="tatendrang"><span class="flame">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
-  <div class="piles">
-    <span class="pile" id="pile-draw" title="Nachziehstapel">🂠 <b id="draw-count">0</b> Nachziehstapel</span>
-    <span class="pile" id="pile-discard" title="Ablagestapel">🗇 <b id="discard-count">0</b> Ablage</span>
-  </div>
+  <div class="stat"><span class="icon">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
+  <div class="stat castle-hp"><span class="icon">🏰</span> <span id="castle-hp-val">20</span> / 20 Burg-LP</div>
   <button class="endround" onclick="endRound()">Runde beenden</button>
 </div>
 
 <div class="message" id="message"></div>
+<div class="intent" id="intent"></div>
 
-<div class="battlefield" id="battlefield"></div>
+<div class="field-wrap">
+  <canvas id="field" width="560" height="420"></canvas>
+</div>
 
-<div class="hand-label">Deine Hand <span id="hand-count"></span></div>
+<div class="hand-label">Deine Hand</div>
 <div class="hand" id="hand"></div>
 
-<footer>Doppeldeutsche Symbolik: 🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht</footer>
+<footer>🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)</footer>
 
 <script>
+const COLS = 20, ROWS = 15, CELL = 28;
+const canvas = document.getElementById('field');
+const ctx = canvas.getContext('2d');
+
 const CARD_POOL = [
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2,
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6,
     text: 'Fundament deiner Burg. Ohne ihn kein Widerstand.' },
-  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1,
+  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3,
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
-  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2,
+  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3,
     text: 'Braucht festen Boden unter den Füßen.' },
-  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3,
+  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 5,
     text: 'Zielt, wo andere zögern.' },
   { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1,
     text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
@@ -368,135 +116,358 @@ const CARD_POOL = [
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
 ];
 
-// Startdeck: wie oft jede Karte zu Beginn im Nachziehstapel liegt.
-const STARTER_DECK = [
-  ['palisade', 3],
-  ['wachturm', 2],
-  ['waldlaeufer', 3],
-  ['bogenschuetze', 2],
-  ['sturmwind', 1],
-  ['krone', 1],
-];
-
-const HAND_SIZE = 5;
+const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 20 };
 
 let state = {
-  round: 1,
-  tatendrang: 3,
-  maxTatendrang: 3,
-  towers: [], // { name, slots: [null | {name, dmg, boosted}] }
-  draw: [],    // Nachziehstapel, oberste Karte am Ende des Arrays
+  tatendrang: 3, maxTatendrang: 3,
+  castleHp: CASTLE.maxHp,
+  towers: [], // { id, col, row, w, h, hp, maxHp, slots: [null|{name,dmg}] }
+  enemy: null, // { col, row, range, dmg, hp, maxHp }
   hand: [],
-  discard: [], // Ablagestapel
-  pendingCard: null, // card awaiting a target click
+  pendingCard: null,
+  nextTowerId: 1,
 };
 
-// Fisher-Yates, mischt an Ort und Stelle.
-function shuffle(cards) {
-  for (let i = cards.length - 1; i > 0; i--) {
+function drawHand() {
+  const hand = [];
+  for (let i = 0; i < 6; i++) hand.push({ ...CARD_POOL[i % CARD_POOL.length], uid: 'c' + Date.now() + '_' + i });
+  for (let i = hand.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [cards[i], cards[j]] = [cards[j], cards[i]];
+    [hand[i], hand[j]] = [hand[j], hand[i]];
   }
-  return cards;
+  return hand;
 }
 
-function buildStarterDeck() {
-  const deck = [];
-  let serial = 0;
-  for (const [id, count] of STARTER_DECK) {
-    const proto = CARD_POOL.find(c => c.id === id);
-    if (!proto) continue;
-    for (let i = 0; i < count; i++) {
-      deck.push({ ...proto, uid: id + '#' + (++serial) });
-    }
+function setMessage(t) { document.getElementById('message').textContent = t; }
+function setIntent(t) { document.getElementById('intent').textContent = t; }
+
+function spawnEnemy() {
+  state.enemy = {
+    col: COLS - 1,
+    row: Math.floor(Math.random() * ROWS),
+    range: 4,
+    dmg: 2,
+    hp: 5,
+    maxHp: 5,
+  };
+}
+
+function cellInsideRect(col, row, r) {
+  return col >= r.col && col < r.col + r.w && row >= r.row && row < r.row + r.h;
+}
+
+function closestPointOnRect(fromCol, fromRow, r) {
+  const c = Math.max(r.col, Math.min(fromCol, r.col + r.w - 1));
+  const rr = Math.max(r.row, Math.min(fromRow, r.row + r.h - 1));
+  return { col: c, row: rr };
+}
+
+function chebyshev(c1, r1, c2, r2) {
+  return Math.max(Math.abs(c1 - c2), Math.abs(r1 - r2));
+}
+
+function findNearestTower(enemy) {
+  let best = null, bestDist = Infinity;
+  for (const t of state.towers) {
+    const p = closestPointOnRect(enemy.col, enemy.row, t);
+    const d = chebyshev(enemy.col, enemy.row, p.col, p.row);
+    if (d < bestDist) { bestDist = d; best = t; }
   }
-  return shuffle(deck);
+  return best;
 }
 
-/**
- * Zieht bis zu n Karten auf die Hand. Ist der Nachziehstapel leer, wandert
- * der Ablagestapel gemischt zurueck. Sind beide leer, wird weniger gezogen.
- * Gibt zurueck, wie viele Karten kamen und ob dabei gemischt wurde.
- */
-function drawCards(n) {
-  let drawn = 0;
-  let reshuffled = false;
-  for (let i = 0; i < n; i++) {
-    if (state.draw.length === 0) {
-      if (state.discard.length === 0) break;
-      state.draw = shuffle(state.discard);
-      state.discard = [];
-      reshuffled = true;
-    }
-    state.hand.push(state.draw.pop());
-    drawn++;
+function currentIntentText() {
+  if (!state.enemy) return '';
+  const e = state.enemy;
+  const target = findNearestTower(e);
+  if (target) {
+    const p = closestPointOnRect(e.col, e.row, target);
+    const d = chebyshev(e.col, e.row, p.col, p.row);
+    if (d <= 1) return '⚔ Gegner bereit zum Angriff auf ' + towerLabel(target) + '!';
+    return '➤ Gegner rückt auf ' + towerLabel(target) + ' vor (Reichweite ' + e.range + ').';
+  } else {
+    if (e.col <= CASTLE.col + CASTLE.w) return '⚔ Gegner bereit, die Burg anzugreifen!';
+    return '➤ Gegner rückt auf die Burg vor (Reichweite ' + e.range + ').';
   }
-  return { drawn, reshuffled };
 }
 
-function setMessage(text) {
-  document.getElementById('message').textContent = text;
-}
+function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
 
-function anyFreeSlot() {
-  return state.towers.some(t => t.slots.some(s => s === null));
-}
+function anyTowerWithFreeSlot() { return state.towers.some(t => t.slots.some(s => s === null)); }
+function anyTowerWithUnit() { return state.towers.some(t => t.slots.some(s => s)); }
 
-function render() {
-  document.getElementById('round-val').textContent = state.round;
-  document.getElementById('tatendrang-val').textContent = state.tatendrang;
-  document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
-  document.getElementById('draw-count').textContent = state.draw.length;
-  document.getElementById('discard-count').textContent = state.discard.length;
-  document.getElementById('pile-draw').classList.toggle('empty', state.draw.length === 0);
-  document.getElementById('pile-discard').classList.toggle('empty', state.discard.length === 0);
-  document.getElementById('hand-count').textContent =
-    state.hand.length ? '(' + state.hand.length + ')' : '(leer)';
+// ---------- Rendering ----------
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const bf = document.getElementById('battlefield');
-  bf.innerHTML = '';
-  bf.classList.toggle('empty', state.towers.length === 0);
+  ctx.strokeStyle = '#c9b78e';
+  ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
+  }
 
-  state.towers.forEach((tower, tIdx) => {
-    const div = document.createElement('div');
-    div.className = 'tower';
-    const nameEl = document.createElement('div');
-    nameEl.className = 'tower-name';
-    nameEl.textContent = '🌰 ' + tower.name;
-    div.appendChild(nameEl);
+  if (state.pendingCard && state.pendingCard.type === 'Gebäude' && state.hoverCell) {
+    const w = 2, h = 2;
+    const valid = isValidTowerPlacement(state.hoverCell.col, state.hoverCell.row, w, h);
+    ctx.fillStyle = valid ? 'rgba(74,92,43,0.35)' : 'rgba(124,31,52,0.35)';
+    ctx.fillRect(state.hoverCell.col * CELL, state.hoverCell.row * CELL, w * CELL, h * CELL);
+  }
 
-    tower.slots.forEach((slot, sIdx) => {
-      const slotEl = document.createElement('div');
-      const isTargetable = state.pendingCard &&
-        state.pendingCard.type === 'Einheit' && slot === null;
-      slotEl.className = 'slot' + (slot ? ' filled' : '') + (isTargetable ? ' targetable' : '');
-      if (slot) {
-        slotEl.innerHTML = '❤ ' + slot.name + ' (' + slot.dmg + ')' +
-          (slot.boosted ? '<span class="unit-boosted"></span>' : '');
-        if (state.pendingCard && state.pendingCard.type === 'Fähigkeit') {
-          slotEl.classList.add('targetable');
-          slotEl.onclick = () => applyAbilityTo(tIdx, sIdx);
-        }
-      } else if (isTargetable) {
-        slotEl.textContent = 'freier Platz';
-        slotEl.onclick = () => placeUnit(tIdx, sIdx);
-      } else {
-        slotEl.textContent = 'leer';
-      }
-      div.appendChild(slotEl);
-    });
-    bf.appendChild(div);
+  ctx.fillStyle = '#5c4326';
+  ctx.fillRect(CASTLE.col * CELL, CASTLE.row * CELL, CASTLE.w * CELL, CASTLE.h * CELL);
+  ctx.fillStyle = '#e9dcc0';
+  ctx.font = '16px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🏰', (CASTLE.col + CASTLE.w / 2) * CELL, (CASTLE.row + CASTLE.h / 2) * CELL + 5);
+  drawHpBar(CASTLE.col * CELL, CASTLE.row * CELL - 8, CASTLE.w * CELL, state.castleHp, CASTLE.maxHp, '#7c1f34');
+
+  // range indicators (drawn first, under everything else)
+  state.towers.forEach(t => {
+    const defender = t.slots.find(s => s && s.range);
+    if (!defender) return;
+    const cx = (t.col + t.w / 2) * CELL;
+    const cy = (t.row + t.h / 2) * CELL;
+    ctx.beginPath();
+    ctx.arc(cx, cy, defender.range * CELL, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(124,31,52,0.06)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(124,31,52,0.35)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]);
   });
 
+  state.towers.forEach(t => {
+    const targetable = state.pendingCard && (
+      (state.pendingCard.type === 'Einheit' && t.slots.some(s => s === null)) ||
+      (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
+    );
+    ctx.fillStyle = targetable ? '#8a6a3a' : '#6b4e2a';
+    ctx.fillRect(t.col * CELL, t.row * CELL, t.w * CELL, t.h * CELL);
+    if (targetable) {
+      ctx.strokeStyle = '#4a5c2b'; ctx.lineWidth = 3;
+      ctx.strokeRect(t.col * CELL + 1, t.row * CELL + 1, t.w * CELL - 2, t.h * CELL - 2);
+    }
+    ctx.fillStyle = '#e9dcc0';
+    ctx.font = '14px serif';
+    ctx.fillText('🌰', (t.col + t.w / 2) * CELL, (t.row + t.h / 2) * CELL + 3);
+    const hasUnit = t.slots.some(s => s);
+    if (hasUnit) {
+      ctx.font = '11px serif';
+      ctx.fillText('❤', (t.col + t.w / 2) * CELL, (t.row + t.h / 2) * CELL + 16);
+    }
+    drawHpBar(t.col * CELL, t.row * CELL - 6, t.w * CELL, t.hp, t.maxHp, '#5c4326');
+  });
+
+  if (state.enemy) {
+    const e = state.enemy;
+    ctx.fillStyle = '#2b2018';
+    ctx.beginPath();
+    ctx.arc(e.col * CELL + CELL / 2, e.row * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e9dcc0';
+    ctx.font = '13px serif';
+    ctx.fillText('⚔', e.col * CELL + CELL / 2, e.row * CELL + CELL / 2 + 4);
+    drawHpBar(e.col * CELL, e.row * CELL - 6, CELL, e.hp, e.maxHp, '#2b2018');
+  }
+
+  ctx.textAlign = 'start';
+}
+
+function drawHpBar(x, y, w, hp, maxHp, color) {
+  ctx.fillStyle = '#00000030';
+  ctx.fillRect(x, y, w, 4);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w * Math.max(0, hp / maxHp), 4);
+}
+
+function isValidTowerPlacement(col, row, w, h) {
+  if (col < 0 || row < 0 || col + w > COLS || row + h > ROWS) return false;
+  const rect = { col, row, w, h };
+  if (rectsOverlap(rect, CASTLE)) return false;
+  for (const t of state.towers) if (rectsOverlap(rect, t)) return false;
+  return true;
+}
+function rectsOverlap(a, b) {
+  return a.col < b.col + b.w && a.col + a.w > b.col && a.row < b.row + b.h && a.row + a.h > b.row;
+}
+
+// ---------- Canvas interaction ----------
+function canvasCellFromEvent(evt) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (evt.clientX - rect.left) * scaleX;
+  const y = (evt.clientY - rect.top) * scaleY;
+  return { col: Math.floor(x / CELL), row: Math.floor(y / CELL) };
+}
+
+canvas.addEventListener('mousemove', (evt) => {
+  if (!state.pendingCard || state.pendingCard.type !== 'Gebäude') return;
+  state.hoverCell = canvasCellFromEvent(evt);
+  draw();
+});
+
+canvas.addEventListener('click', (evt) => {
+  const cell = canvasCellFromEvent(evt);
+  if (!state.pendingCard) return;
+
+  if (state.pendingCard.type === 'Gebäude') {
+    if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) {
+      placeTower(cell.col, cell.row);
+    } else {
+      setMessage('Hier kann kein Turm stehen.');
+    }
+    return;
+  }
+
+  const tower = state.towers.find(t => cellInsideRect(cell.col, cell.row, t));
+  if (!tower) return;
+
+  if (state.pendingCard.type === 'Einheit') {
+    const slotIdx = tower.slots.findIndex(s => s === null);
+    if (slotIdx === -1) { setMessage('Dieser Turm hat keinen freien Platz.'); return; }
+    placeUnit(tower, slotIdx);
+  } else if (state.pendingCard.type === 'Fähigkeit') {
+    const slotIdx = tower.slots.findIndex(s => s !== null);
+    if (slotIdx === -1) { setMessage('Auf diesem Turm steht keine Einheit.'); return; }
+    applyAbility(tower, slotIdx);
+  }
+});
+
+// ---------- Game actions ----------
+function playCard(card) {
+  if (card.type === 'Gebäude') {
+    state.pendingCard = card;
+    setMessage('Wähle eine Position für ' + card.name + ' auf dem Feld.');
+  } else if (card.type === 'Einheit') {
+    if (!anyTowerWithFreeSlot()) { setMessage('Braucht einen Turm mit freiem Platz!'); return; }
+    state.pendingCard = card;
+    setMessage('Wähle einen Turm für ' + card.name + '.');
+  } else if (card.type === 'Fähigkeit') {
+    if (!anyTowerWithUnit()) { setMessage('Keine Einheit auf dem Feld, die verstärkt werden könnte.'); return; }
+    state.pendingCard = card;
+    setMessage('Wähle eine Turm-Einheit für ' + card.name + '.');
+  } else if (card.type === 'Macht') {
+    state.tatendrang -= card.cost;
+    state.towers.forEach(t => t.slots.push(null));
+    removeFromHand(card);
+    setMessage(card.name + ' wirkt: alle Türme erhalten einen zusätzlichen Platz.');
+  }
+  renderAll();
+}
+
+function placeTower(col, row) {
+  const card = state.pendingCard;
+  state.tatendrang -= card.cost;
+  state.towers.push({
+    id: state.nextTowerId++, name: card.name, col, row, w: 2, h: 2,
+    hp: card.hp, maxHp: card.hp, slots: [null],
+  });
+  removeFromHand(card);
+  state.pendingCard = null;
+  state.hoverCell = null;
+  setMessage(card.name + ' errichtet.');
+  renderAll();
+}
+
+function placeUnit(tower, slotIdx) {
+  const card = state.pendingCard;
+  state.tatendrang -= card.cost;
+  tower.slots[slotIdx] = { name: card.name, dmg: card.dmg, range: card.range, boosted: false };
+  removeFromHand(card);
+  state.pendingCard = null;
+  setMessage(card.name + ' bezieht Stellung auf ' + tower.name + '.');
+  renderAll();
+}
+
+function applyAbility(tower, slotIdx) {
+  const card = state.pendingCard;
+  const unit = tower.slots[slotIdx];
+  state.tatendrang -= card.cost;
+  unit.dmg += 1;
+  unit.boosted = true;
+  removeFromHand(card);
+  state.pendingCard = null;
+  setMessage(card.name + ' verstärkt ' + unit.name + ' (+1 Schaden).');
+  renderAll();
+}
+
+function removeFromHand(card) { state.hand = state.hand.filter(c => c.uid !== card.uid); }
+
+// ---------- Enemy turn ----------
+function resolveEnemyTurn() {
+  const e = state.enemy;
+  if (!e) return;
+
+  const target = findNearestTower(e);
+  let targetPoint, isCastle = false;
+  if (target) {
+    targetPoint = closestPointOnRect(e.col, e.row, target);
+  } else {
+    targetPoint = { col: CASTLE.col + CASTLE.w, row: Math.max(CASTLE.row, Math.min(e.row, CASTLE.row + CASTLE.h - 1)) };
+    isCastle = true;
+  }
+
+  let remaining = e.range;
+  while (remaining > 0) {
+    const dist = chebyshev(e.col, e.row, targetPoint.col, targetPoint.row);
+    if (dist <= 1) break;
+    const dx = Math.sign(targetPoint.col - e.col);
+    const dy = Math.sign(targetPoint.row - e.row);
+    e.col += dx; e.row += dy;
+    remaining--;
+  }
+
+  const finalDist = chebyshev(e.col, e.row, targetPoint.col, targetPoint.row);
+  if (finalDist <= 1) {
+    if (target) {
+      target.hp -= e.dmg;
+      const defender = target.slots.find(s => s);
+      if (defender) e.hp -= defender.dmg;
+      if (target.hp <= 0) {
+        state.towers = state.towers.filter(t => t.id !== target.id);
+        setMessage((defender ? defender.name + ' fällt, ' : '') + target.name + ' wurde zerstört!');
+      } else {
+        setMessage('Gegner greift ' + target.name + ' an (' + target.hp + '/' + target.maxHp + ' LP übrig).');
+      }
+    } else if (isCastle) {
+      state.castleHp -= e.dmg;
+      setMessage('Die Burg wird direkt angegriffen! (' + state.castleHp + '/' + CASTLE.maxHp + ' LP übrig)');
+    }
+  }
+
+  if (e.hp <= 0) {
+    setMessage('Gegner besiegt!');
+    state.enemy = null;
+  }
+}
+
+function endRound() {
+  resolveEnemyTurn();
+  if (!state.enemy && state.castleHp > 0) spawnEnemy();
+
+  state.tatendrang = state.maxTatendrang;
+  state.hand = drawHand();
+  state.pendingCard = null;
+  if (state.castleHp <= 0) setMessage('Die Burg ist gefallen. Spiel vorbei.');
+  renderAll();
+}
+
+// ---------- Hand rendering ----------
+function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   state.hand.forEach(card => {
     const el = document.createElement('div');
     const canAfford = state.tatendrang >= card.cost;
-    let disabled = !canAfford;
-    if (card.type === 'Einheit' && !anyFreeSlot()) disabled = true;
-    if (card.type === 'Fähigkeit' && !state.towers.some(t => t.slots.some(s => s))) disabled = true;
-    if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
+    let disabled = !canAfford || state.castleHp <= 0;
+    if (card.type === 'Einheit' && !anyTowerWithFreeSlot()) disabled = true;
+    if (card.type === 'Fähigkeit' && !anyTowerWithUnit()) disabled = true;
 
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
@@ -510,104 +481,27 @@ function render() {
       <div class="card-name">${card.name}</div>
       <div class="card-type ${card.type}">${card.type}</div>
       ${card.dmg ? `<div class="card-stats">⚔ ${card.dmg} Schaden</div>` : ''}
+      ${card.range ? `<div class="card-stats">➤ ${card.range} Reichweite</div>` : ''}
+      ${card.hp ? `<div class="card-stats">♥ ${card.hp} Turm-LP</div>` : ''}
       <div class="card-text">${card.text}</div>
     `;
     handEl.appendChild(el);
   });
 }
 
-function playCard(card) {
-  if (card.type === 'Gebäude') {
-    state.tatendrang -= card.cost;
-    state.towers.push({ name: card.name, slots: [null] });
-    removeFromHand(card);
-    setMessage(card.name + ' errichtet.');
-    state.pendingCard = null;
-  } else if (card.type === 'Einheit') {
-    if (!anyFreeSlot()) {
-      setMessage('Braucht einen Turm mit freiem Platz!');
-      return;
-    }
-    state.pendingCard = card;
-    setMessage('Wähle einen freien Turm-Platz für ' + card.name + '.');
-  } else if (card.type === 'Fähigkeit') {
-    const hasUnit = state.towers.some(t => t.slots.some(s => s));
-    if (!hasUnit) {
-      setMessage('Keine Einheit auf dem Feld, die verstärkt werden könnte.');
-      return;
-    }
-    state.pendingCard = card;
-    setMessage('Wähle eine Einheit für ' + card.name + '.');
-  } else if (card.type === 'Macht') {
-    if (state.towers.length === 0) {
-      setMessage('Kein Turm errichtet, den die Krone erhöhen könnte.');
-      return;
-    }
-    state.tatendrang -= card.cost;
-    state.towers.forEach(t => t.slots.push(null));
-    removeFromHand(card);
-    setMessage(card.name + ' wirkt: alle Türme erhalten einen zusätzlichen Platz.');
-    state.pendingCard = null;
-  }
-  render();
-}
-
-function placeUnit(tIdx, sIdx) {
-  const card = state.pendingCard;
-  if (!card) return;
-  state.tatendrang -= card.cost;
-  state.towers[tIdx].slots[sIdx] = { name: card.name, dmg: card.dmg, boosted: false };
-  removeFromHand(card);
-  state.pendingCard = null;
-  setMessage(card.name + ' bezieht Stellung.');
-  render();
-}
-
-function applyAbilityTo(tIdx, sIdx) {
-  const card = state.pendingCard;
-  if (!card) return;
-  const unit = state.towers[tIdx].slots[sIdx];
-  if (!unit) return;
-  state.tatendrang -= card.cost;
-  unit.dmg += 1;
-  unit.boosted = true;
-  removeFromHand(card);
-  state.pendingCard = null;
-  setMessage(card.name + ' verstärkt ' + unit.name + ' (+1 Schaden).');
-  render();
-}
-
-// Gespielte Karten verschwinden nicht, sie kommen auf den Ablagestapel
-// und damit spaeter wieder ins Deck.
-function removeFromHand(card) {
-  state.hand = state.hand.filter(c => c.uid !== card.uid);
-  state.discard.push(card);
-}
-
-function endRound() {
-  // Nicht gespielte Karten wandern auf den Ablagestapel.
-  const abgelegt = state.hand.length;
-  state.discard.push(...state.hand);
-  state.hand = [];
-
-  state.round += 1;
-  state.tatendrang = state.maxTatendrang;
-  state.pendingCard = null;
-
-  const { drawn, reshuffled } = drawCards(HAND_SIZE);
-
-  let text = 'Runde ' + state.round + '. Tatendrang aufgefrischt';
-  text += abgelegt > 0 ? ', ' + abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt' : '';
-  text += ', ' + drawn + ' nachgezogen.';
-  if (reshuffled) text += ' Der Ablagestapel wurde neu gemischt.';
-  setMessage(text);
-  render();
+function renderAll() {
+  document.getElementById('tatendrang-val').textContent = state.tatendrang;
+  document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
+  document.getElementById('castle-hp-val').textContent = Math.max(0, state.castleHp);
+  setIntent(currentIntentText());
+  draw();
+  renderHand();
 }
 
 // init
-state.draw = buildStarterDeck();
-drawCards(HAND_SIZE);
-render();
+state.hand = drawHand();
+spawnEnemy();
+renderAll();
 </script>
 
 </body>
