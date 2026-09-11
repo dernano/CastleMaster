@@ -1,12 +1,11 @@
 # Castle Master
 
-Ein rundenbasiertes Deckbuilding-Kartenspiel im Browser. Du errichtest Türme,
-besetzt sie mit Einheiten und verstärkst sie mit Fähigkeiten. Die Kartenfarben
-folgen dem doppeldeutschen Blatt.
+Ein rundenbasiertes Deckbuilding-Kartenspiel im Browser. Du errichtest Türme
+auf einem Raster, besetzt sie mit Einheiten und hältst damit einen Gegner von
+deiner Burg fern. Die Kartenfarben folgen dem doppeldeutschen Blatt.
 
-Grundlage ist der Prototyp aus dem Chat mit seinem Kern-Loop: Turm bauen, dann
-Einheit platzieren. Darauf aufgesetzt ist inzwischen ein echtes Deck mit
-Nachzieh- und Ablagestapel.
+Grundlage ist Prototyp v2 aus dem Chat. Darauf aufgesetzt ist ein echtes Deck
+mit Nachzieh- und Ablagestapel.
 
 ## Starten
 
@@ -18,28 +17,54 @@ Kein `npm install` nötig, das Projekt hat keine Abhängigkeiten. Der Dev-Server
 ist ein kleines Node-Skript. Ein Doppelklick auf `index.html` funktioniert
 ebenfalls, weil alles in einer Datei steckt.
 
+## Spielfeld
+
+Ein Raster von 20 mal 15 Feldern als Testgröße, angepeilt sind später 80 mal
+60. Die Burg steht links und hat 20 Lebenspunkte. Der Gegner erscheint rechts.
+
+Türme belegen zwei mal zwei Felder und werden frei platziert. Beim Setzen einer
+Gebäude-Karte zeigt eine Vorschau, ob die Stelle frei ist. Jeder Turm hat eigene
+Lebenspunkte und mindestens einen Platz für eine Einheit.
+
 ## Kartenfarben und Typen
 
 | Farbe | Typ | Wirkung |
 | --- | --- | --- |
-| 🌰 Eichel | Gebäude | errichtet einen Turm mit einem Platz |
-| ❤ Herz | Einheit | wird auf einen freien Turmplatz gesetzt, hat Schaden |
+| 🌰 Eichel | Gebäude | Turm auf ein freies Feld, bringt eigene Lebenspunkte mit |
+| ❤ Herz | Einheit | besetzt einen Turmplatz, hat Schaden und Reichweite |
 | 🍃 Blatt | Fähigkeit | verstärkt eine Einheit um 1 Schaden |
 | 🔔 Schellen | Macht | globaler Effekt, gibt allen Türmen einen Platz |
 
-## Ressource und Runden
+| Karte | Typ | Kosten | Werte |
+| --- | --- | --- | --- |
+| Wachturm | Gebäude | 2 | 6 Turm-LP |
+| Palisade | Gebäude | 1 | 3 Turm-LP |
+| Waldläufer | Einheit | 1 | 2 Schaden, Reichweite 3 |
+| Bogenschütze | Einheit | 2 | 3 Schaden, Reichweite 5 |
+| Sturmwind | Fähigkeit | 1 | +1 Schaden auf eine Einheit |
+| Krone der Belagerung | Macht | 3 | ein Platz für jeden Turm |
+
+## Rundenablauf
 
 `Tatendrang` ist die Ressource, drei Punkte pro Runde. Karten kosten davon.
-`Runde beenden` legt die restliche Hand ab, füllt den Tatendrang auf und zieht
-fünf Karten nach. Türme und Einheiten bleiben über Runden hinweg stehen.
+
+`Runde beenden` löst zuerst den Gegnerzug aus: Der Gegner rückt bis zu vier
+Felder auf das nächstgelegene Ziel vor, sonst auf die Burg, und greift an,
+sobald er daneben steht. Eine Einheit auf dem angegriffenen Turm schlägt zurück.
+Fällt ein Turm, verschwindet er samt Besatzung. Fällt die Burg auf null, ist die
+Partie vorbei.
+
+Danach wandert die restliche Hand auf den Ablagestapel, der Tatendrang wird
+aufgefüllt und fünf Karten werden nachgezogen. Die Absichtszeile über dem Feld
+kündigt an, was der Gegner als Nächstes vorhat.
 
 ## Deck
 
 Das Deck besteht aus zwölf Karten und zirkuliert wie in einem klassischen
 Deckbuilder. Gespielte und am Rundenende übrige Karten wandern auf den
-Ablagestapel. Ist der Nachziehstapel leer, wird die Ablage gemischt und zum
-neuen Nachziehstapel. Karten gehen nie verloren, die Summe aus Nachziehstapel,
-Hand und Ablage ist immer zwölf.
+Ablagestapel. Ist der Nachziehstapel leer, wird die Ablage gemischt und wird
+zum neuen Nachziehstapel. Karten gehen nie verloren, die Summe aus
+Nachziehstapel, Hand und Ablage ist immer zwölf.
 
 | Karte | Anzahl im Startdeck |
 | --- | --- |
@@ -53,31 +78,24 @@ Hand und Ablage ist immer zwölf.
 Handgröße und Startdeck stehen als `HAND_SIZE` und `STARTER_DECK` oben im
 Skript.
 
-## Aktueller Kartenpool
-
-| Karte | Typ | Kosten | Schaden |
-| --- | --- | --- | --- |
-| Wachturm | Gebäude | 2 | – |
-| Palisade | Gebäude | 1 | – |
-| Waldläufer | Einheit | 1 | 2 |
-| Bogenschütze | Einheit | 2 | 3 |
-| Sturmwind | Fähigkeit | 1 | – |
-| Krone der Belagerung | Macht | 3 | – |
-
 ## Was noch fehlt
 
-Der Prototyp bildet den Kern-Loop ab, mehr nicht. Offen sind:
-
-- **Kein Deckbuilding.** Das Deck zirkuliert, aber es lässt sich während einer
-  Partie nicht verändern. Es fehlt eine Möglichkeit, Karten zu erwerben.
-- **Kein Gegner und kein Kampf.** Der Schadenswert der Einheiten wird nirgends
-  ausgewertet.
-- **Kein Sieg und keine Niederlage.** Die Partie läuft endlos weiter.
+- **Einheiten schießen nicht.** Die Reichweite wird auf der Karte genannt und
+  als Kreis gezeichnet, aber nirgends ausgewertet. Eine Einheit richtet nur
+  Schaden an, wenn der Gegner ihren Turm angreift.
+- **Kein Deckbuilding.** Das Deck zirkuliert, lässt sich während einer Partie
+  aber nicht verändern. Es fehlt eine Möglichkeit, Karten zu erwerben.
+- **Kein Sieg.** Gegner erscheinen endlos, einer nach dem anderen. Verlieren
+  kann man, gewinnen nicht.
+- **Nur ein Gegnertyp** mit festen Werten, ohne Wellen oder Steigerung.
+- **Keine Meldung beim Vorrücken.** Zieht der Gegner nur, bleibt die
+  Meldungszeile leer. Die Absichtszeile deckt das ab.
 
 ## Aufbau
 
-Alles steckt in `index.html`: Stil, Aufbau und Logik. Der Kartenpool ist das
-Feld `CARD_POOL` ganz oben im Skript, der Spielzustand das Objekt `state` mit
-den drei Stapeln `draw`, `hand` und `discard`.
+Alles steckt in `index.html`: Stil, Aufbau und Logik. Wichtige Stellen im
+Skript sind `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
+`state` für den Spielzustand mit den Stapeln `draw`, `hand` und `discard`,
+`resolveEnemyTurn` für den Gegnerzug und `draw()` für die Canvas-Darstellung.
 
 `scripts/serve.js` ist ein statischer Dev-Server ohne Abhängigkeiten.

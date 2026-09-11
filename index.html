@@ -37,6 +37,12 @@
     padding: 6px 14px; border-radius: 3px; font-size: 0.9rem; box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
   .stat .icon { font-size: 1.1rem; }
   .stat.castle-hp { background: var(--herz-dark); }
+  .stat.pile { background: rgba(255,255,255,0.5); color: var(--eichel-dark); border: 1px solid var(--parchment-dark);
+    box-shadow: none; font-size: 0.82rem; padding: 6px 12px; }
+  .stat.pile b { font-size: 0.95rem; color: var(--walnut-dark); }
+  .stat.pile.empty { opacity: 0.5; }
+  .round-label { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--eichel); }
+
   button.endround { background: var(--herz); color: var(--parchment); border: none; padding: 7px 16px;
     border-radius: 3px; font-family: inherit; font-size: 0.88rem; letter-spacing: 0.03em; cursor: pointer;
     box-shadow: 0 2px 0 var(--herz-dark); }
@@ -79,8 +85,11 @@
 <div class="subtitle">Prototyp v2 – Grid-Feld, frei platzierbare Türme, erster Gegner (Testraster 20x15)</div>
 
 <div class="topbar">
+  <div class="round-label">Runde <span id="round-val">1</span></div>
   <div class="stat"><span class="icon">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
   <div class="stat castle-hp"><span class="icon">🏰</span> <span id="castle-hp-val">20</span> / 20 Burg-LP</div>
+  <div class="stat pile" id="pile-draw" title="Nachziehstapel">🂠 <b id="draw-count">0</b> Nachziehstapel</div>
+  <div class="stat pile" id="pile-discard" title="Ablagestapel">🗇 <b id="discard-count">0</b> Ablage</div>
   <button class="endround" onclick="endRound()">Runde beenden</button>
 </div>
 
@@ -91,7 +100,7 @@
   <canvas id="field" width="560" height="420"></canvas>
 </div>
 
-<div class="hand-label">Deine Hand</div>
+<div class="hand-label">Deine Hand <span id="hand-count"></span></div>
 <div class="hand" id="hand"></div>
 
 <footer>🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht · Testraster 20x15 (Ziel später: 80x60)</footer>
@@ -118,24 +127,69 @@ const CARD_POOL = [
 
 const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 20 };
 
+// Startdeck: wie oft jede Karte zu Beginn im Nachziehstapel liegt.
+const STARTER_DECK = [
+  ['palisade', 3],
+  ['wachturm', 2],
+  ['waldlaeufer', 3],
+  ['bogenschuetze', 2],
+  ['sturmwind', 1],
+  ['krone', 1],
+];
+
+const HAND_SIZE = 5;
+
 let state = {
+  round: 1,
   tatendrang: 3, maxTatendrang: 3,
   castleHp: CASTLE.maxHp,
   towers: [], // { id, col, row, w, h, hp, maxHp, slots: [null|{name,dmg}] }
   enemy: null, // { col, row, range, dmg, hp, maxHp }
+  draw: [],    // Nachziehstapel, oberste Karte am Ende des Arrays
   hand: [],
+  discard: [], // Ablagestapel
   pendingCard: null,
   nextTowerId: 1,
 };
 
-function drawHand() {
-  const hand = [];
-  for (let i = 0; i < 6; i++) hand.push({ ...CARD_POOL[i % CARD_POOL.length], uid: 'c' + Date.now() + '_' + i });
-  for (let i = hand.length - 1; i > 0; i--) {
+// Fisher-Yates, mischt an Ort und Stelle.
+function shuffle(cards) {
+  for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [hand[i], hand[j]] = [hand[j], hand[i]];
+    [cards[i], cards[j]] = [cards[j], cards[i]];
   }
-  return hand;
+  return cards;
+}
+
+function buildStarterDeck() {
+  const deck = [];
+  let serial = 0;
+  for (const [id, count] of STARTER_DECK) {
+    const proto = CARD_POOL.find(c => c.id === id);
+    if (!proto) continue;
+    for (let i = 0; i < count; i++) deck.push({ ...proto, uid: id + '#' + (++serial) });
+  }
+  return shuffle(deck);
+}
+
+/**
+ * Zieht bis zu n Karten auf die Hand. Ist der Nachziehstapel leer, wandert
+ * der Ablagestapel gemischt zurueck. Sind beide leer, kommen weniger Karten.
+ */
+function drawCards(n) {
+  let drawn = 0;
+  let reshuffled = false;
+  for (let i = 0; i < n; i++) {
+    if (state.draw.length === 0) {
+      if (state.discard.length === 0) break;
+      state.draw = shuffle(state.discard);
+      state.discard = [];
+      reshuffled = true;
+    }
+    state.hand.push(state.draw.pop());
+    drawn++;
+  }
+  return { drawn, reshuffled };
 }
 
 function setMessage(t) { document.getElementById('message').textContent = t; }
@@ -353,6 +407,7 @@ function playCard(card) {
     state.pendingCard = card;
     setMessage('Wähle eine Turm-Einheit für ' + card.name + '.');
   } else if (card.type === 'Macht') {
+    if (state.towers.length === 0) { setMessage('Kein Turm errichtet, den die Krone erhöhen könnte.'); return; }
     state.tatendrang -= card.cost;
     state.towers.forEach(t => t.slots.push(null));
     removeFromHand(card);
@@ -397,7 +452,12 @@ function applyAbility(tower, slotIdx) {
   renderAll();
 }
 
-function removeFromHand(card) { state.hand = state.hand.filter(c => c.uid !== card.uid); }
+// Gespielte Karten verschwinden nicht, sie kommen auf den Ablagestapel
+// und damit spaeter wieder ins Deck.
+function removeFromHand(card) {
+  state.hand = state.hand.filter(c => c.uid !== card.uid);
+  state.discard.push(card);
+}
 
 // ---------- Enemy turn ----------
 function resolveEnemyTurn() {
@@ -448,13 +508,35 @@ function resolveEnemyTurn() {
 }
 
 function endRound() {
+  if (state.castleHp <= 0) return;
+
+  // Zuerst leeren, damit nur die Meldung dieser Runde uebrig bleibt.
+  setMessage('');
   resolveEnemyTurn();
+  const kampfMeldung = document.getElementById('message').textContent;
   if (!state.enemy && state.castleHp > 0) spawnEnemy();
 
+  // Nicht gespielte Karten wandern auf den Ablagestapel, dann neu ziehen.
+  const abgelegt = state.hand.length;
+  state.discard.push(...state.hand);
+  state.hand = [];
+  const { drawn, reshuffled } = drawCards(HAND_SIZE);
+
+  state.round += 1;
   state.tatendrang = state.maxTatendrang;
-  state.hand = drawHand();
   state.pendingCard = null;
-  if (state.castleHp <= 0) setMessage('Die Burg ist gefallen. Spiel vorbei.');
+  state.hoverCell = null;
+
+  if (state.castleHp <= 0) {
+    setMessage('Die Burg ist gefallen. Spiel vorbei.');
+  } else {
+    let text = kampfMeldung ? kampfMeldung + ' · ' : '';
+    text += 'Runde ' + state.round + ': ';
+    text += abgelegt > 0 ? abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt, ' : '';
+    text += drawn + ' nachgezogen.';
+    if (reshuffled) text += ' Ablagestapel neu gemischt.';
+    setMessage(text);
+  }
   renderAll();
 }
 
@@ -468,6 +550,7 @@ function renderHand() {
     let disabled = !canAfford || state.castleHp <= 0;
     if (card.type === 'Einheit' && !anyTowerWithFreeSlot()) disabled = true;
     if (card.type === 'Fähigkeit' && !anyTowerWithUnit()) disabled = true;
+    if (card.type === 'Macht' && state.towers.length === 0) disabled = true;
 
     el.className = 'card' + (disabled ? ' disabled' : '') +
       (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
@@ -490,16 +573,23 @@ function renderHand() {
 }
 
 function renderAll() {
+  document.getElementById('round-val').textContent = state.round;
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
   document.getElementById('castle-hp-val').textContent = Math.max(0, state.castleHp);
+  document.getElementById('draw-count').textContent = state.draw.length;
+  document.getElementById('discard-count').textContent = state.discard.length;
+  document.getElementById('pile-draw').classList.toggle('empty', state.draw.length === 0);
+  document.getElementById('pile-discard').classList.toggle('empty', state.discard.length === 0);
+  document.getElementById('hand-count').textContent = state.hand.length ? '(' + state.hand.length + ')' : '(leer)';
   setIntent(currentIntentText());
   draw();
   renderHand();
 }
 
 // init
-state.hand = drawHand();
+state.draw = buildStarterDeck();
+drawCards(HAND_SIZE);
 spawnEnemy();
 renderAll();
 </script>
