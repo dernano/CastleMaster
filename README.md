@@ -35,6 +35,25 @@ Aufgebot.
 Türme, Burgschaden und Deck bleiben über Runden hinweg bestehen. Die Burg heilt
 nicht, ihre 35 Lebenspunkte müssen den ganzen Feldzug tragen.
 
+## Bewegung und Darstellung
+
+Das Bild läuft dauerhaft mit rund 60 Bildern je Sekunde. Die Spiellogik bleibt
+davon unberührt: Ein Zug gilt sofort, nur die Darstellung läuft nach. Gegner
+haben deshalb neben ihrer Rasterposition eine sichtbare Position, die der
+logischen hinterherwandert.
+
+Zu sehen sind: gleitende Bewegung statt Springen, fliegende Pfeile mit Bogen,
+Aufblitzen und Schadenszahl beim Treffer, zusammensackende Gefallene,
+Staubwolken, Ausholen beim Zuschlagen, Rütteln der Ansicht bei schweren
+Treffern, wehende Fahnen, bewegtes Wasser mit Brandung, ziehende
+Wolkenschatten, Flusen in der Luft und Rauch über den Lagerfeuern.
+
+Wer im System weniger Bewegung eingestellt hat, bekommt alles ohne Animation,
+die Zahlen und Effekte bleiben lesbar.
+
+Der Boden wird einmal auf eine Zwischenfläche gemalt und danach nur noch
+kopiert, das hält die Bildrate stabil.
+
 ## Spielfeld
 
 Ein Raster von 20 mal 15 Feldern als Testgröße, angepeilt sind später 80 mal

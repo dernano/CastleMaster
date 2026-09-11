@@ -393,6 +393,8 @@ function makeEnemy(typ, runde) {
     dmg: t.dmg + belagerungsSchaden(runde),
     move: t.move, reach: t.reach,
     col: COLS - 1, row: 0,
+    vx: LAGER_COL + 0.5, vy: 0,   // sichtbare Position, laeuft nach
+    lunge: 0, blitz: 0,
   };
 }
 
@@ -440,6 +442,10 @@ function deployFromLager() {
     const e = state.lager.shift();
     e.col = COLS - 1;
     e.row = freieStartzeile();
+    // Sie treten aus dem Lager heraus, also von rechts ins Bild laufen.
+    e.vx = LAGER_COL + 0.6;
+    e.vy = e.row;
+    if (wenigerBewegung) { e.vx = e.col; e.vy = e.row; }
     state.enemies.push(e);
     raus.push(e);
   }
@@ -574,6 +580,87 @@ const imFeld = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
 // Wasser liegt an den beiden hinteren Kanten, Sand an den vorderen.
 const istWasser = (c, r) => (c < 0 || r < 0) && c < COLS && r < ROWS;
 
+// ---------- Animation ----------
+// Die Logik bleibt sofort gueltig, nur die Darstellung laeuft nach.
+const BEWEGUNG_TEMPO = 5.5;   // Felder je Sekunde
+const PFEIL_DAUER = 0.28;     // Sekunden bis zum Einschlag
+let animZeit = 0;
+let ruettler = 0;
+const projektile = [];
+const zahlen = [];
+const leichen = [];
+
+const wenigerBewegung = window.matchMedia
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const staubkoerner = [];
+
+/** Kleine Staubwolke an einem Rasterpunkt. */
+function staub(col, row, anzahl, farbe) {
+  if (wenigerBewegung) return;
+  for (let i = 0; i < anzahl; i++) {
+    const w = Math.random() * Math.PI * 2;
+    staubkoerner.push({
+      col, row, farbe,
+      dx: Math.cos(w) * (12 + Math.random() * 26),
+      dy: Math.sin(w) * (5 + Math.random() * 10) - 18,
+      t: 0, dauer: 0.4 + Math.random() * 0.4,
+      gr: 1 + Math.random() * 2,
+    });
+  }
+  if (staubkoerner.length > 300) staubkoerner.splice(0, staubkoerner.length - 300);
+}
+
+// Langsam ziehende Wolkenschatten und ein paar Flusen in der Luft.
+const wolken = Array.from({ length: 4 }, (_, i) => ({
+  x: -200 + i * 320, y: 90 + i * 95, rx: 170 + i * 34, ry: 62 + i * 11, tempo: 9 + i * 3,
+}));
+const flusen = Array.from({ length: 26 }, () => ({
+  x: Math.random() * 960, y: Math.random() * 520,
+  vx: 8 + Math.random() * 14, vy: -3 + Math.random() * 6, gr: Math.random() < 0.7 ? 1 : 2,
+}));
+
+// Ein weicher Fleck, einmal gemalt und dann nur noch skaliert gestempelt.
+let wolkenBild = null;
+function baueWolkenbild() {
+  wolkenBild = document.createElement('canvas');
+  wolkenBild.width = 256; wolkenBild.height = 256;
+  const g = wolkenBild.getContext('2d');
+  const v = g.createRadialGradient(128, 128, 10, 128, 128, 126);
+  v.addColorStop(0, 'rgba(26,18,10,0.34)');
+  v.addColorStop(0.55, 'rgba(26,18,10,0.16)');
+  v.addColorStop(1, 'rgba(26,18,10,0)');
+  g.fillStyle = v;
+  g.fillRect(0, 0, 256, 256);
+}
+
+function drawWolken() {
+  if (wenigerBewegung) return;
+  if (!wolkenBild) baueWolkenbild();
+  for (const w of wolken) {
+    ctx.drawImage(wolkenBild, w.x - w.rx, w.y - w.ry, w.rx * 2, w.ry * 2);
+  }
+}
+
+function drawFlusen() {
+  if (wenigerBewegung) return;
+  ctx.fillStyle = 'rgba(255,238,200,0.30)';
+  for (const f of flusen) ctx.fillRect(Math.round(f.x), Math.round(f.y), f.gr, f.gr);
+}
+
+function zeigeZahl(col, row, text, farbe) {
+  zahlen.push({ col, row, text, farbe, t: 0, dauer: 0.9 });
+}
+
+function zeigePfeil(vonCol, vonRow, zuCol, zuRow, farbe) {
+  if (wenigerBewegung) return;
+  projektile.push({ vonCol, vonRow, zuCol, zuRow, farbe, t: 0, dauer: PFEIL_DAUER });
+}
+
+function ruetteln(staerke) {
+  if (!wenigerBewegung) ruettler = Math.max(ruettler, staerke);
+}
+
 const isoX = (c, r) => (c - r) * (TW / 2) + ORIGIN_X;
 const isoY = (c, r) => (c + r) * (TH / 2) + ORIGIN_Y;
 
@@ -598,6 +685,38 @@ function fillDiamond(c, r, color) {
 }
 
 /** Quader auf dem Raster: zwei sichtbare Seitenwaende plus Deckflaeche. */
+/** Schlagschatten eines Bauwerks, nach links unten vom Licht weg. */
+function drawBauSchatten(col, row, w, h, hoehe) {
+  const v = hoehe / TH * 0.55;
+  const pts = [
+    [isoX(col, row), isoY(col, row)],
+    [isoX(col + w, row), isoY(col + w, row)],
+    [isoX(col + w, row + h), isoY(col + w, row + h)],
+    [isoX(col, row + h), isoY(col, row + h)],
+  ].map(([x, y]) => [x - v * 9, y + v * 4]);
+  ctx.fillStyle = 'rgba(40,28,14,0.28)';
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Spitzdach auf einem Turm. */
+function drawDach(col, row, w, h, base, hoehe, farbe, farbeDunkel) {
+  const A = [isoX(col, row), isoY(col, row) - base];
+  const B = [isoX(col + w, row), isoY(col + w, row) - base];
+  const C = [isoX(col + w, row + h), isoY(col + w, row + h) - base];
+  const D = [isoX(col, row + h), isoY(col, row + h) - base];
+  const S = [isoX(col + w / 2, row + h / 2), isoY(col + w / 2, row + h / 2) - base - hoehe];
+  poly([B, C, S], farbeDunkel);
+  poly([D, C, S], farbeDunkel);
+  poly([A, B, S], farbe);
+  poly([A, D, S], farbe);
+  ctx.fillStyle = '#e3b552';
+  ctx.fillRect(S[0] - 1, S[1] - 6, 2, 7);
+}
+
 function drawBlock(col, row, w, h, height, col3, base = 0) {
   const lift = (c, r, up) => [isoX(c, r), isoY(c, r) - up];
   const A = lift(col, row, base + height);
@@ -609,7 +728,25 @@ function drawBlock(col, row, w, h, height, col3, base = 0) {
   const D0 = lift(col, row + h, base);
   poly([B, C, C0, B0], col3.rechts);
   poly([D, C, C0, D0], col3.links);
+  if (height > 12) {
+    steinFugen(B, B0, C, C0, height);
+    steinFugen(D, D0, C, C0, height);
+  }
   poly([A, B, C, D], col3.oben);
+}
+
+/** Waagerechte Fugen auf einer Wandflaeche, damit Stein nach Stein aussieht. */
+function steinFugen(obenA, untenA, obenB, untenB, hoehe) {
+  const stufen = Math.max(2, Math.round(hoehe / 9));
+  ctx.strokeStyle = 'rgba(30,22,12,0.16)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < stufen; i++) {
+    const f = i / stufen;
+    ctx.beginPath();
+    ctx.moveTo(obenA[0] + (untenA[0] - obenA[0]) * f, obenA[1] + (untenA[1] - obenA[1]) * f);
+    ctx.lineTo(obenB[0] + (untenB[0] - obenB[0]) * f, obenB[1] + (untenB[1] - obenB[1]) * f);
+    ctx.stroke();
+  }
 }
 
 /** Zinnenkranz entlang der Oberkante eines Quaders. */
@@ -736,67 +873,163 @@ const DEKO = [];
 let pickables = [];
 function addPick(art, ref, x, y, w, h) { pickables.push({ art, ref, x, y, w, h }); }
 
-function drawGround() {
+// Der Boden aendert sich nie, also wird er einmal vorgemalt.
+let bodenBild = null;
+
+function bodenFarbe(c, r) {
+  const n = noise(c, r);
+  if (istWasser(c, r)) return n < 0.5 ? '#1b4e66' : '#215a75';
+  if (imFeld(c, r)) return n < 0.34 ? '#d6b07e' : n < 0.7 ? '#cda772' : '#c49a64';
+  if (c >= LAGER_COL && c < LAGER_COL + LAGER_BREITE && r >= 0 && r < ROWS) {
+    return n < 0.5 ? '#6d5233' : '#63492d';
+  }
+  return n < 0.5 ? '#bb9a68' : '#b08f5e';
+}
+
+/** Erdreich unter einer Kachel, damit das Land als Scholle wirkt statt zu schweben. */
+function drawKante(g, c, r, dicke) {
+  const x = isoX(c, r), y = isoY(c, r);
+  const unten = [x, y + TH], rechts = [x + TW / 2, y + TH / 2], links = [x - TW / 2, y + TH / 2];
+  g.fillStyle = '#7a5f3a';
+  g.beginPath();
+  g.moveTo(rechts[0], rechts[1]); g.lineTo(unten[0], unten[1]);
+  g.lineTo(unten[0], unten[1] + dicke); g.lineTo(rechts[0], rechts[1] + dicke);
+  g.closePath(); g.fill();
+  g.fillStyle = '#5d472b';
+  g.beginPath();
+  g.moveTo(links[0], links[1]); g.lineTo(unten[0], unten[1]);
+  g.lineTo(unten[0], unten[1] + dicke); g.lineTo(links[0], links[1] + dicke);
+  g.closePath(); g.fill();
+  g.fillStyle = 'rgba(0,0,0,0.22)';
+  g.fillRect(links[0], unten[1] + dicke - 3, TW, 3);
+}
+
+function baueBoden() {
+  bodenBild = document.createElement('canvas');
+  bodenBild.width = canvas.width;
+  bodenBild.height = canvas.height;
+  const g = bodenBild.getContext('2d');
+
+  const belegt = (c, r) => imFeld(c, r) || istWasser(c, r) ||
+    (c >= -RAND && c < COLS + RAND && r >= -RAND && r < ROWS + RAND);
+
+  // Erdreich zuerst, an den vorderen Kanten der Scholle
+  for (let r = -RAND; r < ROWS + RAND; r++) {
+    for (let c = -RAND; c < COLS + RAND; c++) {
+      if (istWasser(c, r)) continue;
+      const vorneFrei = !belegt(c + 1, r) || !belegt(c, r + 1);
+      if (vorneFrei) drawKante(g, c, r, 14);
+    }
+  }
+
   for (let r = -RAND; r < ROWS + RAND; r++) {
     for (let c = -RAND; c < COLS + RAND; c++) {
       const drin = imFeld(c, r);
-      const imLager = c >= LAGER_COL && c < LAGER_COL + LAGER_BREITE && r >= 0 && r < ROWS;
       const wasser = istWasser(c, r);
       const n = noise(c, r);
       const x = isoX(c, r), y = isoY(c, r) + TH / 2;
-      let farbe;
-      if (wasser) farbe = n < 0.5 ? '#1f5771' : '#256380';
-      else if (drin) farbe = n < 0.34 ? '#d3ae7b' : n < 0.7 ? '#cda772' : '#c69d68';
-      else if (imLager) farbe = n < 0.5 ? '#6d5233' : '#63492d';
-      else farbe = n < 0.5 ? '#bb9a68' : '#b08f5e';
-      fillDiamond(c, r, farbe);
 
-      // Brandung dort, wo Wasser auf Land trifft
-      if (wasser && !istWasser(c + 1, r) && !istWasser(c, r + 1)) {
-        fillDiamond(c, r, 'rgba(150,205,220,0.28)');
-      }
-      if (wasser && n > 0.72) {
-        ctx.fillStyle = 'rgba(190,225,240,0.30)';
-        ctx.fillRect(x - 5, y, 9, 2);
-      }
+      g.fillStyle = bodenFarbe(c, r);
+      g.beginPath();
+      g.moveTo(x, y - TH / 2);
+      g.lineTo(x + TW / 2, y);
+      g.lineTo(x, y + TH / 2);
+      g.lineTo(x - TW / 2, y);
+      g.closePath();
+      g.fill();
+
       if (!wasser && n > 0.9) {
-        ctx.fillStyle = drin ? 'rgba(120,95,55,0.35)' : 'rgba(110,88,50,0.4)';
-        ctx.fillRect(x - 5, y - 1, 3, 2);
-        ctx.fillRect(x + 3, y + 2, 2, 2);
+        g.fillStyle = drin ? 'rgba(120,95,55,0.32)' : 'rgba(110,88,50,0.38)';
+        g.fillRect(x - 5, y - 1, 3, 2);
+        g.fillRect(x + 3, y + 2, 2, 2);
       }
       if (drin && n > 0.55 && n < 0.6) {
-        ctx.fillStyle = 'rgba(96,116,58,0.45)';
-        ctx.fillRect(x - 2, y - 2, 2, 3);
-        ctx.fillRect(x + 2, y - 1, 2, 3);
+        g.fillStyle = 'rgba(96,116,58,0.4)';
+        g.fillRect(x - 2, y - 2, 2, 3);
+        g.fillRect(x + 2, y - 1, 2, 3);
+      }
+      // Warmes Streiflicht von oben rechts
+      if (!wasser && n > 0.5) {
+        g.fillStyle = 'rgba(255,226,170,0.07)';
+        g.beginPath();
+        g.moveTo(x, y - TH / 2);
+        g.lineTo(x + TW / 2, y);
+        g.lineTo(x, y);
+        g.closePath();
+        g.fill();
+      }
+    }
+  }
+
+  // Ausgetretener Weg vom Lager zum Burgtor
+  for (let c = 2; c < COLS + LAGER_BREITE; c++) {
+    const mitte = 7 + Math.sin(c * 0.45) * 1.3;
+    for (let d = -1; d <= 1; d++) {
+      const r = Math.round(mitte + d);
+      if (r < 0 || r >= ROWS) continue;
+      const x = isoX(c, r), y = isoY(c, r) + TH / 2;
+      g.fillStyle = d === 0 ? 'rgba(110,86,50,0.30)' : 'rgba(110,86,50,0.15)';
+      g.beginPath();
+      g.moveTo(x, y - TH / 2); g.lineTo(x + TW / 2, y);
+      g.lineTo(x, y + TH / 2); g.lineTo(x - TW / 2, y);
+      g.closePath(); g.fill();
+      if (d === 0 && noise(c * 5, r * 3) > 0.6) {
+        g.fillStyle = 'rgba(88,68,38,0.4)';
+        g.fillRect(x - 6, y - 2, 5, 2);
+        g.fillRect(x + 2, y + 1, 4, 2);
       }
     }
   }
 
   // Grenze des geschuetzten Lagers
-  ctx.strokeStyle = 'rgba(224,80,60,0.5)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([7, 5]);
-  ctx.beginPath();
-  ctx.moveTo(isoX(LAGER_COL, 0), isoY(LAGER_COL, 0));
-  ctx.lineTo(isoX(LAGER_COL, ROWS), isoY(LAGER_COL, ROWS));
-  ctx.stroke();
-  ctx.setLineDash([]);
+  g.strokeStyle = 'rgba(224,80,60,0.45)';
+  g.lineWidth = 2;
+  g.setLineDash([7, 5]);
+  g.beginPath();
+  g.moveTo(isoX(LAGER_COL, 0), isoY(LAGER_COL, 0));
+  g.lineTo(isoX(LAGER_COL, ROWS), isoY(LAGER_COL, ROWS));
+  g.stroke();
+  g.setLineDash([]);
 
-  // Rasterlinien nur im Spielfeld, dezent
-  ctx.strokeStyle = 'rgba(85,64,34,0.07)';
-  ctx.lineWidth = 1;
+  // Rasterlinien nur im Spielfeld, sehr dezent
+  g.strokeStyle = 'rgba(85,64,34,0.07)';
+  g.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath();
-    ctx.moveTo(isoX(c, 0), isoY(c, 0));
-    ctx.lineTo(isoX(c, ROWS), isoY(c, ROWS));
-    ctx.stroke();
+    g.beginPath(); g.moveTo(isoX(c, 0), isoY(c, 0)); g.lineTo(isoX(c, ROWS), isoY(c, ROWS)); g.stroke();
   }
   for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath();
-    ctx.moveTo(isoX(0, r), isoY(0, r));
-    ctx.lineTo(isoX(COLS, r), isoY(COLS, r));
-    ctx.stroke();
+    g.beginPath(); g.moveTo(isoX(0, r), isoY(0, r)); g.lineTo(isoX(COLS, r), isoY(COLS, r)); g.stroke();
   }
+}
+
+/** Bewegtes Wasser und Brandung, jeden Frame frisch. */
+function drawWasser() {
+  for (let r = -RAND; r < ROWS + RAND; r++) {
+    for (let c = -RAND; c < COLS + RAND; c++) {
+      if (!istWasser(c, r)) continue;
+      const x = isoX(c, r), y = isoY(c, r) + TH / 2;
+      const welle = Math.sin(animZeit * 1.6 + (c - r) * 0.55);
+      if (welle > 0.35) {
+        ctx.fillStyle = 'rgba(150,205,225,' + (0.10 + welle * 0.13).toFixed(3) + ')';
+        ctx.fillRect(x - 7, y - 1 + welle * 2, 13, 2);
+      }
+      // Brandung am Ufer
+      if (!istWasser(c + 1, r) || !istWasser(c, r + 1)) {
+        const schaum = 0.18 + Math.sin(animZeit * 2.2 + (c + r) * 0.8) * 0.12;
+        ctx.fillStyle = 'rgba(210,240,248,' + Math.max(0, schaum).toFixed(3) + ')';
+        ctx.beginPath();
+        ctx.moveTo(x, y - TH / 2); ctx.lineTo(x + TW / 2, y);
+        ctx.lineTo(x, y + TH / 2); ctx.lineTo(x - TW / 2, y);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+}
+
+function drawGround() {
+  if (!bodenBild) baueBoden();
+  ctx.drawImage(bodenBild, 0, 0);
+  drawWasser();
 }
 
 /** Reichweitenfeld: alle Kacheln im Chebyshev-Abstand markieren. */
@@ -822,11 +1055,17 @@ function drawHpBar(x, y, w, hp, maxHp, farbe) {
 
 function drawBanner(x, y, farbe) {
   ctx.fillStyle = '#3a2c1c';
-  ctx.fillRect(x, y - 16, 1.5, 18);
-  ctx.fillStyle = farbe;
-  ctx.fillRect(x + 1.5, y - 16, 8, 10);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(x + 1.5, y - 8, 8, 2);
+  ctx.fillRect(x, y - 18, 1.5, 20);
+  const weh = wenigerBewegung ? 0 : Math.sin(animZeit * 3.4 + x * 0.15);
+  for (let i = 0; i < 8; i++) {
+    const versatz = wenigerBewegung ? 0 : Math.round(Math.sin(animZeit * 3.4 + i * 0.55 + x * 0.1) * 1.2);
+    ctx.fillStyle = i > 4 ? farbe : farbe;
+    ctx.fillRect(x + 1.5 + i, y - 18 + versatz, 1, 10);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + 1.5 + i, y - 11 + versatz, 1, 2);
+  }
+  ctx.fillStyle = 'rgba(255,235,190,0.18)';
+  ctx.fillRect(x + 1.5, y - 18 + (weh > 0 ? 1 : 0), 3, 2);
 }
 
 function drawCastle() {
@@ -834,6 +1073,7 @@ function drawCastle() {
   const H = 34;           // Hoehe des Mauerrings
   const KEEP = 40;        // zusaetzliche Hoehe des Bergfrieds
 
+  drawBauSchatten(C.col, C.row, C.w, C.h, H);
   drawBlock(C.col, C.row, C.w, C.h, H, BURG);
   drawMerlons(C.col, C.row, C.w, C.h, H, STEIN);
 
@@ -852,6 +1092,7 @@ function drawCastle() {
   // Bergfried am hinteren Ende
   drawBlock(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN_HELL, H);
   drawMerlons(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN, H + KEEP - 7);
+  drawDach(C.col + 0.3, C.row + 0.55, 1.4, 1.8, H + KEEP + 7, 24, '#8e3f34', '#6a2c26');
 
   const kx = isoX(C.col + 1, C.row + 1.45);
   const ky = isoY(C.col + 1, C.row + 1.45) - H - KEEP;
@@ -874,8 +1115,12 @@ function drawTower(t) {
     (state.pendingCard.type === 'Fähigkeit' && t.slots.some(s => s))
   );
 
+  drawBauSchatten(t.col, t.row, t.w, t.h, H);
   drawBlock(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
   drawMerlons(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
+  if (t.name === 'Wachturm') {
+    drawDach(t.col + 0.12, t.row + 0.12, t.w - 0.24, t.h - 0.24, H + 7, 20, '#8e3f34', '#6a2c26');
+  }
 
   const cx = isoX(t.col + t.w / 2, t.row + t.h / 2);
   const cy = isoY(t.col + t.w / 2, t.row + t.h / 2) - H;
@@ -918,8 +1163,21 @@ function drawEnemy(e) {
   const plan = enemyPlan(e);
   // Kleiner Versatz, damit sich Gegner auf demselben Feld nicht ganz decken.
   const jitter = ((e.id * 37) % 9) - 4;
-  const cx = isoX(e.col, e.row) + jitter;
-  const cy = isoY(e.col, e.row) + TH / 2 + ((e.id * 13) % 5) - 2;
+  const vx = e.vx === undefined ? e.col : e.vx;
+  const vy = e.vy === undefined ? e.row : e.vy;
+
+  // Beim Zuschlagen kurz zum Ziel hin ausholen
+  const plan2 = plan;
+  let lx = 0, ly = 0;
+  if (e.lunge > 0 && plan2.zielPunkt) {
+    const k = Math.sin(e.lunge * Math.PI) * 0.28;
+    lx = (plan2.zielPunkt.col - vx) * k;
+    ly = (plan2.zielPunkt.row - vy) * k;
+  }
+  const wippen = wenigerBewegung ? 0 : Math.sin(animZeit * 3 + e.id * 1.7) * 1.2;
+
+  const cx = isoX(vx + lx, vy + ly) + jitter;
+  const cy = isoY(vx + lx, vy + ly) + TH / 2 + ((e.id * 13) % 5) - 2 + wippen;
   const sel = getSelectedTower();
 
   if (sel) {
@@ -931,8 +1189,11 @@ function drawEnemy(e) {
     ctx.stroke();
   }
 
-  drawShadow(cx, cy, 4 + t.scale * 2);
-  drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, { ...PAL, ...t.pal });
+  drawShadow(cx, cy - wippen, 4 + t.scale * 2);
+  const pal = e.blitz > 0
+    ? { ...PAL, ...t.pal, r: '#ffd9c8', R: '#ffffff', k: '#7a2a20' }
+    : { ...PAL, ...t.pal };
+  drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, pal);
   const h = 9 * t.scale;
   drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
 
@@ -947,25 +1208,162 @@ function drawEnemy(e) {
  * Gegner im Lager. Sie stehen ausserhalb des Feldes, sind unangreifbar und
  * bekommen deshalb weder Ring noch Absichtsplakette, nur ihren Namen.
  */
+let vignetteBild = null;
+/** Weicher Randabfall, damit das Bild nicht hart im Schwarz endet. */
+function drawVignette() {
+  if (!vignetteBild) {
+    vignetteBild = document.createElement('canvas');
+    vignetteBild.width = canvas.width;
+    vignetteBild.height = canvas.height;
+    const g = vignetteBild.getContext('2d');
+    const v = g.createRadialGradient(
+      canvas.width / 2, canvas.height / 2, canvas.height * 0.28,
+      canvas.width / 2, canvas.height / 2, canvas.height * 0.82);
+    v.addColorStop(0, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(6,4,3,0.55)');
+    g.fillStyle = v;
+    g.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  ctx.drawImage(vignetteBild, 0, 0);
+}
+
+/** Fliegende Geschosse mit leichtem Bogen. */
+function drawProjektile() {
+  for (const p of projektile) {
+    const f = Math.min(1, p.t / p.dauer);
+    const cx = isoX(p.vonCol + (p.zuCol - p.vonCol) * f, p.vonRow + (p.zuRow - p.vonRow) * f);
+    const cy = isoY(p.vonCol + (p.zuCol - p.vonCol) * f, p.vonRow + (p.zuRow - p.vonRow) * f)
+      + TH / 2 - 22 - Math.sin(f * Math.PI) * 16;
+    ctx.fillStyle = p.farbe;
+    ctx.fillRect(Math.round(cx) - 1, Math.round(cy) - 3, 3, 6);
+    ctx.fillStyle = 'rgba(255,240,200,0.35)';
+    ctx.fillRect(Math.round(cx), Math.round(cy) + 3, 1, 4);
+  }
+}
+
+function drawStaub() {
+  for (const k of staubkoerner) {
+    const f = k.t / k.dauer;
+    ctx.globalAlpha = (1 - f) * 0.8;
+    ctx.fillStyle = k.farbe;
+    const x = isoX(k.col, k.row) + k.dx * f;
+    const y = isoY(k.col, k.row) + TH / 2 + k.dy * f;
+    ctx.fillRect(Math.round(x), Math.round(y), k.gr, k.gr);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** Aufsteigende Schadens- und Hinweiszahlen. */
+function drawZahlen() {
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  for (const z of zahlen) {
+    const f = z.t / z.dauer;
+    const x = isoX(z.col, z.row);
+    const y = isoY(z.col, z.row) + TH / 2 - 26 - f * 20;
+    ctx.globalAlpha = f < 0.7 ? 1 : 1 - (f - 0.7) / 0.3;
+    ctx.fillStyle = 'rgba(10,8,6,0.8)';
+    ctx.fillText(z.text, x + 1, y + 1);
+    ctx.fillStyle = z.farbe;
+    ctx.fillText(z.text, x, y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'start';
+}
+
+/** Gefallene Gegner sacken zusammen und verblassen. */
+function drawLeichen() {
+  for (const l of leichen) {
+    const f = l.t / l.dauer;
+    const t = ENEMY_TYPES[l.typ];
+    const x = isoX(l.vx, l.vy);
+    const y = isoY(l.vx, l.vy) + TH / 2 + f * 5;
+    ctx.globalAlpha = 1 - f;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(f * 0.9);
+    drawSprite(FIG_GEGNER, 0, 2, t.scale, ctx, { ...PAL, ...t.pal });
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawZelt(x, y, breite, hoehe, hell, dunkel) {
+  ctx.fillStyle = 'rgba(35,24,12,0.32)';
+  ctx.beginPath();
+  ctx.ellipse(x - 3, y + 2, breite * 0.75, breite * 0.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = dunkel;
+  ctx.beginPath();
+  ctx.moveTo(x, y - hoehe); ctx.lineTo(x + breite / 2, y); ctx.lineTo(x, y + 3);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = hell;
+  ctx.beginPath();
+  ctx.moveTo(x, y - hoehe); ctx.lineTo(x - breite / 2, y); ctx.lineTo(x, y + 3);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2a1c10';
+  ctx.fillRect(x - 2, y - 6, 4, 6);
+  ctx.fillStyle = '#8c2230';
+  ctx.fillRect(x - 1, y - hoehe - 7, 1.5, 7);
+  ctx.fillRect(x + 0.5, y - hoehe - 7, 5, 4);
+}
+
+/** Lagerfeuer mit flackernder Flamme und aufsteigendem Rauch. */
+function drawFeuer(x, y) {
+  ctx.fillStyle = '#3a2a18';
+  ctx.fillRect(x - 6, y - 1, 12, 3);
+  ctx.fillRect(x - 3, y - 4, 8, 3);
+  if (!wenigerBewegung) {
+    for (let i = 0; i < 3; i++) {
+      const f = Math.abs(Math.sin(animZeit * (5 + i) + i * 2));
+      ctx.fillStyle = i === 0 ? '#ffd166' : i === 1 ? '#f08a3c' : '#d9542c';
+      const hh = 5 + f * 7 - i * 1.5;
+      ctx.fillRect(x - 3 + i * 2, y - 4 - hh, 3, hh);
+    }
+    for (let i = 0; i < 5; i++) {
+      const t = (animZeit * 0.45 + i * 0.2) % 1;
+      ctx.globalAlpha = (1 - t) * 0.28;
+      ctx.fillStyle = '#cfc0a0';
+      ctx.fillRect(x - 2 + Math.sin(t * 6 + i) * 5, y - 14 - t * 34, 3 + t * 4, 3 + t * 4);
+    }
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.fillStyle = '#f08a3c';
+    ctx.fillRect(x - 3, y - 12, 7, 8);
+  }
+}
+
+/**
+ * Gegner im Lager. Sie stehen ausserhalb des Feldes, sind unangreifbar und
+ * bekommen deshalb weder Ring noch Absichtsplakette.
+ */
 function drawLager() {
+  // Zelte und Feuer stehen immer, auch wenn das Lager leer ist
+  drawZelt(isoX(LAGER_COL + 1.65, 1.1), isoY(LAGER_COL + 1.65, 1.1) + TH / 2, 40, 30, '#7b5f3a', '#54402a');
+  drawZelt(isoX(LAGER_COL + 1.75, 5.2), isoY(LAGER_COL + 1.75, 5.2) + TH / 2, 34, 25, '#6f5433', '#4a3823');
+  drawZelt(isoX(LAGER_COL + 1.65, 9.4), isoY(LAGER_COL + 1.65, 9.4) + TH / 2, 40, 30, '#7b5f3a', '#54402a');
+  drawZelt(isoX(LAGER_COL + 1.7, 13.2), isoY(LAGER_COL + 1.7, 13.2) + TH / 2, 32, 24, '#6f5433', '#4a3823');
+  drawFeuer(isoX(LAGER_COL + 0.45, 3.4), isoY(LAGER_COL + 0.45, 3.4) + TH / 2);
+  drawFeuer(isoX(LAGER_COL + 0.45, 11.2), isoY(LAGER_COL + 0.45, 11.2) + TH / 2);
+
   if (!state.lager.length) return;
 
   state.lager.forEach((e, i) => {
     const t = ENEMY_TYPES[e.typ];
-    const col = LAGER_COL + (i % LAGER_BREITE) * 0.95 + 0.2;
-    const row = Math.floor(i / LAGER_BREITE) * 1.6 + 0.6;
+    const col = LAGER_COL + (i % LAGER_BREITE) * 0.85 + 0.15;
+    const row = Math.floor(i / LAGER_BREITE) * 1.55 + 0.6;
     if (row >= ROWS) return;
+    const wippen = wenigerBewegung ? 0 : Math.sin(animZeit * 2 + i * 1.3) * 1;
     const x = isoX(col, row);
-    const y = isoY(col, row) + TH / 2;
-    ctx.globalAlpha = 0.82;
-    drawShadow(x, y, 3 + t.scale * 2);
+    const y = isoY(col, row) + TH / 2 + wippen;
+    ctx.globalAlpha = 0.85;
+    drawShadow(x, y - wippen, 3 + t.scale * 2);
     drawSprite(FIG_GEGNER, x, y + 2, Math.max(2, t.scale - 1), ctx, { ...PAL, ...t.pal });
     ctx.globalAlpha = 1;
   });
 
-  // Beschriftung des Lagers
   const bx = isoX(LAGER_COL + 1, 0);
-  const by = isoY(LAGER_COL + 1, 0) - 12;
+  const by = isoY(LAGER_COL + 1, 0) - 14;
   drawBadge(bx, by, 'Lager · ' + state.lager.length, '#ffb3a7', '#8c2230');
 }
 
@@ -991,6 +1389,15 @@ function drawDeko(d) {
   const x = isoX(d.c, d.r), y = isoY(d.c, d.r) + TH / 2;
   if (d.art === 'palme') drawPalme(x, y);
   else drawFels(x, y, d.s);
+}
+
+/** Dezente Markierung unter dem Mauszeiger. */
+function drawHover() {
+  if (state.pendingCard || !state.hoverCell || state.phase !== 'kampf') return;
+  const { col, row } = state.hoverCell;
+  if (!imFeld(col, row)) return;
+  const puls = 0.10 + Math.sin(animZeit * 4) * 0.04;
+  fillDiamond(col, row, 'rgba(255,240,200,' + puls.toFixed(3) + ')');
 }
 
 function drawPlacementPreview() {
@@ -1050,12 +1457,69 @@ function zeichenReihenfolge(objekte) {
   return raus;
 }
 
+/** Schreibt alle laufenden Bewegungen und Effekte fort. */
+function updateAnimations(dt) {
+  animZeit += dt;
+  ruettler = Math.max(0, ruettler - dt * 22);
+
+  for (const e of state.enemies) {
+    if (e.vx === undefined) { e.vx = e.col; e.vy = e.row; }
+    const dx = e.col - e.vx;
+    const dy = e.row - e.vy;
+    const dist = Math.hypot(dx, dy);
+    const schritt = BEWEGUNG_TEMPO * dt;
+    if (wenigerBewegung || dist <= schritt || dist === 0) {
+      e.vx = e.col; e.vy = e.row;
+    } else {
+      e.vx += (dx / dist) * schritt;
+      e.vy += (dy / dist) * schritt;
+    }
+    e.lunge = Math.max(0, (e.lunge || 0) - dt * 4);
+    e.blitz = Math.max(0, (e.blitz || 0) - dt * 5);
+  }
+
+  for (let i = projektile.length - 1; i >= 0; i--) {
+    projektile[i].t += dt;
+    if (projektile[i].t >= projektile[i].dauer) projektile.splice(i, 1);
+  }
+  for (let i = zahlen.length - 1; i >= 0; i--) {
+    zahlen[i].t += dt;
+    if (zahlen[i].t >= zahlen[i].dauer) zahlen.splice(i, 1);
+  }
+  for (let i = leichen.length - 1; i >= 0; i--) {
+    leichen[i].t += dt;
+    if (leichen[i].t >= leichen[i].dauer) leichen.splice(i, 1);
+  }
+  for (const w of wolken) {
+    w.x += w.tempo * dt;
+    if (w.x - w.rx > canvas.width + 60) { w.x = -w.rx - 60; w.y = 70 + Math.random() * 330; }
+  }
+  for (const f of flusen) {
+    f.x += f.vx * dt; f.y += f.vy * dt;
+    if (f.x > canvas.width + 5) { f.x = -5; f.y = Math.random() * canvas.height; }
+    if (f.y < -5) f.y = canvas.height + 5;
+    if (f.y > canvas.height + 5) f.y = -5;
+  }
+  for (let i = staubkoerner.length - 1; i >= 0; i--) {
+    const k = staubkoerner[i];
+    k.t += dt;
+    k.dy += 46 * dt;
+    if (k.t >= k.dauer) staubkoerner.splice(i, 1);
+  }
+}
+
 function draw() {
   pickables = [];
   ctx.fillStyle = '#0b0908';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  ctx.save();
+  if (ruettler > 0.2) {
+    ctx.translate((Math.random() - 0.5) * ruettler, (Math.random() - 0.5) * ruettler);
+  }
+
   drawGround();
+  drawWolken();
 
   // Reichweite des ausgewaehlten Turms als Feldmarkierung
   const sel = getSelectedTower();
@@ -1067,15 +1531,29 @@ function draw() {
     }
   }
 
+  drawHover();
   drawPlacementPreview();
 
   const objekte = [];
   objekte.push({ col: CASTLE.col, row: CASTLE.row, w: CASTLE.w, h: CASTLE.h, zeichne: drawCastle });
   for (const t of state.towers) objekte.push({ col: t.col, row: t.row, w: t.w, h: t.h, zeichne: () => drawTower(t) });
-  for (const e of state.enemies) objekte.push({ col: e.col, row: e.row, w: 1, h: 1, zeichne: () => drawEnemy(e) });
+  for (const e of state.enemies) {
+    objekte.push({
+      col: Math.round(e.vx === undefined ? e.col : e.vx),
+      row: Math.round(e.vy === undefined ? e.row : e.vy),
+      w: 1, h: 1, zeichne: () => drawEnemy(e),
+    });
+  }
   for (const d of DEKO) objekte.push({ col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
   for (const o of zeichenReihenfolge(objekte)) o.zeichne();
+  drawLeichen();
+  drawStaub();
   drawLager();
+  drawProjektile();
+  drawZahlen();
+  drawFlusen();
+  ctx.restore();
+  drawVignette();
 }
 
 // ---------- Minikarte ----------
@@ -1230,9 +1708,11 @@ function pickAt(p) {
 }
 
 canvas.addEventListener('mousemove', (evt) => {
-  if (!state.pendingCard || state.pendingCard.type !== 'Gebäude') return;
-  state.hoverCell = cellFromPoint(canvasPoint(evt));
-  draw();
+  const p = canvasPoint(evt);
+  state.hoverCell = cellFromPoint(p);
+  const treffer = pickAt(p);
+  canvas.style.cursor = treffer || (state.pendingCard && state.pendingCard.type === 'Gebäude')
+    ? 'pointer' : 'default';
 });
 
 canvas.addEventListener('mouseleave', () => {
@@ -1355,7 +1835,18 @@ function attackWithTower(tower, enemy) {
   const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d).length;
   const salve = anzahl > 1 ? ' (' + anzahl + ' Einheiten)' : '';
 
+  // Sichtbarer Schuss
+  const ex = enemy.vx === undefined ? enemy.col : enemy.vx;
+  const ey = enemy.vy === undefined ? enemy.row : enemy.vy;
+  for (let i = 0; i < anzahl; i++) {
+    setTimeout(() => zeigePfeil(tower.col + tower.w / 2, tower.row + tower.h / 2, ex, ey, '#f0e2bd'), i * 70);
+  }
+  enemy.blitz = 1;
+  zeigeZahl(ex, ey, '-' + schaden, '#ffd166');
+  staub(ex, ey, 5, '#e8d5a8');
+
   if (enemy.hp <= 0) {
+    leichen.push({ vx: ex, vy: ey, typ: enemy.typ, t: 0, dauer: 0.65 });
     state.enemies = state.enemies.filter(e => e !== enemy);
     setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
     if (rundeGewonnen()) { beginneBelohnung(); return; }
@@ -1479,19 +1970,27 @@ function resolveEnemyTurn() {
       continue;
     }
 
+    e.lunge = 1;
     if (plan.turm) {
       const turm = plan.turm;
       turm.hp -= e.dmg;
+      zeigeZahl(turm.col + turm.w / 2, turm.row + turm.h / 2, '-' + e.dmg, '#ff8b6b');
+      staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, '#cbbc98');
+      ruetteln(3);
       if (turm.hp <= 0) {
         const besatzung = turm.slots.filter(x => x).length;
         state.towers = state.towers.filter(t => t.id !== turm.id);
         if (state.selectedTower === turm.id) state.selectedTower = null;
+        staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, '#cbbc98');
+        ruetteln(8);
         meldungen.push(turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!');
       } else {
         meldungen.push(e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')');
       }
     } else {
       state.castleHp -= e.dmg;
+      zeigeZahl(CASTLE.col + CASTLE.w / 2, CASTLE.row + CASTLE.h / 2, '-' + e.dmg, '#ff6b6b');
+      ruetteln(7);
       meldungen.push(e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')');
     }
   }
@@ -1706,11 +2205,21 @@ function renderAll() {
   document.getElementById('enemy-count').textContent = state.enemies.length + state.lager.length;
 
   setIntent(currentIntentText());
-  draw();
   drawMinimap();
   renderHand();
   renderReward();
 }
+
+// ---------- Bildschleife ----------
+let letzteZeit = 0;
+function frame(t) {
+  const dt = letzteZeit ? Math.min(0.05, (t - letzteZeit) / 1000) : 0;
+  letzteZeit = t;
+  updateAnimations(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
 // init
 state.draw = buildStarterDeck();
