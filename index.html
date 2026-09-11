@@ -1019,6 +1019,28 @@ const DEKO = [];
 
 // ---------- Anklickbare Flaechen, in Zeichenreihenfolge gesammelt ----------
 let pickables = [];
+
+/** Bildschirmrechteck eines Bauwerks samt Aufbauten. */
+function bauRect(col, row, w, h, hoehe) {
+  const links = isoX(col, row + h) - 4;
+  const rechts = isoX(col + w, row) + 4;
+  const oben = isoY(col, row) - hoehe;
+  const unten = isoY(col + w, row + h) + 6;
+  return { x: links, y: oben, w: rechts - links, h: unten - oben };
+}
+
+/** Bildschirmrechteck eines Gegners samt Leiste und Plakette. */
+function gegnerRect(e) {
+  const t = ENEMY_TYPES[e.typ];
+  const vx = e.vx === undefined ? e.col : e.vx;
+  const vy = e.vy === undefined ? e.row : e.vy;
+  const cx = isoX(vx, vy), cy = isoY(vx, vy) + TH / 2;
+  const b = 7 * t.scale + 12;
+  return { x: cx - b / 2, y: cy - 9 * t.scale - 12, w: b, h: 9 * t.scale + 26 };
+}
+
+const ueberlappt = (a, b) =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 function addPick(art, ref, x, y, w, h) { pickables.push({ art, ref, x, y, w, h }); }
 
 // Der Boden aendert sich nie, also wird er einmal vorgemalt.
@@ -1317,9 +1339,10 @@ function drawTower(t) {
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
 }
 
-function drawEnemy(e) {
+function drawEnemy(e, geist = false) {
   const t = ENEMY_TYPES[e.typ];
   const plan = enemyPlan(e);
+  if (geist) ctx.globalAlpha = 0.55;
   // Kleiner Versatz, damit sich Gegner auf demselben Feld nicht ganz decken.
   const jitter = ((e.id * 37) % 9) - 4;
   const vx = e.vx === undefined ? e.col : e.vx;
@@ -1361,6 +1384,7 @@ function drawEnemy(e) {
   if (plan.aktion === 'angriff') drawBadge(cx, cy + 5, '⚔ ' + e.dmg, '#ffb3a7', '#8c2230');
   else drawBadge(cx, cy + 5, '➤ ' + e.move, '#cfc0a0', '#6b5535');
 
+  if (geist) { ctx.globalAlpha = 1; return; }
   addPick('enemy', e, cx - 7 * t.scale / 2 - 5, cy - h - 8, 7 * t.scale + 10, h + 26);
 }
 
@@ -1716,17 +1740,46 @@ function draw() {
   drawPlacementPreview();
 
   const objekte = [];
-  objekte.push({ col: CASTLE.col, row: CASTLE.row, w: CASTLE.w, h: CASTLE.h, zeichne: drawCastle });
-  for (const t of state.towers) objekte.push({ col: t.col, row: t.row, w: t.w, h: t.h, zeichne: () => drawTower(t) });
-  for (const e of state.enemies) {
+  objekte.push({
+    art: 'bau', col: CASTLE.col, row: CASTLE.row, w: CASTLE.w, h: CASTLE.h,
+    rect: bauRect(CASTLE.col, CASTLE.row, CASTLE.w, CASTLE.h, 115),
+    zeichne: drawCastle,
+  });
+  for (const t of state.towers) {
     objekte.push({
-      col: Math.round(e.vx === undefined ? e.col : e.vx),
-      row: Math.round(e.vy === undefined ? e.row : e.vy),
-      w: 1, h: 1, zeichne: () => drawEnemy(e),
+      art: 'bau', col: t.col, row: t.row, w: t.w, h: t.h,
+      rect: bauRect(t.col, t.row, t.w, t.h, 62),
+      zeichne: () => drawTower(t),
     });
   }
-  for (const d of DEKO) objekte.push({ col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
-  for (const o of zeichenReihenfolge(objekte)) o.zeichne();
+  for (const e of state.enemies) {
+    objekte.push({
+      art: 'gegner',
+      col: Math.round(e.vx === undefined ? e.col : e.vx),
+      row: Math.round(e.vy === undefined ? e.row : e.vy),
+      w: 1, h: 1, rect: gegnerRect(e),
+      zeichne: () => drawEnemy(e),
+      geist: () => drawEnemy(e, true),
+    });
+  }
+  for (const d of DEKO) objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
+
+  const geordnet = zeichenReihenfolge(objekte);
+  for (const o of geordnet) o.zeichne();
+
+  // Roentgenblick: Ein hoher Turm verdeckt alles, was dahinter steht. Das ist
+  // zwar richtig gerechnet, im Spiel aber unbrauchbar. Wer verschwindet, wird
+  // blass darueber gelegt und bleibt so sichtbar und anklickbar.
+  for (let i = 0; i < geordnet.length; i++) {
+    const o = geordnet[i];
+    if (o.art !== 'gegner') continue;
+    for (let j = i + 1; j < geordnet.length; j++) {
+      const b = geordnet[j];
+      if (b.art !== 'bau' || !ueberlappt(o.rect, b.rect)) continue;
+      o.geist();
+      break;
+    }
+  }
   drawLeichen();
   drawStaub();
   drawLager();
@@ -1882,11 +1935,15 @@ function cellFromPoint(p) {
 
 /** Vorderstes angeklicktes Objekt, oder null. */
 function pickAt(p) {
+  let bauwerk = null;
   for (let i = pickables.length - 1; i >= 0; i--) {
     const o = pickables[i];
-    if (p.x >= o.x && p.x <= o.x + o.w && p.y >= o.y && p.y <= o.y + o.h) return o;
+    if (p.x < o.x || p.x > o.x + o.w || p.y < o.y || p.y > o.y + o.h) continue;
+    // Gegner gewinnen, sonst waeren verdeckte Ziele nicht anklickbar.
+    if (o.art === 'enemy') return o;
+    if (!bauwerk) bauwerk = o;
   }
-  return null;
+  return bauwerk;
 }
 
 canvas.addEventListener('mousemove', (evt) => {

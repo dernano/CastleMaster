@@ -51,6 +51,11 @@ Ausholen beim Zuschlagen, Rütteln der Ansicht bei schweren Treffern, wehende
 Fahnen, bewegtes Wasser mit Brandung, ziehende Wolkenschatten, Vögel, Flusen in
 der Luft und Rauch über den Lagerfeuern.
 
+Ein hoher Turm verdeckt geometrisch korrekt alles, was dahinter steht. Im
+Spiel ist das unbrauchbar, deshalb werden verdeckte Gegner blass über das
+Mauerwerk gelegt und bleiben so sichtbar. Klicks bevorzugen Gegner gegenüber
+Bauwerken, sonst wäre ein verdecktes Ziel nicht anwählbar.
+
 Beim Rundenwechsel und nach gewonnener Runde fährt ein Banner über das Bild.
 Karten fächern sich beim Nachziehen auf.
 
