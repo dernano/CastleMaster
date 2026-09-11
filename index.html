@@ -4,8 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Castle Master</title>
+
 <style>
+  /* Pixelify Sans, lateinischer Schnitt, fest eingebettet.
+     So sieht das Spiel ohne Netz genauso aus und haengt an keinem Dienst. */
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400 700;font-display:block;src:url(data:font/woff2;base64,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) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
   :root {
+    --pixel: "Pixelify Sans", "Trebuchet MS", system-ui, sans-serif;
+    --fliess: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
     --ink: #100d0a;
     --panel: #1c1713;
     --panel-2: #262019;
@@ -27,11 +34,21 @@
 
   html, body { height: 100%; }
 
+  @keyframes glut {
+    0%, 100% { background-position: 50% 18%, 12% 82%, 88% 72%; }
+    50%      { background-position: 54% 24%, 18% 76%, 82% 78%; }
+  }
+
   body {
     margin: 0;
     background: #0b0908;
     background-image:
-      radial-gradient(ellipse at 50% 20%, #1d1711 0%, #0b0908 70%);
+      radial-gradient(ellipse 70% 55% at 50% 18%, #2a2016 0%, transparent 70%),
+      radial-gradient(ellipse 45% 40% at 12% 82%, #241a2e 0%, transparent 70%),
+      radial-gradient(ellipse 45% 40% at 88% 72%, #2b1a15 0%, transparent 70%),
+      linear-gradient(#0b0908, #0b0908);
+    background-repeat: no-repeat;
+    animation: glut 26s ease-in-out infinite;
     color: var(--text);
     font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
     display: flex;
@@ -71,14 +88,16 @@
   .chip { display: flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 14px; white-space: nowrap; }
   .chip + .chip { border-left: 1px solid rgba(255,255,255,0.12); }
   .chip .ic { font-size: 13px; filter: saturate(1.2); }
-  .chip b { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .chip b { font-family: var(--pixel); font-size: 17px; font-weight: 700; letter-spacing: 0.02em;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
   .chip.tatendrang b { color: var(--gold); }
   .chip.burg b { color: #e9917f; }
   .chip.dim { color: var(--muted); }
   .chip.dim b { color: var(--parchment-dark); }
 
   .wave { display: flex; flex-direction: column; gap: 3px; min-width: 148px; padding: 1px 6px; }
-  .wave-top { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  .wave-top { display: flex; align-items: center; gap: 7px; font-size: 13px; font-family: var(--pixel); }
+  .wave-top b { font-size: 16px; }
   .wave-top .swords { color: var(--muted); }
   .wave-top .foes { color: #e9917f; margin-left: auto; }
   .wave-bar { height: 5px; background: #3a1a1a; border-radius: 2px; overflow: hidden; }
@@ -102,17 +121,21 @@
     border-radius: 4px;
   }
   .reward-box { padding: 16px 20px; text-align: center; max-width: 92%; }
-  .reward-box h2 { margin: 0 0 4px; font-size: 18px; color: var(--gold); letter-spacing: 0.03em; }
+  .reward-box h2 { margin: 0 0 4px; font-family: var(--pixel); font-size: 26px; font-weight: 700;
+    color: var(--gold); letter-spacing: 0.03em; text-shadow: 0 3px 0 rgba(0,0,0,0.6); }
   .reward-box p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
   #reward-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
   .ghost-btn {
     background: var(--panel-2); color: var(--muted); border: 2px solid var(--frame);
-    border-radius: 5px; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer;
+    border-radius: 6px; padding: 8px 16px; font-family: var(--pixel); font-size: 14px; cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.45);
   }
+  .ghost-btn:active { transform: translateY(3px); box-shadow: none; }
   .ghost-btn:hover { color: var(--text); border-color: var(--frame-hi); }
 
   #lines { width: 100%; max-width: 960px; text-align: center; min-height: 34px; }
-  #message { font-size: 14px; color: var(--gold); min-height: 18px; }
+  #message { font-family: var(--pixel); font-size: 15px; color: var(--gold); min-height: 20px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.55); }
   #intent { font-size: 12.5px; color: var(--muted); min-height: 16px; }
 
   /* ---------- Untere Leiste ---------- */
@@ -127,83 +150,228 @@
   #side { grid-area: side; }
 
   #minimap-panel { padding: 6px; display: grid; place-items: center; }
-  canvas#minimap { display: block; image-rendering: pixelated; width: 122px; height: 92px; }
+  canvas#minimap { display: block; image-rendering: pixelated; width: 108px; height: 81px; }
 
-  #hand-wrap { padding: 8px; overflow-x: auto; overflow-y: hidden; }
-  #hand { display: flex; gap: 8px; justify-content: center; min-width: min-content; }
+  #hand-wrap { padding: 6px 4px; overflow-x: auto; overflow-y: visible; }
+  /* Die Hand liegt aufgefaechert wie ein echtes Blatt: die Karten ueberlappen
+     und die angefasste kommt nach vorn. */
+  #hand { display: flex; gap: 0; justify-content: center; min-width: min-content; padding: 4px 10px 2px; }
+  #hand .card-slot { margin-right: -16px; }
+  #hand .card-slot:last-child { margin-right: 0; }
+  #hand .card-slot:nth-child(1) { z-index: 1; }
+  #hand .card-slot:nth-child(2) { z-index: 2; }
+  #hand .card-slot:nth-child(3) { z-index: 3; }
+  #hand .card-slot:nth-child(4) { z-index: 4; }
+  #hand .card-slot:nth-child(5) { z-index: 5; }
+  #hand .card-slot:nth-child(6) { z-index: 6; }
+  #hand .card-slot:hover { z-index: 20; }
+
+  /* Leichte Faecherung: aussen staerker geneigt als in der Mitte */
+  #hand .card-slot:nth-child(1) > .card { transform-origin: bottom center; }
+  #hand .card-slot:nth-child(1) { transform: rotate(-3deg) translateY(3px); }
+  #hand .card-slot:nth-child(2) { transform: rotate(-1.5deg) translateY(1px); }
+  #hand .card-slot:nth-child(4) { transform: rotate(1.5deg) translateY(1px); }
+  #hand .card-slot:nth-child(5) { transform: rotate(3deg) translateY(3px); }
+  #hand .card-slot:nth-child(6) { transform: rotate(4.5deg) translateY(6px); }
+  #hand .card-slot:hover { transform: none; }
 
   #side { display: flex; flex-direction: column; gap: 8px; }
 
   button.endround {
-    background: linear-gradient(180deg, var(--herz-hi), var(--herz));
-    color: #ffeede; border: 2px solid #5d1720; border-radius: 5px;
-    padding: 9px 12px; font: inherit; font-size: 14px; font-weight: bold;
-    letter-spacing: 0.03em; cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 3px 0 rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #d8503f, var(--herz) 55%, #6d1722);
+    color: #fff2e6; border: 3px solid #4a1119; border-radius: 7px;
+    padding: 11px 14px; font-family: var(--pixel); font-size: 17px; font-weight: 700;
+    letter-spacing: 0.04em; cursor: pointer;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.28), inset 0 -8px 12px -8px rgba(0,0,0,0.6),
+      0 5px 0 #3a0d14, 0 8px 14px rgba(0,0,0,0.5);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
-  button.endround:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); }
+  button.endround:hover:not(:disabled) { filter: brightness(1.08); }
+  button.endround:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 0 0 #3a0d14;
+  }
   button.endround:disabled { filter: grayscale(0.7) brightness(0.7); cursor: not-allowed; }
 
-  #deck-pile { padding: 6px 10px; text-align: center; font-size: 12px; color: var(--muted); line-height: 1.5; }
-  #deck-pile b { display: block; font-size: 17px; color: var(--parchment); }
+  #deck-pile { padding: 6px 8px; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  #deck-pile b { display: block; font-family: var(--pixel); font-size: 24px; font-weight: 700;
+    color: var(--parchment); text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
   /* ---------- Karten ---------- */
+  /* Ein Halter traegt Einzug und Schweben, die Karte darin die Neigung.
+     Sonst wuerden sich die Transformationen gegenseitig ueberschreiben. */
+  .card-slot {
+    width: 132px;
+    flex: none;
+    perspective: 640px;
+    animation: kartefaechern 0.36s cubic-bezier(0.2, 1.3, 0.35, 1) backwards;
+  }
+
+  @keyframes schweben {
+    0%, 100% { transform: translateY(0) rotate(-0.35deg); }
+    50%      { transform: translateY(-3px) rotate(0.35deg); }
+  }
+  .card-slot > .card { animation: schweben 3.4s ease-in-out infinite; }
+  .card-slot:nth-child(2n) > .card { animation-duration: 3.9s; animation-delay: -1.1s; }
+  .card-slot:nth-child(3n) > .card { animation-duration: 4.3s; animation-delay: -2.2s; }
+
   .card {
-    width: 122px; flex: none; background: var(--parchment);
-    border: 2px solid #40301c; border-radius: 4px;
-    box-shadow: 0 3px 0 rgba(0,0,0,0.5); color: #2b2018;
-    display: flex; flex-direction: column; cursor: pointer; position: relative;
-    padding: 5px 5px 6px; transition: transform 0.1s ease, box-shadow 0.1s ease;
-  }
-  .card:hover:not(.disabled) { transform: translateY(-7px) rotate(-0.6deg); box-shadow: 0 10px 12px rgba(0,0,0,0.55); }
-  .card:active:not(.disabled) { transform: translateY(-2px) scale(0.98); }
+    position: relative;
+    width: 100%;
+    min-height: 208px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 6px;
+    cursor: pointer;
+    color: #2b2018;
+    border-radius: 9px;
+    transform-style: preserve-3d;
+    transition: box-shadow 0.14s ease, filter 0.14s ease;
 
-  @keyframes kartefaechern {
-    from { transform: translateY(26px) rotate(4deg) scale(0.92); opacity: 0; }
-    to   { transform: none; opacity: 1; }
+    /* Dicker Rand, heller Grat innen, tiefer Schatten aussen */
+    background:
+      linear-gradient(170deg, #f6ecd4 0%, #e7d9ba 46%, #dbcaa6 100%);
+    border: 3px solid #37281a;
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 252, 240, 0.75),
+      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.55),
+      0 5px 0 #241a11,
+      0 9px 16px rgba(0, 0, 0, 0.55);
   }
-  #hand .card { animation: kartefaechern 0.32s cubic-bezier(0.22, 1.2, 0.36, 1) backwards; }
 
-  @keyframes tafelauf {
-    from { transform: translateY(18px) scale(0.94); opacity: 0; }
-    to   { transform: none; opacity: 1; }
+  /* Farbkante der Kartenfarbe */
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 7px;
+    border-radius: 6px 0 0 6px;
+    background: linear-gradient(180deg, var(--farbe-hell), var(--farbe));
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.35);
   }
-  .reward-box { animation: tafelauf 0.3s cubic-bezier(0.22, 1.2, 0.36, 1); }
-  #reward-cards .card { animation: kartefaechern 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) backwards; }
 
-  @keyframes pochen {
-    0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 3px 0 rgba(0,0,0,0.5); }
-    50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 3px 0 rgba(0,0,0,0.5), 0 0 14px rgba(224,80,60,0.55); }
+  /* Glanz, der beim Ueberfahren durchwandert */
+  .card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 46%, transparent 62%);
+    background-size: 260% 100%;
+    background-position: 140% 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
-  button.endround:not(:disabled) { animation: pochen 2.6s ease-in-out infinite; }
-  .card.disabled { filter: grayscale(0.75) brightness(0.82); cursor: not-allowed; }
-  .card.selected { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 3px 0 rgba(0,0,0,0.5); }
+  .card-slot:hover .card::after { opacity: 1; animation: glanz 0.75s ease-out; }
+  @keyframes glanz { from { background-position: 140% 0; } to { background-position: -60% 0; } }
 
-  .card-head { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+  .card-slot:hover > .card {
+    animation-play-state: paused;
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 252, 240, 0.9),
+      inset 0 -14px 20px -12px rgba(90, 62, 28, 0.45),
+      0 10px 0 #241a11,
+      0 18px 26px rgba(0, 0, 0, 0.6);
+  }
+
+  .card.disabled { cursor: not-allowed; filter: grayscale(0.8) brightness(0.72) contrast(0.9); }
+  .card-slot.gesperrt { pointer-events: none; }
+
+  .card.selected {
+    border-color: var(--gold);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 245, 205, 0.95),
+      0 0 0 3px rgba(227, 181, 82, 0.65),
+      0 10px 0 #241a11,
+      0 16px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 8px 5px 13px;
+  }
+
+  /* Kostenstein mit Facette */
   .cost {
-    width: 19px; height: 21px; flex: none; display: grid; place-items: center;
-    background: linear-gradient(180deg, #4a7fc8, var(--blau));
-    border: 1.5px solid #1d3c6b; color: #fff; font-size: 12px; font-weight: bold;
-    clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+    width: 26px; height: 26px; flex: none;
+    display: grid; place-items: center;
+    font-family: var(--pixel);
+    font-size: 16px; font-weight: 700; line-height: 1;
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+    background: radial-gradient(circle at 34% 28%, #7fb0ee, #2f5fa8 62%, #1d3c6b);
+    border: 2px solid #16294a;
+    border-radius: 50%;
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.55), 0 2px 0 rgba(0, 0, 0, 0.3);
   }
-  .card-name { font-size: 11px; font-weight: bold; line-height: 1.15; flex: 1; }
-  .card-suit { font-size: 12px; flex: none; opacity: 0.85; }
-  .card-art { width: 100%; height: 56px; border: 1.5px solid #6b5535; display: block; image-rendering: pixelated; }
-  .card-text { font-size: 10px; line-height: 1.25; padding: 5px 2px 4px; flex: 1; color: #4a3a28; }
+
+  .card-name {
+    flex: 1;
+    font-family: var(--pixel);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    color: #2a1d12;
+    text-shadow: 0 1px 0 rgba(255, 250, 235, 0.8);
+  }
+  .card-suit { font-size: 15px; flex: none; filter: drop-shadow(0 1px 0 rgba(255,250,235,0.7)); }
+
+  /* Bild in vertiefter Fassung */
+  .card-art-frame {
+    margin: 0 8px 0 13px;
+    border: 2px solid #4a3620;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 250, 235, 0.7);
+    line-height: 0;
+  }
+  .card-art { width: 100%; height: 58px; display: block; image-rendering: pixelated; }
+
+  .card-stats {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 7px 8px 2px 13px;
+  }
+  .pill {
+    font-family: var(--pixel);
+    font-size: 12px; font-weight: 600; line-height: 1;
+    padding: 3px 6px 2px;
+    border-radius: 4px;
+    background: rgba(58, 42, 24, 0.12);
+    border: 1px solid rgba(58, 42, 24, 0.3);
+    color: #3a2a18;
+  }
+  .pill.schaden { color: #7c1f2c; border-color: rgba(124,31,44,0.4); background: rgba(124,31,44,0.1); }
+  .pill.reich   { color: #2f5fa8; border-color: rgba(47,95,168,0.4); background: rgba(47,95,168,0.1); }
+  .pill.leben   { color: #4a5c2b; border-color: rgba(74,92,43,0.4); background: rgba(74,92,43,0.1); }
+  .pill.hoehe   { color: #8a6116; border-color: rgba(138,97,22,0.4); background: rgba(138,97,22,0.12); }
+
+  .card-text {
+    font-family: var(--fliess);
+    font-size: 10.5px; line-height: 1.3;
+    padding: 5px 9px 6px 13px;
+    flex: 1;
+    color: #5a4630;
+    font-style: italic;
+  }
+
+  /* Typenband am Fuss, in der Farbe der Kartenfarbe */
   .card-badge {
-    align-self: center; font-size: 9.5px; letter-spacing: 0.05em;
-    background: var(--parchment-dark); border: 1.5px solid #6b5535; border-radius: 3px;
-    padding: 1px 9px; color: #3a2c1c;
-  }
-
-  button:focus-visible, .card:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .card, button.endround { transition: none; }
-    .card:hover:not(.disabled) { transform: none; }
+    margin: 0 6px 0 11px;
+    font-family: var(--pixel);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    text-align: center;
+    padding: 3px 0 2px;
+    border-radius: 4px;
+    color: #fdf4df;
+    background: linear-gradient(180deg, var(--farbe-hell), var(--farbe));
+    border: 1.5px solid rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
 
   kbd { font-family: inherit; font-size: 11px; background: var(--panel-2); border: 1px solid var(--frame);
@@ -682,6 +850,9 @@ function ueberschwingen(x) {
 }
 function weich(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
 let ruettler = 0;
+let blitzSchirm = 0;      // kurzes Aufhellen des ganzen Bildes
+
+function schirmBlitz(staerke) { if (!wenigerBewegung) blitzSchirm = Math.max(blitzSchirm, staerke); }
 const projektile = [];
 const zahlen = [];
 const leichen = [];
@@ -768,10 +939,14 @@ function drawBanner_Runde() {
   ctx.fillRect(0, mitte + 33, canvas.width, 2);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#e3b552';
-  ctx.font = 'bold 26px "Trebuchet MS", system-ui, sans-serif';
+  ctx.font = '700 38px "Pixelify Sans", "Trebuchet MS", sans-serif';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'rgba(10,7,5,0.9)';
+  ctx.strokeText(banner.titel, canvas.width / 2, mitte + 2);
   ctx.fillText(banner.titel, canvas.width / 2, mitte + 2);
   ctx.fillStyle = '#a8977c';
-  ctx.font = '13px "Trebuchet MS", system-ui, sans-serif';
+  ctx.font = '500 16px "Pixelify Sans", "Trebuchet MS", sans-serif';
   ctx.fillText(banner.unter, canvas.width / 2, mitte + 22);
   ctx.textAlign = 'start';
   ctx.restore();
@@ -1392,6 +1567,23 @@ function drawEnemy(e, geist = false) {
  * Gegner im Lager. Sie stehen ausserhalb des Feldes, sind unangreifbar und
  * bekommen deshalb weder Ring noch Absichtsplakette, nur ihren Namen.
  */
+let rasterBild = null;
+/** Feine Rasterzeilen, damit es nach Bildschirm aussieht und nicht nach Seite. */
+function drawRaster() {
+  if (!rasterBild) {
+    rasterBild = document.createElement('canvas');
+    rasterBild.width = 4; rasterBild.height = 4;
+    const g = rasterBild.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0.13)';
+    g.fillRect(0, 0, 4, 1);
+    g.fillStyle = 'rgba(255,240,210,0.025)';
+    g.fillRect(0, 2, 4, 1);
+  }
+  const m = ctx.createPattern(rasterBild, 'repeat');
+  ctx.fillStyle = m;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 let vignetteBild = null;
 /** Weicher Randabfall, damit das Bild nicht hart im Schwarz endet. */
 function drawVignette() {
@@ -1439,19 +1631,25 @@ function drawStaub() {
 
 /** Aufsteigende Schadens- und Hinweiszahlen. */
 function drawZahlen() {
-  ctx.font = 'bold 12px system-ui, sans-serif';
   ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
   for (const z of zahlen) {
     const f = z.t / z.dauer;
-    const auf = f < 0.18 ? 0.6 + (f / 0.18) * 0.75 : 1.12 - Math.min(1, (f - 0.18) / 0.2) * 0.12;
-    ctx.font = 'bold ' + (12 * auf).toFixed(1) + 'px system-ui, sans-serif';
+    const auf = f < 0.16 ? 0.4 + (f / 0.16) * 1.05 : 1.45 - Math.min(1, (f - 0.16) / 0.22) * 0.45;
+    const kipp = wenigerBewegung ? 0 : Math.sin(f * 14) * (1 - f) * 0.16;
     const x = isoX(z.col, z.row);
-    const y = isoY(z.col, z.row) + TH / 2 - 26 - weich(f) * 22;
-    ctx.globalAlpha = f < 0.7 ? 1 : 1 - (f - 0.7) / 0.3;
-    ctx.fillStyle = 'rgba(10,8,6,0.8)';
-    ctx.fillText(z.text, x + 1, y + 1);
+    const y = isoY(z.col, z.row) + TH / 2 - 26 - weich(f) * 26;
+    ctx.save();
+    ctx.globalAlpha = f < 0.72 ? 1 : 1 - (f - 0.72) / 0.28;
+    ctx.translate(x, y);
+    ctx.rotate(kipp);
+    ctx.font = '700 ' + (17 * auf).toFixed(1) + 'px "Pixelify Sans", "Trebuchet MS", sans-serif';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(12,8,5,0.92)';
+    ctx.strokeText(z.text, 0, 0);
     ctx.fillStyle = z.farbe;
-    ctx.fillText(z.text, x, y);
+    ctx.fillText(z.text, 0, 0);
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = 'start';
@@ -1555,8 +1753,8 @@ function drawLager() {
 
 /** Kleine Plakette mit einer Absicht oder einem Wert. */
 function drawBadge(x, y, text, farbe, rand) {
-  ctx.font = 'bold 9px system-ui, sans-serif';
-  const w = Math.max(20, ctx.measureText(text).width + 9);
+  ctx.font = '600 12px "Pixelify Sans", "Trebuchet MS", sans-serif';
+  const w = Math.max(22, ctx.measureText(text).width + 10);
   const hh = 12;
   ctx.fillStyle = 'rgba(10,8,6,0.85)';
   ctx.fillRect(Math.round(x - w / 2), y, w, hh);
@@ -1566,7 +1764,7 @@ function drawBadge(x, y, text, farbe, rand) {
   ctx.fillStyle = farbe;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, Math.round(x), y + hh / 2 + 0.5);
+  ctx.fillText(text, Math.round(x), y + hh / 2 + 1);
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 }
@@ -1647,6 +1845,7 @@ function zeichenReihenfolge(objekte) {
 function updateAnimations(dt) {
   animZeit += dt;
   ruettler = Math.max(0, ruettler - dt * 22);
+  blitzSchirm = Math.max(0, blitzSchirm - dt * 3.4);
 
   for (const t of state.towers) {
     if (t.bauZeit !== undefined && t.bauZeit < BAU_DAUER) {
@@ -1787,7 +1986,12 @@ function draw() {
   drawZahlen();
   drawFlusen();
   ctx.restore();
+  drawRaster();
   drawVignette();
+  if (blitzSchirm > 0.01) {
+    ctx.fillStyle = 'rgba(255,232,190,' + Math.min(0.5, blitzSchirm * 0.42).toFixed(3) + ')';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   drawBanner_Runde();
 }
 
@@ -2230,6 +2434,7 @@ function resolveEnemyTurn() {
         if (state.selectedTower === turm.id) state.selectedTower = null;
         staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, '#cbbc98');
         ruetteln(8);
+        schirmBlitz(0.6);
         klang('fall');
         meldungen.push(turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!');
       } else {
@@ -2239,6 +2444,7 @@ function resolveEnemyTurn() {
       state.castleHp -= e.dmg;
       zeigeZahl(CASTLE.col + CASTLE.w / 2, CASTLE.row + CASTLE.h / 2, '-' + e.dmg, '#ff6b6b');
       ruetteln(7);
+      schirmBlitz(0.8);
       klang('burg');
       meldungen.push(e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')');
     }
@@ -2293,6 +2499,7 @@ function beginneBelohnung() {
     state.belohnung.push(topf.splice(Math.floor(Math.random() * topf.length), 1)[0]);
   }
   zeigeBanner('Runde ' + state.runde + ' überstanden', 'Wähle eine Karte für dein Deck');
+  schirmBlitz(1);
   klang('sieg');
   setMessage('Runde ' + state.runde + ' überstanden. Wähle eine Karte für dein Deck.');
   renderAll();
@@ -2378,40 +2585,82 @@ document.getElementById('help-btn').addEventListener('click', () => {
 // ============================================================
 //  Oberflaeche
 // ============================================================
-/** Baut die Darstellung einer Karte. */
+// Farbe je Kartenfarbe, faerbt Kante und Typenband.
+const FARBTON = {
+  'Gebäude':   ['#a07a3c', '#6d4f1f'],
+  'Einheit':   ['#b0364a', '#7c1f2c'],
+  'Fähigkeit': ['#6f8f3c', '#465c22'],
+  'Macht':     ['#d9a435', '#96690f'],
+};
+
+/** Baut die Darstellung einer Karte samt Halter. */
 function cardElement(card, { disabled = false, selected = false, onClick = null } = {}) {
+  const slot = document.createElement('div');
+  slot.className = 'card-slot' + (disabled ? ' gesperrt' : '');
+
   const el = document.createElement('div');
   el.className = 'card' + (disabled ? ' disabled' : '') + (selected ? ' selected' : '');
-  if (onClick) el.onclick = () => { if (!disabled) onClick(); };
+  const [hell, dunkel] = FARBTON[card.type] || ['#8a7a5c', '#5a4a30'];
+  el.style.setProperty('--farbe-hell', hell);
+  el.style.setProperty('--farbe', dunkel);
 
   const head = document.createElement('div');
   head.className = 'card-head';
-  head.innerHTML = '<span class="cost">' + card.cost + '</span><span class="card-name">' +
-    card.name + '</span><span class="card-suit">' + card.suit + '</span>';
+  head.innerHTML = '<span class="cost">' + card.cost + '</span>' +
+    '<span class="card-name">' + card.name + '</span>' +
+    '<span class="card-suit">' + card.suit + '</span>';
   el.appendChild(head);
 
+  const fassung = document.createElement('div');
+  fassung.className = 'card-art-frame';
   const art = document.createElement('canvas');
   art.className = 'card-art';
-  art.width = 108; art.height = 56;
+  art.width = 116; art.height = 58;
   paintCardArt(art, card.art);
-  el.appendChild(art);
+  fassung.appendChild(art);
+  el.appendChild(fassung);
 
   const werte = [];
-  if (card.dmg) werte.push('⚔ ' + card.dmg);
-  if (card.range) werte.push('➤ ' + card.range);
-  if (card.hp) werte.push('♥ ' + card.hp);
-  if (card.rangeBonus) werte.push('▲ +' + card.rangeBonus);
+  if (card.dmg) werte.push(['schaden', '⚔ ' + card.dmg]);
+  if (card.range) werte.push(['reich', '➤ ' + card.range]);
+  if (card.hp) werte.push(['leben', '♥ ' + card.hp]);
+  if (card.rangeBonus) werte.push(['hoehe', '▲ +' + card.rangeBonus]);
+  if (werte.length) {
+    const leiste = document.createElement('div');
+    leiste.className = 'card-stats';
+    leiste.innerHTML = werte.map(([k, t]) => '<span class="pill ' + k + '">' + t + '</span>').join('');
+    el.appendChild(leiste);
+  }
 
   const txt = document.createElement('div');
   txt.className = 'card-text';
-  txt.innerHTML = (werte.length ? '<b>' + werte.join(' · ') + '</b><br>' : '') + card.text;
+  txt.textContent = card.text;
   el.appendChild(txt);
 
   const badge = document.createElement('div');
   badge.className = 'card-badge';
   badge.textContent = card.type;
   el.appendChild(badge);
-  return el;
+
+  // Karte neigt sich zum Zeiger, wie ein Stueck Pappe in der Hand
+  if (!disabled && !wenigerBewegung) {
+    slot.addEventListener('pointermove', (evt) => {
+      const r = slot.getBoundingClientRect();
+      const nx = (evt.clientX - r.left) / r.width - 0.5;
+      const ny = (evt.clientY - r.top) / r.height - 0.5;
+      el.style.transform =
+        'translateY(-10px) rotateX(' + (-ny * 16).toFixed(2) + 'deg) rotateY(' +
+        (nx * 18).toFixed(2) + 'deg) scale(1.06)';
+    });
+    slot.addEventListener('pointerleave', () => { el.style.transform = ''; });
+    slot.addEventListener('pointerdown', () => {
+      el.style.transform = 'translateY(-4px) scale(0.97)';
+    });
+  }
+
+  if (onClick) slot.addEventListener('click', () => { if (!disabled) onClick(); });
+  slot.appendChild(el);
+  return slot;
 }
 
 function renderHand() {
@@ -2429,7 +2678,7 @@ function renderHand() {
       selected: Boolean(state.pendingCard && state.pendingCard.uid === card.uid),
       onClick: () => { state.selectedTower = null; klang('karte'); playCard(card); },
     });
-    el.style.animationDelay = (i * 45) + 'ms';
+    el.style.animationDelay = (i * 55) + 'ms';
     handEl.appendChild(el);
   });
 }
@@ -2447,7 +2696,7 @@ function renderReward() {
   liste.innerHTML = '';
   state.belohnung.forEach((proto, i) => {
     const el = cardElement(proto, { onClick: () => { klang('karte'); nimmBelohnung(proto); } });
-    el.style.animationDelay = (120 + i * 90) + 'ms';
+    el.style.animationDelay = (140 + i * 110) + 'ms';
     liste.appendChild(el);
   });
 }

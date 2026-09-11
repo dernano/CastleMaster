@@ -59,6 +59,24 @@ Bauwerken, sonst wäre ein verdecktes Ziel nicht anwählbar.
 Beim Rundenwechsel und nach gewonnener Runde fährt ein Banner über das Bild.
 Karten fächern sich beim Nachziehen auf.
 
+## Schrift und Karten
+
+Die Oberfläche läuft in Pixelify Sans, einer kantigen Pixelschrift, die zum
+gezeichneten Spielfeld passt. Sie ist als variabler lateinischer Schnitt fest in
+die Datei eingebettet, rund 16 KB. Damit hängt nichts an einem Schriftdienst,
+es wird nichts nachgeladen, und das Spiel sieht ohne Netz genauso aus.
+Kartenbeschreibungen bleiben in einer ruhigen Kursiven, weil Pixelschrift in
+Fließtext schlecht liest.
+
+Die Karten sind keine Kacheln mehr, sondern Karten: dicker Rand, heller Grat
+innen, Schlagschatten nach unten, Farbkante und Typenband in der Farbe der
+Kartenfarbe, ein facettierter Kostenstein und das Bild in vertiefter Fassung.
+
+Die Hand liegt aufgefächert wie ein Blatt, die Karten überlappen und sind
+leicht gedreht. Unter dem Zeiger neigt sich eine Karte räumlich mit, hebt ab,
+ein Glanz wandert darüber, und beim Drücken federt sie ein. Im Ruhezustand
+schweben sie unmerklich.
+
 ## Ton
 
 Alle Geräusche werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
