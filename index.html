@@ -1,85 +1,503 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Castle Master</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e222b'/%3E%3Cpath d='M6 24V12l4 3 3-5 3 5 3-5 3 5 4-3v12z' fill='%23f2c14e'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div id="app">
-      <main id="stage">
-        <div id="topbar">
-          <h1>Castle&nbsp;Master</h1>
-          <div class="stats">
-            <span class="stat gold"><i>Gold</i><b id="stat-gold">0</b></span>
-            <span class="stat lives"><i>Leben</i><b id="stat-lives">0</b></span>
-            <span class="stat"><i>Welle</i><b id="stat-wave">0</b></span>
-            <span class="stat"><i>Gegner</i><b id="stat-remaining">-</b></span>
-            <span class="stat"><i>Abschuesse</i><b id="stat-kills">0</b></span>
-            <span class="stat"><i>Rekord</i><b id="stat-best">0</b></span>
-          </div>
-        </div>
+<head>
+<meta charset="UTF-8">
+<title>Castle Master – Prototyp</title>
+<style>
+  :root {
+    --parchment: #e9dcc0;
+    --parchment-dark: #d9c9a3;
+    --ink: #2b2018;
+    --walnut: #4a3527;
+    --walnut-dark: #2f2018;
+    --herz: #7c1f34;
+    --herz-dark: #5c1526;
+    --blatt: #4a5c2b;
+    --blatt-dark: #37451f;
+    --schellen: #a67818;
+    --schellen-dark: #7d5a10;
+    --eichel: #5c4326;
+    --eichel-dark: #40300f;
+    --disabled: #9c9184;
+  }
 
-        <div id="board">
-          <canvas id="game" width="960" height="600"></canvas>
-          <div id="overlay" class="hidden">
-            <div class="overlay-card">
-              <h2 id="overlay-title">Die Burg ist gefallen</h2>
-              <p id="overlay-text"></p>
-              <button id="restart-button" type="button" class="primary">Neue Partie (R)</button>
-            </div>
-          </div>
-        </div>
+  * { box-sizing: border-box; }
 
-        <p id="message" data-tone="info"></p>
-        <div id="legend"></div>
-      </main>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--parchment);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.03) 0, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(0,0,0,0.04) 0, transparent 45%);
+    font-family: Georgia, 'Iowan Old Style', serif;
+    color: var(--ink);
+    padding: 20px 16px 100px;
+  }
 
-      <aside id="sidebar">
-        <section class="panel">
-          <h2>Tuerme bauen</h2>
-          <div id="build-menu"></div>
-        </section>
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    letter-spacing: 0.04em;
+    margin: 0 0 4px;
+    color: var(--walnut-dark);
+  }
 
-        <section class="panel hidden" id="selection">
-          <h2 id="selection-title">Turm</h2>
-          <div id="selection-stats"></div>
-          <div class="row">
-            <button id="upgrade-button" type="button" class="primary">Ausbauen</button>
-            <button id="sell-button" type="button" class="ghost">Verkaufen</button>
-          </div>
-        </section>
+  .subtitle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--eichel);
+    margin-bottom: 18px;
+    font-style: italic;
+  }
 
-        <section class="panel">
-          <h2 id="wave-heading">Naechste Welle</h2>
-          <p id="wave-preview" class="muted"></p>
-          <button id="wave-button" type="button" class="primary wide">Welle starten</button>
-          <div class="row">
-            <button id="speed-button" type="button" class="ghost">1x</button>
-            <button id="pause-button" type="button" class="ghost">Pause</button>
-          </div>
-        </section>
+  .topbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
 
-        <section class="panel help">
-          <h2>Steuerung</h2>
-          <ul>
-            <li><kbd>1</kbd>-<kbd>4</kbd> Turm waehlen, Linksklick baut</li>
-            <li><kbd>Rechtsklick</kbd> / <kbd>Esc</kbd> Auswahl aufheben</li>
-            <li><kbd>U</kbd> ausbauen, <kbd>X</kbd> verkaufen</li>
-            <li><kbd>Leertaste</kbd> Welle starten oder pausieren</li>
-            <li><kbd>F</kbd> Geschwindigkeit, <kbd>P</kbd> Pause</li>
-          </ul>
-          <p class="muted">
-            Tuerme versperren den Weg. Die Gegner suchen sich immer die kuerzeste
-            freie Route - baue ein Labyrinth, aber sperre den Bergfried nie
-            vollstaendig ab.
-          </p>
-        </section>
-      </aside>
-    </div>
+  .tatendrang {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--walnut-dark);
+    color: var(--parchment);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 1rem;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  }
 
-    <script type="module" src="src/main.js"></script>
-  </body>
+  .tatendrang .flame {
+    color: #e7b84f;
+    font-size: 1.2rem;
+  }
+
+  button.endround {
+    background: var(--herz);
+    color: var(--parchment);
+    border: none;
+    padding: 8px 18px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    box-shadow: 0 2px 0 var(--herz-dark);
+  }
+  button.endround:active { transform: translateY(1px); box-shadow: none; }
+
+  .message {
+    text-align: center;
+    min-height: 24px;
+    font-size: 0.9rem;
+    color: var(--herz-dark);
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+
+  /* Battlefield */
+  .battlefield {
+    max-width: 900px;
+    margin: 0 auto 30px;
+    border: 2px solid var(--walnut);
+    border-radius: 4px;
+    background: var(--parchment-dark);
+    padding: 20px;
+    min-height: 160px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+  }
+
+  .battlefield.empty::before {
+    content: "Noch keine Türme errichtet. Spiele eine Gebäude-Karte.";
+    color: var(--disabled);
+    font-style: italic;
+    font-size: 0.9rem;
+    width: 100%;
+    text-align: center;
+    padding: 30px 0;
+  }
+
+  .tower {
+    background: var(--parchment);
+    border: 2px solid var(--eichel);
+    border-radius: 4px;
+    width: 130px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .tower-name {
+    font-size: 0.78rem;
+    color: var(--eichel-dark);
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+  }
+
+  .slot {
+    border: 1.5px dashed var(--disabled);
+    border-radius: 3px;
+    min-height: 46px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 4px;
+    background: rgba(255,255,255,0.4);
+  }
+
+  .slot.filled {
+    border-style: solid;
+    border-color: var(--herz);
+    background: rgba(124,31,52,0.08);
+    color: var(--herz-dark);
+    font-weight: bold;
+  }
+
+  .slot.targetable {
+    border-color: var(--blatt);
+    background: rgba(74,92,43,0.15);
+    cursor: pointer;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(74,92,43,0.4); }
+    50% { box-shadow: 0 0 6px rgba(74,92,43,0.6); }
+  }
+
+  .unit-boosted::after {
+    content: " ✦";
+    color: var(--schellen);
+  }
+
+  /* Hand */
+  .hand-label {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--eichel);
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .hand {
+    max-width: 950px;
+    margin: 0 auto;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .card {
+    width: 140px;
+    min-height: 190px;
+    background: var(--parchment);
+    border: 2px solid var(--walnut);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    position: relative;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+  }
+
+  .card:hover:not(.disabled) {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 10px rgba(0,0,0,0.2);
+  }
+
+  .card.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .card.selected {
+    outline: 3px solid var(--schellen);
+    outline-offset: 2px;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+
+  .card-cost {
+    background: var(--walnut-dark);
+    color: var(--parchment);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .card-suit {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  .card-name {
+    font-size: 0.92rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+
+  .card-type {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .card-type.Gebäude { color: var(--eichel); }
+  .card-type.Einheit { color: var(--herz); }
+  .card-type.Fähigkeit { color: var(--blatt); }
+  .card-type.Macht { color: var(--schellen-dark); }
+
+  .card-text {
+    font-size: 0.72rem;
+    font-style: italic;
+    color: #55483a;
+    margin-top: auto;
+    line-height: 1.25;
+  }
+
+  .card-stats {
+    font-size: 0.75rem;
+    color: var(--walnut-dark);
+    margin-bottom: 4px;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.7rem;
+    color: var(--disabled);
+  }
+</style>
+</head>
+<body>
+
+<h1>🏰 Castle Master</h1>
+<div class="subtitle">Prototyp – Kern-Loop: Turm bauen → Einheit platzieren</div>
+
+<div class="topbar">
+  <div class="tatendrang"><span class="flame">⚡</span> <span id="tatendrang-val">3</span> / <span id="tatendrang-max">3</span> Tatendrang</div>
+  <button class="endround" onclick="endRound()">Runde beenden</button>
+</div>
+
+<div class="message" id="message"></div>
+
+<div class="battlefield" id="battlefield"></div>
+
+<div class="hand-label">Deine Hand</div>
+<div class="hand" id="hand"></div>
+
+<footer>Doppeldeutsche Symbolik: 🌰 Eichel = Gebäude · ❤ Herz = Einheit · 🍃 Blatt = Fähigkeit · 🔔 Schellen = Macht</footer>
+
+<script>
+const CARD_POOL = [
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2,
+    text: 'Fundament deiner Burg. Ohne ihn kein Widerstand.' },
+  { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1,
+    text: 'Schnell errichtet, doch nicht weniger trotzig.' },
+  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2,
+    text: 'Braucht festen Boden unter den Füßen.' },
+  { id: 'bogenschuetze', name: 'Bogenschütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 3,
+    text: 'Zielt, wo andere zögern.' },
+  { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1,
+    text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
+  { id: 'krone', name: 'Krone der Belagerung', type: 'Macht', suit: '🔔', cost: 3,
+    text: 'Wer die Krone trägt, baut höher als jeder andere.' },
+];
+
+let state = {
+  tatendrang: 3,
+  maxTatendrang: 3,
+  towers: [], // { name, slots: [null | {name, dmg, boosted}] }
+  hand: [],
+  pendingCard: null, // card awaiting a target click
+};
+
+function drawHand() {
+  const hand = [];
+  const pool = CARD_POOL;
+  for (let i = 0; i < 6; i++) {
+    hand.push({ ...pool[i % pool.length], uid: 'c' + Date.now() + '_' + i });
+  }
+  // shuffle a little so it doesn't feel too fixed
+  for (let i = hand.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [hand[i], hand[j]] = [hand[j], hand[i]];
+  }
+  return hand;
+}
+
+function setMessage(text) {
+  document.getElementById('message').textContent = text;
+}
+
+function anyFreeSlot() {
+  return state.towers.some(t => t.slots.some(s => s === null));
+}
+
+function render() {
+  document.getElementById('tatendrang-val').textContent = state.tatendrang;
+  document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
+
+  const bf = document.getElementById('battlefield');
+  bf.innerHTML = '';
+  bf.classList.toggle('empty', state.towers.length === 0);
+
+  state.towers.forEach((tower, tIdx) => {
+    const div = document.createElement('div');
+    div.className = 'tower';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'tower-name';
+    nameEl.textContent = '🌰 ' + tower.name;
+    div.appendChild(nameEl);
+
+    tower.slots.forEach((slot, sIdx) => {
+      const slotEl = document.createElement('div');
+      const isTargetable = state.pendingCard &&
+        state.pendingCard.type === 'Einheit' && slot === null;
+      slotEl.className = 'slot' + (slot ? ' filled' : '') + (isTargetable ? ' targetable' : '');
+      if (slot) {
+        slotEl.innerHTML = '❤ ' + slot.name + ' (' + slot.dmg + ')' +
+          (slot.boosted ? '<span class="unit-boosted"></span>' : '');
+        if (state.pendingCard && state.pendingCard.type === 'Fähigkeit') {
+          slotEl.classList.add('targetable');
+          slotEl.onclick = () => applyAbilityTo(tIdx, sIdx);
+        }
+      } else if (isTargetable) {
+        slotEl.textContent = 'freier Platz';
+        slotEl.onclick = () => placeUnit(tIdx, sIdx);
+      } else {
+        slotEl.textContent = 'leer';
+      }
+      div.appendChild(slotEl);
+    });
+    bf.appendChild(div);
+  });
+
+  const handEl = document.getElementById('hand');
+  handEl.innerHTML = '';
+  state.hand.forEach(card => {
+    const el = document.createElement('div');
+    const canAfford = state.tatendrang >= card.cost;
+    let disabled = !canAfford;
+    if (card.type === 'Einheit' && !anyFreeSlot()) disabled = true;
+    if (card.type === 'Fähigkeit' && !state.towers.some(t => t.slots.some(s => s))) disabled = true;
+
+    el.className = 'card' + (disabled ? ' disabled' : '') +
+      (state.pendingCard && state.pendingCard.uid === card.uid ? ' selected' : '');
+    el.onclick = () => !disabled && playCard(card);
+
+    el.innerHTML = `
+      <div class="card-top">
+        <span class="card-cost">${card.cost}</span>
+        <span class="card-suit">${card.suit}</span>
+      </div>
+      <div class="card-name">${card.name}</div>
+      <div class="card-type ${card.type}">${card.type}</div>
+      ${card.dmg ? `<div class="card-stats">⚔ ${card.dmg} Schaden</div>` : ''}
+      <div class="card-text">${card.text}</div>
+    `;
+    handEl.appendChild(el);
+  });
+}
+
+function playCard(card) {
+  if (card.type === 'Gebäude') {
+    state.tatendrang -= card.cost;
+    state.towers.push({ name: card.name, slots: [null] });
+    removeFromHand(card);
+    setMessage(card.name + ' errichtet.');
+    state.pendingCard = null;
+  } else if (card.type === 'Einheit') {
+    if (!anyFreeSlot()) {
+      setMessage('Braucht einen Turm mit freiem Platz!');
+      return;
+    }
+    state.pendingCard = card;
+    setMessage('Wähle einen freien Turm-Platz für ' + card.name + '.');
+  } else if (card.type === 'Fähigkeit') {
+    const hasUnit = state.towers.some(t => t.slots.some(s => s));
+    if (!hasUnit) {
+      setMessage('Keine Einheit auf dem Feld, die verstärkt werden könnte.');
+      return;
+    }
+    state.pendingCard = card;
+    setMessage('Wähle eine Einheit für ' + card.name + '.');
+  } else if (card.type === 'Macht') {
+    state.tatendrang -= card.cost;
+    state.towers.forEach(t => t.slots.push(null));
+    removeFromHand(card);
+    setMessage(card.name + ' wirkt: alle Türme erhalten einen zusätzlichen Platz.');
+    state.pendingCard = null;
+  }
+  render();
+}
+
+function placeUnit(tIdx, sIdx) {
+  const card = state.pendingCard;
+  if (!card) return;
+  state.tatendrang -= card.cost;
+  state.towers[tIdx].slots[sIdx] = { name: card.name, dmg: card.dmg, boosted: false };
+  removeFromHand(card);
+  state.pendingCard = null;
+  setMessage(card.name + ' bezieht Stellung.');
+  render();
+}
+
+function applyAbilityTo(tIdx, sIdx) {
+  const card = state.pendingCard;
+  if (!card) return;
+  const unit = state.towers[tIdx].slots[sIdx];
+  if (!unit) return;
+  state.tatendrang -= card.cost;
+  unit.dmg += 1;
+  unit.boosted = true;
+  removeFromHand(card);
+  state.pendingCard = null;
+  setMessage(card.name + ' verstärkt ' + unit.name + ' (+1 Schaden).');
+  render();
+}
+
+function removeFromHand(card) {
+  state.hand = state.hand.filter(c => c.uid !== card.uid);
+}
+
+function endRound() {
+  state.tatendrang = state.maxTatendrang;
+  state.hand = drawHand();
+  state.pendingCard = null;
+  setMessage('Neue Runde. Tatendrang aufgefrischt, Hand neu gezogen.');
+  render();
+}
+
+// init
+state.hand = drawHand();
+render();
+</script>
+
+</body>
 </html>

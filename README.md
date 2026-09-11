@@ -1,11 +1,11 @@
 # Castle Master
 
-Ein Burgverteidigungsspiel im Browser. Du baust Türme rund um einen Bergfried
-und hältst Welle für Welle an Angreifern auf. Türme versperren dabei den Weg,
-also entscheidest du mit jedem Bauplatz auch, welche Route die Gegner nehmen.
+Ein rundenbasiertes Deckbuilding-Kartenspiel im Browser. Du errichtest Türme,
+besetzt sie mit Einheiten und verstärkst sie mit Fähigkeiten. Die Kartenfarben
+folgen dem doppeldeutschen Blatt.
 
-Läuft ohne Build-Schritt und ohne Abhängigkeiten: reines HTML, CSS und
-JavaScript mit ES-Modulen auf einem Canvas.
+Der Stand in diesem Repository ist der Prototyp aus dem Chat, unverändert
+übernommen. Er zeigt den Kern-Loop: Turm bauen, dann Einheit platzieren.
 
 ## Starten
 
@@ -13,105 +13,50 @@ JavaScript mit ES-Modulen auf einem Canvas.
 npm start          # http://localhost:5173
 ```
 
-Der Dev-Server ist ein kleines Node-Skript, `npm install` ist nicht nötig.
-Ein direkter Doppelklick auf `index.html` funktioniert nicht, weil Browser
-ES-Module über `file://` blockieren.
+Kein `npm install` nötig, das Projekt hat keine Abhängigkeiten. Der Dev-Server
+ist ein kleines Node-Skript. Ein Doppelklick auf `index.html` funktioniert
+ebenfalls, weil alles in einer Datei steckt.
 
-```bash
-npm test           # 39 Tests der Spiellogik, ohne Browser
-```
+## Kartenfarben und Typen
 
-## Spielprinzip
-
-Zwei Tore am linken Rand, ein Bergfried rechts. Gegner laufen immer den
-kürzesten freien Weg. Jeder Turm blockiert sein Feld, verlängert also die
-Strecke. Den letzten Weg komplett zumauern geht nicht, das Spiel lehnt
-solche Bauplätze ab.
-
-| Turm | Kosten | Rolle |
+| Farbe | Typ | Wirkung |
 | --- | --- | --- |
-| Bogenturm | 50 | schnelle Einzelziele, schwach gegen Rüstung |
-| Kanone | 110 | Flächenschaden, gut gegen Gruppen und Rüstung |
-| Frostturm | 80 | verlangsamt, wenig Schaden, trifft auch Flieger |
-| Magierturm | 140 | Blitze springen weiter, ignorieren Rüstung |
+| 🌰 Eichel | Gebäude | errichtet einen Turm mit einem Platz |
+| ❤ Herz | Einheit | wird auf einen freien Turmplatz gesetzt, hat Schaden |
+| 🍃 Blatt | Fähigkeit | verstärkt eine Einheit um 1 Schaden |
+| 🔔 Schellen | Macht | globaler Effekt, gibt allen Türmen einen Platz |
 
-Jeder Turm hat drei Stufen. Verkaufen gibt 60 Prozent des investierten Goldes
-zurück.
+## Ressource und Runden
 
-Gegner unterscheiden sich in Tempo, Rüstung und Schaden am Bergfried. Ritter
-und Kriegsfürsten haben viel Rüstung, gegen sie hilft magischer Schaden.
-Drachen fliegen und ignorieren das Labyrinth komplett, sie nehmen den direkten
-Weg zum Bergfried.
+`Tatendrang` ist die Ressource, drei Punkte pro Runde. Karten kosten davon.
+`Runde beenden` füllt den Tatendrang auf und zieht eine neue Hand. Türme und
+Einheiten bleiben über Runden hinweg stehen.
 
-Welle 10 ist die erste Bosswelle, danach kommt alle zehn Wellen eine weitere.
-Ab Welle 11 werden die Wellen prozedural erzeugt, das Spiel endet also nicht.
+## Aktueller Kartenpool
 
-## Steuerung
+| Karte | Typ | Kosten | Schaden |
+| --- | --- | --- | --- |
+| Wachturm | Gebäude | 2 | – |
+| Palisade | Gebäude | 1 | – |
+| Waldläufer | Einheit | 1 | 2 |
+| Bogenschütze | Einheit | 2 | 3 |
+| Sturmwind | Fähigkeit | 1 | – |
+| Krone der Belagerung | Macht | 3 | – |
 
-| Eingabe | Wirkung |
-| --- | --- |
-| `1`–`4` | Turmtyp wählen, Linksklick setzt ihn |
-| Rechtsklick / `Esc` | Auswahl aufheben |
-| Klick auf Turm | Turm auswählen |
-| `U` / `X` | ausbauen / verkaufen |
-| `Leertaste` | Welle starten, während einer Welle pausieren |
-| `F` / `P` | Geschwindigkeit (1x/2x/3x) / Pause |
-| `R` | nach der Niederlage neu starten |
+## Was noch fehlt
 
-## Aufbau des Codes
+Der Prototyp bildet den Kern-Loop ab, mehr nicht. Offen sind:
 
-```
-index.html          Seitengerüst und Oberfläche
-styles.css          Gestaltung
-src/
-  main.js           Spielschleife, Eingabe, Verdrahtung
-  game/             reine Spiellogik, läuft auch ohne Browser
-    constants.js    Feldgröße und Feldtypen
-    map.js          Karte als ASCII, wird zum Gitter geparst
-    pathfinding.js  Flow-Field per Breitensuche, Bau-Prüfung
-    config.js       sämtliche Balance-Werte
-    waves.js        Wellen, skriptet und prozedural
-    combat.js       Schadensformeln
-    game.js         Zustand und Simulationsschritt
-  render/renderer.js Canvas-Darstellung und Effekte
-  ui/hud.js         Anzeige und Bedienelemente
-tests/              Tests der Spiellogik mit node:test
-scripts/serve.js    statischer Dev-Server
-```
+- **Kein echtes Deck.** Jede Runde besteht die Hand aus allen sechs Pool-Karten,
+  nur neu gemischt. Es gibt keinen Nachzieh- und keinen Ablagestapel.
+- **Kein Deckbuilding.** Karten lassen sich während einer Partie nicht erwerben.
+- **Kein Gegner und kein Kampf.** Der Schadenswert der Einheiten wird nirgends
+  ausgewertet.
+- **Kein Sieg und keine Niederlage.** Die Partie läuft endlos weiter.
 
-Der Ordner `game/` kennt weder `document` noch `window`. Deshalb lässt sich
-eine komplette Partie im Test simulieren, ohne einen Browser zu starten. Die
-Oberfläche liest den Zustand nur und meldet Absichten über Rückrufe zurück,
-sie verändert ihn nie selbst.
+## Aufbau
 
-### Wegfindung
+Alles steckt in `index.html`: Stil, Aufbau und Logik. Der Kartenpool ist das
+Feld `CARD_POOL` ganz oben im Skript, der Spielzustand das Objekt `state`.
 
-Eine Breitensuche startet beim Bergfried und läuft über alle begehbaren
-Felder. Jedes Feld merkt sich den Abstand zum Ziel und das nächste Feld auf
-dem kürzesten Weg. Alle Gegner folgen diesem einen Feld, das spart pro Gegner
-eine eigene Suche. Vor jedem Bau wird das Feld testweise gesperrt und die
-Suche wiederholt: Erreicht danach ein Tor den Bergfried nicht mehr, ist der
-Bau nicht erlaubt.
-
-### Simulation
-
-Die Schleife läuft mit fester Schrittweite von 1/60 Sekunde, unabhängig von
-der Bildrate. Der Geschwindigkeitsschalter führt einfach mehr Schritte pro
-Bild aus. Effekte wie Funken und Goldanzeigen entstehen aus Ereignissen, die
-die Logik meldet, damit die Darstellung nichts über den Spielablauf wissen
-muss.
-
-## Balance anpassen
-
-Alle Zahlen zu Türmen, Gegnern und Wirtschaft stehen in
-`src/game/config.js`, die Wellen in `src/game/waves.js`. Die Karte ist die
-ASCII-Liste `MAP_ROWS` in `src/game/map.js`: `#` ist Fels, `.` ein freies
-Feld, `S` ein Tor, `K` der Bergfried.
-
-## Nächste Schritte
-
-- Ton: Schüsse, Treffer, Wellenbeginn
-- mehrere Karten und eine Kartenauswahl
-- Held oder Zauber mit Abklingzeit als aktives Element
-- Spielstand speichern und fortsetzen
-- Bestenliste über mehrere Läufe
+`scripts/serve.js` ist ein statischer Dev-Server ohne Abhängigkeiten.
