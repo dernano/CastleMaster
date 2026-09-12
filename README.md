@@ -485,6 +485,39 @@ kam ein Farbpaar in die Figurenpalette:
 Beide stehen in der Werkstatt zur Wahl, und der Waldläufer ist dort
 bearbeitbar wie jede andere Figur.
 
+### Echte Bilder statt gemalter Motive
+
+Ein gezeichnetes Motiv ist eine Nacherzählung, keine Kopie. Wer eine Vorlage
+*exakt* auf der Karte haben will, braucht die Datei selbst. Dafür gibt es
+jetzt einen Bildpfad:
+
+    bilder/waldlaeufer.png          die Zeichnung allein, wird gespiegelt
+    bilder/waldlaeufer.ganz.png     bringt beide Hälften und das Band schon mit
+
+    node scripts/kartenbilder.mjs
+
+Das Werkzeug verkleinert jede Datei auf Kartenmaß, kodiert sie als JPEG und
+schreibt sie als Datenadresse in den Block `KARTEN_BILDER` in `index.html`.
+Datenadressen, weil die veröffentlichte Seite nichts von außen laden darf —
+und weil das Spiel eine einzige Datei bleiben soll.
+
+Verkleinert wird mit dem Browser, den Playwright mitbringt; auf dieser
+Maschine liegt keine Bildbibliothek. Fehlt Playwright, wandert die Datei
+unverändert hinein und sollte dann von sich aus klein sein.
+
+Ein Bild in `zuschnitt.json` bekommt einen Ausschnitt in Anteilen der
+Bildkante — nützlich, wenn die Vorlage schon einen eigenen Rahmen und
+Eckzeichen mitbringt, die das Spiel ohnehin selbst zeichnet.
+
+**Was das Spiel weiter selbst zeichnet**, auch wenn ein Bild da ist: Rahmen,
+Eckzeichen mit den Kosten, die Werte-Pillen und der Regeltext. Die ändern sich
+im Lauf — Kosten sinken beim Schärfen, mitwachsende Karten zeigen ihren
+jetzigen Wert. Ein festes Bild könnte das nicht und würde lügen.
+
+Zur Größe: bei Anzeigemaß wiegt ein Kartenbild als JPEG rund 20 KB. Alle
+fünfundsiebzig wären also etwa 1,5 MB gegen eine Grenze von 16 MB. Der Platz
+ist nicht das Problem, die fünfundsiebzig Zeichnungen sind es.
+
 ## Figuren und die Werkstatt
 
 Lange gab es genau **zwei** Figuren im ganzen Spiel, jede neun mal neun Felder:

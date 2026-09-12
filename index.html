@@ -4924,6 +4924,46 @@ function drawMinimap() {
 // wird nur die obere Haelfte; die untere ist dieselbe Zeichnung, um 180 Grad
 // gedreht. Das ist nicht Sparsamkeit, sondern genau das, was das Blatt tut.
 
+/*
+ * Echte Bilder fuer einzelne Karten.
+ *
+ * Jede Karte wird sonst in zeichneMotiv() aus Linien und Flaechen gemalt. Wo
+ * hier ein Eintrag steht, wird stattdessen das hinterlegte Bild gezeigt: eine
+ * Datenadresse, damit die Seite eine einzige Datei bleibt und nichts von
+ * aussen holen muss.
+ *
+ * Gefuellt wird der Block von `node scripts/kartenbilder.mjs`; von Hand
+ * schreibt hier niemand etwas hinein. Schluessel ist die Karten-Kennung.
+ *
+ *   art: 'motiv'  Das Bild ist die Zeichnung allein. Es fuellt die obere
+ *                 Haelfte, die untere wird wie gemalt gespiegelt.
+ *   art: 'ganz'   Das Bild bringt beide Haelften schon mit. Es fuellt das
+ *                 ganze Feld, und das Namensband der Karte tritt zurueck.
+ */
+const KARTEN_BILDER = {
+  // von scripts/kartenbilder.mjs gefuellt
+};
+
+// Die Datenadressen einmal in Bilder verwandeln. Sie liegen sofort bereit,
+// weil eine Datenadresse nicht erst geladen werden muss.
+const kartenBildCache = {};
+function kartenBild(id) {
+  const eintrag = KARTEN_BILDER[id];
+  if (!eintrag) return null;
+  if (!kartenBildCache[id]) {
+    const bild = new Image();
+    bild.src = eintrag.daten;
+    kartenBildCache[id] = { bild, art: eintrag.art || 'motiv' };
+  }
+  return kartenBildCache[id];
+}
+
+/** Traegt eine Karte ein eigenes Bild ueber beide Haelften? */
+function hatGanzesBild(card) {
+  const b = kartenBild(card.id);
+  return Boolean(b && b.art === 'ganz');
+}
+
 // Das Kartenbild wird in doppelter Aufloesung gemalt und halb so gross
 // eingesetzt. Die Motive rechnen weiter in ihren alten Massen, bekommen aber
 // die doppelte Zahl an Bildpunkten: erst damit traegt eine Zeichnung Falten,
@@ -5655,10 +5695,21 @@ function eichenlaub() {
 }
 
 /**
+ * Legt ein Bild deckend in ein Rechteck: es wird so weit vergroessert, dass
+ * kein Rand frei bleibt, und mittig beschnitten. Sonst haengt eine hochkante
+ * Zeichnung verzerrt im querformatigen Feld.
+ */
+function deckendZeichnen(c, bild, x, y, w, h) {
+  const mass = Math.max(w / bild.naturalWidth, h / bild.naturalHeight);
+  const bw = bild.naturalWidth * mass, bh = bild.naturalHeight * mass;
+  c.drawImage(bild, x + (w - bw) / 2, y + (h - bh) / 2, bw, bh);
+}
+
+/**
  * Das fertige Kartenbild: obere Haelfte gemalt, untere gespiegelt, dazwischen
  * die Trennlinie des doppeldeutschen Blattes.
  */
-function paintCardArt(cv, art) {
+function paintCardArt(cv, art, id) {
   const c = cv.getContext('2d');
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.imageSmoothingEnabled = true;
@@ -5669,6 +5720,29 @@ function paintCardArt(cv, art) {
   c.fillRect(0, 0, w, h);
 
   const halb = h / 2;
+  const eigen = id ? kartenBild(id) : null;
+
+  // Ein hinterlegtes Bild geht dem gemalten Motiv vor.
+  if (eigen && eigen.bild.complete && eigen.bild.naturalWidth) {
+    if (eigen.art === 'ganz') {
+      deckendZeichnen(c, eigen.bild, 0, 0, w, h);
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      return;
+    }
+    c.save();
+    c.beginPath(); c.rect(0, 0, w, halb); c.clip();
+    deckendZeichnen(c, eigen.bild, 0, 0, w, halb);
+    c.restore();
+    c.save();
+    c.beginPath(); c.rect(0, halb, w, h - halb); c.clip();
+    c.translate(w, h); c.rotate(Math.PI);
+    deckendZeichnen(c, eigen.bild, 0, 0, w, halb);
+    c.restore();
+    c.fillStyle = BLATT.schwarz;
+    c.fillRect(0, halb - 1, w, 2);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    return;
+  }
 
   c.save();
   c.beginPath(); c.rect(0, 0, w, halb); c.clip();
@@ -7773,14 +7847,17 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   const art = document.createElement('canvas');
   art.className = 'card-art';
   art.width = 116 * BILD_SCHAERFE; art.height = 104 * BILD_SCHAERFE;
-  paintCardArt(art, card.art);
+  paintCardArt(art, card.art, card.id);
   fassung.appendChild(art);
 
   // Namensband auf der Trennlinie, wie die Figurennamen im Blatt
-  const band = document.createElement('div');
-  band.className = 'card-band' + (card.name.length > 15 ? ' lang' : '');
-  band.textContent = card.name;
-  fassung.appendChild(band);
+  // Bringt das Bild sein eigenes Schriftband mit, blendet die Karte ihres aus.
+  if (!hatGanzesBild(card)) {
+    const band = document.createElement('div');
+    band.className = 'card-band' + (card.name.length > 15 ? ' lang' : '');
+    band.textContent = card.name;
+    fassung.appendChild(band);
+  }
   el.appendChild(fassung);
 
   const typ = document.createElement('div');
