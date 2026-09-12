@@ -1004,7 +1004,9 @@ const ENEMY_TYPES = {
   ritter: { id: 'ritter', name: 'Ritter', hp: 14, dmg: 3, move: 3, reach: 1,
     punkte: 5, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
   ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
-    punkte: 7, abRunde: 5, scale: 3, pal: { r: '#5d4023', R: '#8a6238' } },
+    punkte: 7, abRunde: 5, scale: 3, geraet: 'ramme', pal: { r: '#5d4023', R: '#8a6238' } },
+  katapult: { id: 'katapult', name: 'Katapult', hp: 12, dmg: 4, move: 1, reach: 7,
+    punkte: 6, abRunde: 6, scale: 3, geraet: 'katapult', pal: { r: '#6b4a2a', R: '#9a7448' } },
   // Nur in der letzten Runde eines Feldzugs, nie im normalen Aufgebot.
   meister: { id: 'meister', name: 'Belagerungsmeister', hp: 65, dmg: 8, move: 2, reach: 2,
     punkte: 99, abRunde: 999, scale: 3, pal: { r: '#4a2b52', R: '#7d4a86' } },
@@ -1046,9 +1048,9 @@ const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
 const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
 
 const rundenBudget = (runde) => Math.round((5 + runde * 2.15) * feldzugHaerte(state.feldzug || 1));
-const einsatzProZug = (runde) => 1 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
+const einsatzProZug = (runde) => 2 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
 const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
-const MAX_GEGNER_AUF_DEM_FELD = 8;                   // wie viele gleichzeitig draussen stehen
+const MAX_GEGNER_AUF_DEM_FELD = 16;                  // wie viele gleichzeitig draussen stehen
 const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
 // Spaetere Runden schicken zaehere Gegner.
@@ -1436,12 +1438,13 @@ const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
 const TW = 44, TH = 22;           // Kachelbreite und -hoehe der Raute
-const ORIGIN_X = 418, ORIGIN_Y = 120;
-const RAND = 2;                   // Dekorativer Ring ausserhalb des Spielfelds
+const ORIGIN_X = 418, ORIGIN_Y = 152;
+const HORIZONT = 64;              // Bildhoehe, auf der Land und Himmel sich treffen
+const RAND = 5;                   // Wie weit das Land ueber das Spielfeld hinaus laeuft
 
 const imFeld = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
 // Wasser liegt an den beiden hinteren Kanten, Sand an den vorderen.
-const istWasser = (c, r) => (c < 0 || r < 0) && c < COLS && r < ROWS;
+const istWasser = () => false;   // kein Wassergraben mehr, das Land laeuft durch
 
 // ---------- Animation ----------
 // Die Logik bleibt sofort gueltig, nur die Darstellung laeuft nach.
@@ -2018,10 +2021,16 @@ const DEKO = [];
 (function buildDeko() {
   for (let r = -RAND; r < ROWS + RAND; r++) {
     for (let c = -RAND; c < COLS + RAND; c++) {
-      if (imFeld(c, r) || istWasser(c, r)) continue;
+      if (imFeld(c, r)) continue;
+      if (isoY(c, r) - TH / 2 < HORIZONT + 26) continue;
+      // Je weiter draussen, desto karger. Palmen stehen nur vereinzelt am
+      // Rand des Feldes, der Rest ist Geroell und Dornbusch.
+      const nah = randDeckung(c, r);
+      if (nah < 0.25) continue;
       const n = noise(c * 3.3, r * 7.7);
-      if (n > 0.86) DEKO.push({ c, r, art: 'palme' });
-      else if (n > 0.74) DEKO.push({ c, r, art: 'fels', s: 3 + Math.round(noise(c, r) * 3) });
+      if (n > 0.955 && nah > 0.7) DEKO.push({ c, r, art: 'palme' });
+      else if (n > 0.88) DEKO.push({ c, r, art: 'busch', s: 2 + Math.round(noise(c, r) * 2) });
+      else if (n > 0.72) DEKO.push({ c, r, art: 'fels', s: 2 + Math.round(noise(c, r) * 3) });
     }
   }
 })();
@@ -2065,6 +2074,18 @@ function bodenFarbe(c, r) {
   return n < 0.5 ? '#bb9a68' : '#b08f5e';
 }
 
+/**
+ * Wie sichtbar eine Kachel ausserhalb des Spielfelds noch ist. Ganz aussen
+ * laeuft das Land in die Ebene aus, statt an einer Kante abzubrechen.
+ */
+function randDeckung(c, r) {
+  const dx = c < 0 ? -c : (c >= COLS ? c - COLS + 1 : 0);
+  const dy = r < 0 ? -r : (r >= ROWS ? r - ROWS + 1 : 0);
+  const d = Math.max(dx, dy);
+  if (d === 0) return 1;
+  return Math.max(0, 1 - d / (RAND + 0.5));
+}
+
 /** Erdreich unter einer Kachel, damit das Land als Scholle wirkt statt zu schweben. */
 function drawKante(g, c, r, dicke) {
   const x = isoX(c, r), y = isoY(c, r);
@@ -2096,8 +2117,11 @@ function baueBoden() {
   for (let r = -RAND; r < ROWS + RAND; r++) {
     for (let c = -RAND; c < COLS + RAND; c++) {
       if (istWasser(c, r)) continue;
+      // Nur unter dem eigentlichen Spielfeld steht eine Erdkante. Weiter
+      // draussen liegt das Land flach auf der Ebene auf.
+      if (!imFeld(c, r) && !imFeld(c + 1, r) && !imFeld(c, r + 1)) continue;
       const vorneFrei = !belegt(c + 1, r) || !belegt(c, r + 1);
-      if (vorneFrei) drawKante(g, c, r, 14);
+      if (vorneFrei) drawKante(g, c, r, 12);
     }
   }
 
@@ -2108,6 +2132,12 @@ function baueBoden() {
       const n = noise(c, r);
       const x = isoX(c, r), y = isoY(c, r) + TH / 2;
 
+      const deckung = randDeckung(c, r);
+      if (deckung <= 0.02) continue;
+      // Nichts darf ueber die Kimm ragen, sonst verschwindet der Horizont
+      // hinter dem eigenen Acker.
+      if (y - TH / 2 < HORIZONT + 26) continue;
+      g.globalAlpha = deckung;
       g.fillStyle = bodenFarbe(c, r);
       g.beginPath();
       g.moveTo(x, y - TH / 2);
@@ -2116,6 +2146,8 @@ function baueBoden() {
       g.lineTo(x - TW / 2, y);
       g.closePath();
       g.fill();
+      g.globalAlpha = 1;
+      if (deckung < 1) continue;   // draussen keine Kiesel und kein Gras
 
       if (!wasser && n > 0.9) {
         g.fillStyle = drin ? 'rgba(120,95,55,0.32)' : 'rgba(110,88,50,0.38)';
@@ -2205,7 +2237,127 @@ function drawWasser() {
   }
 }
 
+// ============================================================
+//  Himmel, Horizont und das Land dahinter
+// ============================================================
+// Vorher endete die Welt am Rand der Scholle und dahinter war Schwarz. Das
+// liess das Ganze wie ein Brett aussehen, das irgendwo schwebt. Jetzt liegt
+// die Burg in einer Ebene, die bis zum Horizont laeuft, und dahinter steht
+// der Rauch des Heeres, das sie belagert.
+
+let himmelBild = null;
+
+function baueHimmel() {
+  himmelBild = document.createElement('canvas');
+  himmelBild.width = canvas.width;
+  himmelBild.height = canvas.height;
+  const g = himmelBild.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Himmel: kalt oben, staubig warm zum Horizont
+  const luft = g.createLinearGradient(0, 0, 0, HORIZONT + 30);
+  luft.addColorStop(0, '#2f3a52');
+  luft.addColorStop(0.45, '#5c5f6e');
+  luft.addColorStop(0.78, '#a8845e');
+  luft.addColorStop(1, '#d8ab73');
+  g.fillStyle = luft;
+  g.fillRect(0, 0, W, HORIZONT + 30);
+
+  // Tief stehende Sonne im Dunst
+  const sx = W * 0.74, sy = HORIZONT - 16;
+  const schein = g.createRadialGradient(sx, sy, 2, sx, sy, 120);
+  schein.addColorStop(0, 'rgba(255,226,160,0.85)');
+  schein.addColorStop(0.35, 'rgba(240,180,110,0.32)');
+  schein.addColorStop(1, 'rgba(220,160,100,0)');
+  g.fillStyle = schein;
+  g.fillRect(sx - 130, sy - 130, 260, 260);
+  g.fillStyle = 'rgba(255,238,196,0.9)';
+  g.beginPath(); g.arc(sx, sy, 13, 0, 6.2832); g.fill();
+
+  // Drei Hoehenzuege, nach hinten blasser. Das gibt der Ebene Tiefe.
+  const zug = (basis, hoehe, farbe, koernung) => {
+    g.fillStyle = farbe;
+    g.beginPath();
+    g.moveTo(-10, basis + 24);
+    for (let x = -10; x <= W + 10; x += 14) {
+      const n = noise(Math.round(x * koernung), Math.round(basis));
+      const n2 = noise(Math.round(x * koernung * 0.37) + 7, Math.round(basis) + 3);
+      g.lineTo(x, basis - hoehe * (0.35 + n * 0.45 + n2 * 0.3));
+    }
+    g.lineTo(W + 10, basis + 24);
+    g.closePath();
+    g.fill();
+  };
+  zug(HORIZONT - 4, 46, '#6b6070', 0.035);
+  zug(HORIZONT + 2, 30, '#7d6a63', 0.06);
+  zug(HORIZONT + 9, 18, '#8d7355', 0.11);
+
+  // Die Ebene selbst, bis unter die Bruestung
+  const boden = g.createLinearGradient(0, HORIZONT + 4, 0, H);
+  boden.addColorStop(0, '#a98a5c');
+  boden.addColorStop(0.14, '#8e7047');
+  boden.addColorStop(0.5, '#6f5738');
+  boden.addColorStop(1, '#4e3d27');
+  g.fillStyle = boden;
+  g.fillRect(0, HORIZONT + 8, W, H - HORIZONT - 8);
+
+  // Dunstband genau auf der Kimm, damit Land und Himmel ineinander laufen
+  const dunst = g.createLinearGradient(0, HORIZONT - 6, 0, HORIZONT + 34);
+  dunst.addColorStop(0, 'rgba(216,171,115,0.7)');
+  dunst.addColorStop(1, 'rgba(216,171,115,0)');
+  g.fillStyle = dunst;
+  g.fillRect(0, HORIZONT - 6, W, 40);
+
+  // Verstreute Zeichen der Ebene: Buschwerk und Steine, klein und blass
+  for (let i = 0; i < 150; i++) {
+    const n = noise(i * 3.1, 11), n2 = noise(i * 1.7, 29);
+    const y = HORIZONT + 14 + n2 * n2 * (H - HORIZONT - 120);
+    const x = n * W;
+    const tiefe = (y - HORIZONT) / (H - HORIZONT);
+    const gr = 1 + tiefe * 3;
+    g.fillStyle = n2 > 0.55
+      ? 'rgba(78,92,45,' + (0.16 + tiefe * 0.3).toFixed(2) + ')'
+      : 'rgba(92,74,48,' + (0.2 + tiefe * 0.3).toFixed(2) + ')';
+    g.fillRect(Math.round(x), Math.round(y), Math.round(gr * 2), Math.round(gr));
+  }
+
+  // Das Heer am Horizont: Zeltreihen als winzige Zacken
+  g.fillStyle = 'rgba(58,46,36,0.5)';
+  for (let i = 0; i < 46; i++) {
+    const n = noise(i * 5.7, 3);
+    const x = 40 + n * (W - 80);
+    const y = HORIZONT + 11 + noise(i, 17) * 5;
+    const b = 3 + noise(i, 23) * 3;
+    g.beginPath();
+    g.moveTo(x - b, y); g.lineTo(x, y - b * 0.9); g.lineTo(x + b, y);
+    g.closePath(); g.fill();
+  }
+}
+
+/** Rauchsaeulen am Horizont. Sie stehen fuer das Lager jenseits der Ebene. */
+const RAUCHSAEULEN = [0.13, 0.27, 0.41, 0.58, 0.69, 0.85];
+function drawFernerRauch() {
+  for (let i = 0; i < RAUCHSAEULEN.length; i++) {
+    const x = RAUCHSAEULEN[i] * canvas.width;
+    const basis = HORIZONT + 10 + (i % 3) * 3;
+    const hoehe = 34 + (i % 4) * 12;
+    for (let j = 0; j < 9; j++) {
+      const t = j / 9;
+      const weh = wenigerBewegung ? 0 : Math.sin(animZeit * 0.5 + i * 2 + t * 3.2) * (5 + t * 16);
+      const br = 1.6 + t * 7;
+      ctx.fillStyle = 'rgba(196,180,160,' + (0.2 * (1 - t)).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.ellipse(x + weh, basis - t * hoehe, br, br * 0.72, 0, 0, 6.2832);
+      ctx.fill();
+    }
+  }
+}
+
 function drawGround() {
+  if (!himmelBild) baueHimmel();
+  ctx.drawImage(himmelBild, 0, 0);
+  drawFernerRauch();
+
   if (!bodenBild) baueBoden();
   ctx.drawImage(bodenBild, 0, 0);
   drawWasser();
@@ -2389,6 +2541,68 @@ function drawTower(t) {
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
 }
 
+/**
+ * Belagerungsgeraet. Eine Ramme ist kein Mann in Braun, sondern ein Kasten
+ * auf Raedern mit einem Baumstamm darin. Der Massstab folgt dem Gegnertyp.
+ */
+function drawGeraet(x, y, art, s, pal) {
+  const holz = pal.r || '#6b4a2a', holzHell = pal.R || '#8a6238';
+  const eisen = '#7d848c';
+
+  if (art === 'ramme') {
+    // Raeder
+    ctx.fillStyle = '#4a3620';
+    for (const dx of [-6 * s, 5 * s]) {
+      ctx.beginPath(); ctx.ellipse(x + dx, y - 1, 2.6 * s, 1.5 * s, 0, 0, 6.2832); ctx.fill();
+    }
+    // Sturmdach
+    ctx.fillStyle = holz;
+    ctx.beginPath();
+    ctx.moveTo(x - 9 * s, y - 3 * s);
+    ctx.lineTo(x + 9 * s, y - 3 * s);
+    ctx.lineTo(x + 7 * s, y - 8 * s);
+    ctx.lineTo(x - 7 * s, y - 8 * s);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = holzHell;
+    ctx.fillRect(x - 7 * s, y - 8 * s, 14 * s, 1.4 * s);
+    // Haeute als Brandschutz
+    ctx.fillStyle = 'rgba(40,28,16,0.3)';
+    for (let i = 0; i < 4; i++) ctx.fillRect(x - 8 * s + i * 4 * s, y - 7 * s, 1.2 * s, 4 * s);
+    // Der Stamm, vorn mit eisernem Kopf
+    ctx.fillStyle = '#5c4326';
+    ctx.fillRect(x - 4 * s, y - 5 * s, 13 * s, 2.2 * s);
+    ctx.fillStyle = eisen;
+    ctx.fillRect(x + 8 * s, y - 5.6 * s, 3 * s, 3.4 * s);
+    return;
+  }
+
+  if (art === 'katapult') {
+    ctx.fillStyle = '#4a3620';
+    for (const dx of [-5 * s, 4 * s]) {
+      ctx.beginPath(); ctx.ellipse(x + dx, y - 1, 2.4 * s, 1.4 * s, 0, 0, 6.2832); ctx.fill();
+    }
+    ctx.fillStyle = holz;
+    ctx.fillRect(x - 8 * s, y - 4 * s, 15 * s, 2.4 * s);
+    // Wurfarm, leicht schwingend
+    const schwung = wenigerBewegung ? 0 : Math.sin(animZeit * 1.4) * 0.18;
+    ctx.save();
+    ctx.translate(x - 1 * s, y - 4 * s);
+    ctx.rotate(-0.75 + schwung);
+    ctx.fillStyle = holzHell;
+    ctx.fillRect(0, -1 * s, 13 * s, 2 * s);
+    ctx.fillStyle = '#4a3620';
+    ctx.beginPath(); ctx.arc(13 * s, 0, 2.4 * s, 0, 6.2832); ctx.fill();
+    ctx.restore();
+    // Rahmen
+    ctx.strokeStyle = holz; ctx.lineWidth = 1.6 * s;
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 4 * s); ctx.lineTo(x - 1 * s, y - 10 * s);
+    ctx.lineTo(x + 4 * s, y - 4 * s);
+    ctx.stroke();
+    return;
+  }
+}
+
 function drawEnemy(e, geist = false) {
   // Der Gegner, der gerade vortritt, bekommt einen Ring. Ohne ihn sieht man
   // im Takt nicht, wer von acht gerade handelt.
@@ -2447,7 +2661,8 @@ function drawEnemy(e, geist = false) {
   const pal = e.blitz > 0
     ? { ...PAL, ...t.pal, r: '#ffd9c8', R: '#ffffff', k: '#7a2a20' }
     : { ...PAL, ...t.pal };
-  drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, pal);
+  if (t.geraet) drawGeraet(cx, cy + 2, t.geraet, t.scale * 0.85, pal);
+  else drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, pal);
   const h = 9 * t.scale;
   drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
 
@@ -2679,13 +2894,34 @@ function drawFeuer(x, y) {
  * bekommen deshalb weder Ring noch Absichtsplakette.
  */
 function drawLager() {
-  // Zelte und Feuer stehen immer, auch wenn das Lager leer ist
-  drawZelt(isoX(LAGER_COL + 1.65, 1.1), isoY(LAGER_COL + 1.65, 1.1) + TH / 2, 40, 30, '#7b5f3a', '#54402a');
-  drawZelt(isoX(LAGER_COL + 1.75, 5.2), isoY(LAGER_COL + 1.75, 5.2) + TH / 2, 34, 25, '#6f5433', '#4a3823');
-  drawZelt(isoX(LAGER_COL + 1.65, 9.4), isoY(LAGER_COL + 1.65, 9.4) + TH / 2, 40, 30, '#7b5f3a', '#54402a');
-  drawZelt(isoX(LAGER_COL + 1.7, 13.2), isoY(LAGER_COL + 1.7, 13.2) + TH / 2, 32, 24, '#6f5433', '#4a3823');
-  drawFeuer(isoX(LAGER_COL + 0.45, 3.4), isoY(LAGER_COL + 0.45, 3.4) + TH / 2);
-  drawFeuer(isoX(LAGER_COL + 0.45, 11.2), isoY(LAGER_COL + 0.45, 11.2) + TH / 2);
+  // Das Belagerungslager steht immer, auch wenn niemand mehr darin wartet:
+  // Zelte, Feuer, Pfaehle und das Geraet, das noch nicht vorgerollt ist.
+  const px = (c, r) => isoX(LAGER_COL + c, r);
+  const py = (c, r) => isoY(LAGER_COL + c, r) + TH / 2;
+
+  // Pfahlreihe am vorderen Rand des Lagers
+  ctx.fillStyle = '#4e3820';
+  for (let r = 0; r < ROWS; r += 0.7) {
+    const x = px(-0.05, r), y = py(-0.05, r);
+    ctx.fillRect(Math.round(x), Math.round(y - 9), 2, 10);
+    ctx.fillStyle = '#6b4a2a';
+    ctx.fillRect(Math.round(x), Math.round(y - 9), 2, 2);
+    ctx.fillStyle = '#4e3820';
+  }
+
+  drawZelt(px(1.75, 0.8), py(1.75, 0.8), 46, 34, '#8a6a3e', '#5c452c');
+  drawFahne(px(1.75, 0.8) + 20, py(1.75, 0.8) - 34, '#8c2230');
+  drawZelt(px(1.7, 4.1), py(1.7, 4.1), 34, 25, '#6f5433', '#4a3823');
+  drawZelt(px(1.8, 7.6), py(1.8, 7.6), 38, 28, '#7b5f3a', '#54402a');
+  drawZelt(px(1.68, 11.0), py(1.68, 11.0), 33, 24, '#6f5433', '#4a3823');
+  drawZelt(px(1.78, 13.9), py(1.78, 13.9), 40, 30, '#7b5f3a', '#54402a');
+
+  // Geparktes Geraet: ein Trebuchet und ein Sturmturm
+  drawTrebuchet(px(0.7, 2.3), py(0.7, 2.3));
+  drawSturmturm(px(0.75, 9.1), py(0.75, 9.1));
+
+  drawFeuer(px(0.45, 5.9), py(0.45, 5.9));
+  drawFeuer(px(0.5, 12.6), py(0.5, 12.6));
 
   if (!state.lager.length) return;
 
@@ -2708,6 +2944,60 @@ function drawLager() {
   drawBadge(bx, by, 'Lager · ' + state.lager.length, '#ffb3a7', '#8c2230');
 }
 
+/** Wimpel auf einer Stange, ueber dem Zelt des Belagerungsherrn. */
+function drawFahne(x, y, farbe) {
+  ctx.fillStyle = '#3a2c1c';
+  ctx.fillRect(x, y - 26, 2, 30);
+  const weh = wenigerBewegung ? 0 : Math.sin(animZeit * 2.6) * 2;
+  ctx.fillStyle = farbe;
+  ctx.beginPath();
+  ctx.moveTo(x + 2, y - 26);
+  ctx.lineTo(x + 18 + weh, y - 22);
+  ctx.lineTo(x + 2, y - 15);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Trebuchet im Lager: Gegengewicht, langer Arm, Schleuder. */
+function drawTrebuchet(x, y) {
+  const schwung = wenigerBewegung ? 0 : Math.sin(animZeit * 0.7) * 0.1;
+  ctx.strokeStyle = '#5c4326'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - 11, y); ctx.lineTo(x, y - 30); ctx.lineTo(x + 11, y);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(x, y - 28);
+  ctx.rotate(-1.05 + schwung);
+  ctx.fillStyle = '#8a6238';
+  ctx.fillRect(-6, -1.5, 34, 3);
+  ctx.fillStyle = '#4a3620';
+  ctx.fillRect(-11, -4, 7, 9);
+  ctx.restore();
+  ctx.fillStyle = '#4a3620';
+  ctx.fillRect(x - 14, y - 2, 28, 3);
+}
+
+/** Sturmturm: ein Geruest auf Raedern, mit Haeuten behaengt. */
+function drawSturmturm(x, y) {
+  ctx.fillStyle = '#4a3620';
+  for (const dx of [-8, 6]) { ctx.beginPath(); ctx.ellipse(x + dx, y, 3, 1.8, 0, 0, 6.2832); ctx.fill(); }
+  ctx.fillStyle = '#6b4a2a';
+  ctx.fillRect(x - 10, y - 34, 20, 33);
+  ctx.fillStyle = '#8a6238';
+  ctx.fillRect(x - 10, y - 34, 20, 3);
+  ctx.fillStyle = 'rgba(40,28,16,0.32)';
+  for (let i = 0; i < 4; i++) ctx.fillRect(x - 9 + i * 5, y - 30, 2, 28);
+  ctx.fillStyle = '#4a3620';
+  for (let i = 0; i < 3; i++) ctx.fillRect(x - 10, y - 30 + i * 9, 20, 1.5);
+  // Klappbruecke, halb heruntergelassen
+  ctx.fillStyle = '#5c4326';
+  ctx.save();
+  ctx.translate(x + 10, y - 30);
+  ctx.rotate(0.5);
+  ctx.fillRect(0, -2, 16, 4);
+  ctx.restore();
+}
+
 /** Kleine Plakette mit einer Absicht oder einem Wert. */
 function drawBadge(x, y, text, farbe, rand) {
   ctx.font = '600 12px "Pixelify Sans", "Trebuchet MS", sans-serif';
@@ -2728,8 +3018,32 @@ function drawBadge(x, y, text, farbe, rand) {
 
 function drawDeko(d) {
   const x = isoX(d.c, d.r), y = isoY(d.c, d.r) + TH / 2;
+  // Weiter draussen wird alles blasser, bis das Land in die Ebene laeuft
+  const deckung = randDeckung(d.c, d.r);
+  if (deckung < 0.25) return;
+  ctx.globalAlpha = Math.min(1, 0.35 + deckung * 0.8);
   if (d.art === 'palme') drawPalme(x, y);
+  else if (d.art === 'busch') drawBusch(x, y, d.s);
   else drawFels(x, y, d.s);
+  ctx.globalAlpha = 1;
+}
+
+/** Dornbusch: ein paar trockene Zweige, wie sie auf der Ebene stehen. */
+function drawBusch(x, y, s) {
+  drawShadow(x, y, s * 1.6);
+  ctx.strokeStyle = '#5c6b34';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const w = -2.2 + i * 1.1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.sin(w) * s * 2.1, y - s * 2.4 - Math.cos(w) * s);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#6b7a3c';
+  ctx.fillRect(x - s, y - s * 2.6, s * 2, s);
+  ctx.fillStyle = '#4e5c2a';
+  ctx.fillRect(x - s + 1, y - s * 1.8, s, 2);
 }
 
 /** Dezente Markierung unter dem Mauszeiger. */
@@ -2876,8 +3190,6 @@ function updateAnimations(dt) {
 
 function draw() {
   pickables = [];
-  ctx.fillStyle = '#0b0908';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
   if (ruettler > 0.2) {

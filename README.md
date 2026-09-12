@@ -131,6 +131,48 @@ tut, steht in `handleGegner`; `resolveEnemyTurn` ruft das in einer Schleife auf
 und bleibt für Tests und für `prefers-reduced-motion` erhalten. `endTurn` stößt
 nur noch an, den Abschluss macht `zugAbschluss`.
 
+## Die Welt jenseits des Spielfelds
+
+Lange endete die Welt am Rand der Scholle, und dahinter war Schwarz. Das liess
+das Ganze wie ein Brett aussehen, das irgendwo schwebt: mehr Handy-Spiel als
+Belagerung.
+
+Jetzt liegt die Burg in einer Ebene, die bis zum Horizont läuft:
+
+- **Himmel** mit tief stehender Sonne im Dunst, kalt oben, staubig warm zur Kimm.
+- **Drei Höhenzüge**, nach hinten blasser, dazu ein Dunstband genau auf dem
+  Horizont, damit Land und Himmel ineinanderlaufen.
+- **Das Heer am Horizont** als Zeltreihen, darüber sechs Rauchsäulen, die im
+  Wind stehen.
+- **Kein Wassergraben mehr.** Er machte aus dem Land ein Brett im Nichts. Das
+  Feld geht heute in die Ebene über und franst zum Rand hin aus.
+- **Steppe statt Palmenhain**: vereinzelte Palmen am Feldrand, sonst Geröll und
+  Dornbusch, nach aussen hin blasser.
+
+Gezeichnet wird das in `baueHimmel` (einmal vorgemalt) und `drawFernerRauch`
+(lebt mit). `randDeckung` bestimmt, wie sichtbar eine Kachel ausserhalb des
+Spielfelds noch ist. Nichts wird über die Kimm hinaus gemalt, sonst
+verschwände der Horizont hinter dem eigenen Acker.
+
+## Das Belagerungslager
+
+Rechts neben dem Spielfeld steht das Lager des Angreifers, und es steht immer,
+auch wenn niemand mehr darin wartet: eine Pfahlreihe, fünf Zelte, das
+Herrenzelt mit Wimpel, zwei Feuer, ein **Trebuchet** und ein **Sturmturm** mit
+halb heruntergelassener Klappbrücke. Dort hinein kann der Spieler nicht
+schiessen.
+
+## Belagerungsgerät
+
+Ramme und Katapult sind kein umgefärbter Mann mehr, sondern gezeichnete
+Maschinen (`drawGeraet`): die Ramme ein Kasten auf Rädern mit einem Baumstamm
+darin und einem eisernen Kopf, das Katapult ein Rahmen mit schwingendem
+Wurfarm. Das Katapult wirft aus sieben Feldern Entfernung und ist ab Station 6
+im Aufgebot.
+
+Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
+und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
+
 ## Bewegung und Darstellung
 
 Das Bild läuft dauerhaft mit rund 60 Bildern je Sekunde. Die Spiellogik bleibt
