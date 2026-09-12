@@ -302,6 +302,51 @@ Was eine Karte tut, steht als Regelzeile auf ihr und wird aus ihren Feldern
 abgeleitet, nicht danebengeschrieben. Nach dem Schärfen stimmt sie deshalb
 weiter.
 
+### Auslöser und Skalierung
+
+Bis vor Kurzem war jede der 75 Karten eine feste Zahl: plus zwei Schaden, sechs
+Schaden, ein Platz mehr. Damit konnte sich nichts aufschaukeln, und einem
+Deckbuilder fehlt dann das Wichtigste: der Moment, in dem das eigene Deck etwas
+Absurdes tut. Zwei Felder ändern das.
+
+**`je` lässt eine Wirkung mitwachsen** mit dem, was gerade auf dem Feld steht.
+Gezählt werden kann: Türme, Einheiten, Gegner auf dem Feld, gefallene Gegner,
+Karten auf der Hand, fehlende Burg-Lebenspunkte.
+
+```js
+{ id: 'steinschlag', cost: 2,
+  sofort: { flaeche: 1 },
+  je: { zaehler: 'proTurm', wirkung: { flaeche: 1 } } }
+```
+
+Auf der Karte steht dann nicht nur die Regel, sondern auch, wie hoch sie
+**gerade** ausfällt — bei vier Türmen `Jetzt: 5 Schaden auf alle Gegner`.
+
+**`wenn` trägt eine Wirkung ein, die später von selbst greift.** Sechs
+Auslöser: wenn ein Gegner fällt, wenn du einen Turm errichtest, wenn einer
+deiner Türme fällt, wenn die Burg getroffen wird, wenn ein Turm schießt, zu
+Beginn jedes Zuges.
+
+```js
+{ id: 'blutzoll', cost: 3,
+  wenn: { ausloeser: 'gegnerFaellt', dann: { alleSchaden: 1 }, gesamt: 5 } }
+```
+
+### Warum Auslöser eine Obergrenze brauchen
+
+Ohne Grenze schaukelt sich eine Maschine an einer Station mit sechzehn Gegnern
+ins Unermessliche. Blutzoll ohne Deckel ging im Test von 2 auf 11 Schaden je
+Salve und gewann neun von zehn Läufen fast ohne Burgschaden.
+
+Deshalb gibt es zwei Deckel: `jeZug` begrenzt, wie oft ein Auslöser in einem
+Zug greift, `gesamt`, wie oft an einer Station insgesamt. Beide stehen auf der
+Karte, sonst wäre sie gelogen. Schärfen hebt den Deckel um zwei
+beziehungsweise eins, statt die Wirkung zu vergrößern.
+
+Mit Deckel: sieben von zehn Läufen bestanden, gegenüber sechs von zehn ohne
+jede Maschine. Die Maschinen belohnen also, wer sie sucht, statt jedem Lauf
+geschenkt zu werden.
+
 ### Eine Karte, die nachzieht, muss etwas kosten
 
 Eine Karte, die sich ihren eigenen Tatendrang zurückgibt und dabei nachzieht,
@@ -444,6 +489,11 @@ Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 - **Nichts wächst über den Feldzug hinweg.** Türme fallen an jeder Station weg,
   Mächte gelten nur für eine Station. Das Einzige, was mitwächst, ist das Deck.
   Ein Lauf fühlt sich deshalb nicht an, als würde er zu etwas werden.
+- **Kein Fortschritt zwischen den Läufen.** Keine Freischaltungen, alle 75
+  Karten ab Lauf eins. Es gibt keinen Grund, warum Lauf 12 sich anders anfühlen
+  sollte als Lauf 2.
+- **Nur ein Endgegner.** Station 17 ist immer derselbe Kampf gegen denselben
+  Mann.
 - **Wenig Ton.** Die neuen Kartenwirkungen klingen alle gleich.
 - **Keine eigenen Bilder.** Alles ist im Code gezeichnet. Eingespielte Grafiken
   und Klänge fehlen noch; dafür bräuchte es einen Lader, und im veröffentlichten

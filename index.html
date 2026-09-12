@@ -407,6 +407,13 @@
     color: #2c2519;
     font-weight: 700;
   }
+  /* Wie hoch eine mitwachsende Karte gerade ausfaellt */
+  .card-jetzt {
+    font-family: var(--pixel);
+    font-size: 9px; line-height: 1.2;
+    color: #9a6b12;
+    margin-top: 2px;
+  }
   .card-text {
     font-family: var(--fliess);
     font-size: 9px; line-height: 1.25;
@@ -811,8 +818,6 @@ const CARD_POOL = [
   // ---------------- Gebaeude ----------------
   { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer', sel: 'gewoehnlich',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
-  { id: 'erdwall', name: 'Erdwall', type: 'Gebäude', suit: '🌰', cost: 1, hp: 6, art: 'mauer', sel: 'gewoehnlich',
-    text: 'Hält lange. Sehen tut man von dort oben wenig.' },
   { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
     text: 'Hoch genug, dass Pfeile weiter tragen.' },
   { id: 'schanze', name: 'Schanze', type: 'Gebäude', suit: '🌰', cost: 2, hp: 10, art: 'mauer', sel: 'gewoehnlich',
@@ -841,9 +846,6 @@ const CARD_POOL = [
     text: 'Wer hier hineinläuft, kommt selten wieder heraus.' },
   { id: 'hoherhorst', name: 'Hoher Horst', type: 'Gebäude', suit: '🌰', cost: 4, hp: 7, rangeBonus: 4, art: 'turm', sel: 'selten',
     text: 'Der Wind pfeift, und die Pfeile fliegen mit ihm.' },
-  { id: 'wallgraben', name: 'Wallgraben', type: 'Gebäude', suit: '🌰', cost: 2, hp: 7, art: 'graben', sel: 'selten',
-    macht: { dornen: 1 },
-    text: 'Unten stehen Pfähle. Man sieht sie erst zu spät.' },
   { id: 'bergfried', name: 'Bergfried', type: 'Gebäude', suit: '🌰', cost: 4, hp: 17, rangeBonus: 3, art: 'bergfried', sel: 'selten',
     text: 'Der letzte Ort, an dem man sich noch wehrt.' },
   { id: 'trutzburg', name: 'Trutzburg', type: 'Gebäude', suit: '🌰', cost: 4, hp: 14, rangeBonus: 1, art: 'bergfried', sel: 'kostbar',
@@ -859,8 +861,6 @@ const CARD_POOL = [
     text: 'Er weicht nicht. Das ist seine ganze Kunst.' },
   { id: 'schleuderer', name: 'Schleuderer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 4, art: 'schleuder', sel: 'gewoehnlich',
     text: 'Steine gibt es genug, und er trifft mit jedem zweiten.' },
-  { id: 'wachmann', name: 'Wachmann', type: 'Einheit', suit: '❤', cost: 1, dmg: 1, range: 2, zaeh: 4, art: 'speer', sel: 'gewoehnlich',
-    text: 'Schlägt selten zu, fällt aber auch nicht um.' },
   { id: 'kundschafter', name: 'Kundschafter', type: 'Einheit', suit: '❤', cost: 1, dmg: 1, range: 5, art: 'waldlaeufer', sel: 'gewoehnlich',
     sofort: { ziehe: 1 },
     text: 'Er bringt mit, was er unterwegs aufgeschnappt hat.' },
@@ -868,19 +868,8 @@ const CARD_POOL = [
     text: 'Zielt, wo andere zögern.' },
   { id: 'armbrustmann', name: 'Armbruster', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 4, art: 'armbrust', sel: 'gewoehnlich',
     text: 'Langsam im Laden, endgültig im Treffen.' },
-  { id: 'soeldner', name: 'Söldner', type: 'Einheit', suit: '❤', cost: 2, dmg: 5, range: 2, art: 'speer', sel: 'gewoehnlich',
-    text: 'Fragt nicht nach dem Grund, nur nach dem Lohn.' },
-  { id: 'wurfaxt', name: 'Axtwerfer', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 2, zaeh: 1, art: 'speer', sel: 'gewoehnlich',
-    text: 'Die Axt kommt zurück. Meistens.' },
-  { id: 'waldhueter', name: 'Waldhüter', type: 'Einheit', suit: '❤', cost: 2, dmg: 4, range: 3, art: 'bogen', sel: 'gewoehnlich',
-    text: 'Er kennt jeden Pfad, auf dem sie kommen.' },
-  { id: 'zweibrueder', name: 'Zwei Brüder', type: 'Einheit', suit: '❤', cost: 2, dmg: 2, range: 4, art: 'bogen', sel: 'gewoehnlich',
-    sofort: { ziehe: 1 },
-    text: 'Der eine schießt, der andere redet. Beide nützlich.' },
   { id: 'turmschmied', name: 'Turmschmied', type: 'Einheit', suit: '❤', cost: 2, dmg: 2, range: 3, zaeh: 3, art: 'hammer', sel: 'gewoehnlich',
     text: 'Er schlägt Nägel ein, solange keiner schießt.' },
-  { id: 'jaeger', name: 'Jäger', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 6, art: 'bogen', sel: 'gewoehnlich',
-    text: 'Wartet, bis der Schuss sich lohnt.' },
   { id: 'fackeltraeger', name: 'Fackelträger', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 2, art: 'fackel', sel: 'gewoehnlich',
     sofort: { flaeche: 1 },
     text: 'Beim Aufsteigen streift die Fackel mehr als gewollt.' },
@@ -889,8 +878,6 @@ const CARD_POOL = [
   { id: 'spaeherin', name: 'Späherin', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 4, art: 'waldlaeufer', sel: 'gewoehnlich',
     sofort: { tatendrang: 1 },
     text: 'Sie ist schon oben, bevor die Leiter steht.' },
-  { id: 'blindschuetze', name: 'Der blinde Schütze', type: 'Einheit', suit: '❤', cost: 2, dmg: 6, range: 3, art: 'bogen', sel: 'gewoehnlich',
-    text: 'Er hört, wo sie stehen. Das genügt ihm.' },
   { id: 'veteran', name: 'Veteran', type: 'Einheit', suit: '❤', cost: 3, dmg: 4, range: 5, zaeh: 3, art: 'armbrust', sel: 'selten',
     text: 'Dritter Feldzug. Er zählt nicht mehr mit.' },
   { id: 'mauerwacht', name: 'Mauerwacht', type: 'Einheit', suit: '❤', cost: 2, dmg: 3, range: 2, zaeh: 5, art: 'speer', sel: 'gewoehnlich',
@@ -910,24 +897,18 @@ const CARD_POOL = [
     text: 'Er reitet die Grenze ab, seit niemand mehr zählt.' },
 
   // ---------------- Faehigkeiten ----------------
-  { id: 'zielen', name: 'Zielen', type: 'Fähigkeit', suit: '🍃', cost: 0, plus: { range: 2 }, art: 'wind', sel: 'gewoehnlich',
-    text: 'Einmal tief durchatmen, bevor der Finger loslässt.' },
   { id: 'schleifstein', name: 'Schleifstein', type: 'Fähigkeit', suit: '🍃', cost: 1, plus: { dmg: 2 }, art: 'hammer', sel: 'gewoehnlich',
     text: 'Scharf war sie schon. Jetzt ist sie schärfer.' },
   { id: 'sturmwind', name: 'Sturmwind', type: 'Fähigkeit', suit: '🍃', cost: 1, plus: { dmg: 1, range: 1 }, art: 'wind', sel: 'selten',
     text: 'Ein Windstoß, der Pfeile schneller fliegen lässt.' },
   { id: 'durchbruch', name: 'Durchschlag', type: 'Fähigkeit', suit: '🍃', cost: 2, plus: { dmg: 1, durchschlag: 1 }, art: 'wind', sel: 'selten',
     text: 'Was einen trifft, trifft auch den dahinter.' },
-  { id: 'brandpfeil', name: 'Brandpfeil', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { schaden: 4 }, art: 'fackel', sel: 'gewoehnlich',
-    text: 'Er brennt schon, bevor er ankommt.' },
   { id: 'pechguss', name: 'Pechguss', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { schaden: 6 }, art: 'oel', sel: 'gewoehnlich',
     text: 'Heiß genug, dass niemand mehr an die Leiter denkt.' },
   { id: 'ausfall', name: 'Ausfall', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { schaden: 10 }, art: 'speer', sel: 'selten',
     text: 'Das Tor geht auf, und für einen Augenblick seid ihr draußen.' },
   { id: 'steinregen', name: 'Steinregen', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { flaeche: 3 }, art: 'schleuder', sel: 'gewoehnlich',
     text: 'Es hagelt über das ganze Feld.' },
-  { id: 'heissersand', name: 'Heißer Sand', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { flaeche: 4 }, art: 'feuer', sel: 'selten',
-    text: 'Er findet jede Ritze in der Rüstung.' },
   { id: 'fallgrube', name: 'Fallgrube', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { fessel: 1 }, art: 'graben', sel: 'gewoehnlich',
     text: 'Ein Brett, etwas Laub, und schon fehlt einer.' },
   { id: 'wurfnetz', name: 'Wurfnetz', type: 'Fähigkeit', suit: '🍃', cost: 2, sofort: { fessel: 2 }, art: 'kette', sel: 'selten',
@@ -936,10 +917,6 @@ const CARD_POOL = [
     text: 'Ein Ruck, und der Weg ist wieder lang.' },
   { id: 'ausbessern', name: 'Ausbessern', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { flicke: 6 }, art: 'hammer', sel: 'gewoehnlich',
     text: 'Ein paar Steine zurück an ihren Platz.' },
-  { id: 'maurerkelle', name: 'Maurerkelle', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { turmSchild: 4 }, art: 'hammer', sel: 'gewoehnlich',
-    text: 'Nicht geflickt, sondern verstärkt. Das hält länger.' },
-  { id: 'feldscher', name: 'Feldscher', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { heileBurg: 4 }, art: 'horn', sel: 'gewoehnlich',
-    text: 'Er ist keiner von den Guten, aber der Einzige hier.' },
   { id: 'doppeltewacht', name: 'Doppelte Wacht', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { ziehe: 2 }, art: 'horn', sel: 'gewoehnlich',
     text: 'Zwei Augenpaare sehen zwei Dinge.' },
   { id: 'hornsignal', name: 'Hornsignal', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { tatendrang: 2 }, art: 'horn', sel: 'gewoehnlich',
@@ -954,12 +931,8 @@ const CARD_POOL = [
   // ---------------- Maechte ----------------
   { id: 'banner', name: 'Banner der Grenze', type: 'Macht', suit: '🔔', cost: 2, macht: { alleSchaden: 1 }, art: 'fahne', sel: 'selten',
     text: 'Solange es weht, zielt jeder eine Spur genauer.' },
-  { id: 'hohewarte', name: 'Hohe Warte', type: 'Macht', suit: '🔔', cost: 2, macht: { alleReichweite: 1 }, art: 'turm', sel: 'selten',
-    text: 'Von hier oben ist die Grenze auf einmal nah.' },
   { id: 'trommelschlag', name: 'Trommelschlag', type: 'Macht', suit: '🔔', cost: 2, macht: { handKarten: 1 }, art: 'horn', sel: 'selten',
     text: 'Der Takt sagt, wann gezogen und wann gespannt wird.' },
-  { id: 'eisernerwille', name: 'Eiserner Wille', type: 'Macht', suit: '🔔', cost: 2, macht: { turmLeben: 3 }, art: 'fahne', sel: 'selten',
-    text: 'Nichts daran ist neu. Es hält nur länger.' },
   { id: 'dornenwall', name: 'Dornenwall', type: 'Macht', suit: '🔔', cost: 2, macht: { dornen: 2 }, art: 'graben', sel: 'selten',
     text: 'Wer die Mauer schlägt, schlägt in Pfähle.' },
   { id: 'wachtbeinacht', name: 'Wacht bei Nacht', type: 'Macht', suit: '🔔', cost: 3, macht: { alleReichweite: 2 }, art: 'nacht', sel: 'kostbar',
@@ -972,10 +945,63 @@ const CARD_POOL = [
     text: 'Wer die Krone trägt, baut höher als jeder andere.' },
   { id: 'erlass', name: 'Königlicher Erlass', type: 'Macht', suit: '🔔', cost: 4, macht: { allePlaetze: 1, alleSchaden: 1 }, art: 'krone', sel: 'kostbar',
     text: 'Ein Siegel, und die Grenze ist plötzlich Sache des Königs.' },
-  { id: 'schwur', name: 'Schwur der Grenze', type: 'Macht', suit: '🔔', cost: 3, macht: { turmLeben: 2, alleSchaden: 1 }, art: 'fahne', sel: 'kostbar',
-    text: 'Gesprochen wird er einmal, gehalten den ganzen Tag.' },
   { id: 'marschbefehl', name: 'Marschbefehl', type: 'Macht', suit: '🔔', cost: 2, macht: { handKarten: 1 }, art: 'fahne', sel: 'kostbar',
     text: 'Kurz, laut, und keiner fragt nach.' },
+
+  // ---------- Mitwachsend: die Wirkung haengt daran, was gerade steht ----------
+  { id: 'steinschlag', name: 'Steinschlag', type: 'Fähigkeit', suit: '🍃', cost: 2, art: 'schleuder', sel: 'gewoehnlich',
+    sofort: { flaeche: 1 }, je: { zaehler: 'proTurm', wirkung: { flaeche: 1 } },
+    text: 'Von jeder Zinne fliegt, was greifbar ist.' },
+  { id: 'letztebastion', name: 'Letzte Bastion', type: 'Fähigkeit', suit: '🍃', cost: 2, art: 'fahne', sel: 'selten',
+    sofort: { schaden: 2 }, je: { zaehler: 'proWunde', wirkung: { schaden: 1 } },
+    text: 'Je tiefer die Wunde, desto härter der Schlag.' },
+  { id: 'erntedank', name: 'Erntedank', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'beutel', sel: 'gewoehnlich',
+    sofort: { sold: 5 }, je: { zaehler: 'proGefallenen', wirkung: { sold: 4 } },
+    text: 'Was sie trugen, tragt ihr jetzt zusammen.' },
+  { id: 'musterung', name: 'Musterung', type: 'Fähigkeit', suit: '🍃', cost: 2, art: 'horn', sel: 'selten',
+    je: { zaehler: 'proTurm', wirkung: { ziehe: 1 } },
+    text: 'Jeder Turm meldet, was ihm fehlt.' },
+  { id: 'wehrzoll', name: 'Wehrzoll', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'hammer', sel: 'gewoehnlich',
+    je: { zaehler: 'proTurm', wirkung: { flickeAlle: 2 } },
+    text: 'Wer viel gebaut hat, hat viel zu flicken.' },
+  { id: 'schlachtruf', name: 'Schlachtruf', type: 'Fähigkeit', suit: '🍃', cost: 2, art: 'horn', sel: 'selten',
+    sofort: { flaeche: 1 }, je: { zaehler: 'proGegner', wirkung: { flaeche: 1 } },
+    text: 'Je dichter sie stehen, desto lauter der Ruf.' },
+  { id: 'notration', name: 'Notration', type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'beutel', sel: 'gewoehnlich',
+    je: { zaehler: 'proEinheit', wirkung: { heileBurg: 1 } },
+    text: 'Jede Hand, die hält, hält auch die Mauer.' },
+
+  // ---------- Ausloeser: Wirkungen, die spaeter von selbst greifen ----------
+  { id: 'wachfeuer', name: 'Wachfeuer', type: 'Macht', suit: '🔔', cost: 2, art: 'feuer', sel: 'selten',
+    wenn: { ausloeser: 'gegnerFaellt', dann: { tatendrang: 1 }, jeZug: 2 },
+    text: 'Jeder Gefallene gibt der Wache neuen Atem.' },
+  { id: 'blutzoll', name: 'Blutzoll', type: 'Macht', suit: '🔔', cost: 3, art: 'fahne', sel: 'kostbar',
+    wenn: { ausloeser: 'gegnerFaellt', dann: { alleSchaden: 1 }, gesamt: 5 },
+    text: 'Was die Mauer kostet, holt sie sich zurück. Und mehr.' },
+  { id: 'totenwache', name: 'Totenwache', type: 'Macht', suit: '🔔', cost: 2, art: 'nacht', sel: 'selten',
+    wenn: { ausloeser: 'gegnerFaellt', dann: { ziehe: 1 }, jeZug: 2 },
+    text: 'Wer zählt, was fällt, weiß bald, was kommt.' },
+  { id: 'steinmetz', name: 'Steinmetz', type: 'Macht', suit: '🔔', cost: 2, art: 'hammer', sel: 'selten',
+    wenn: { ausloeser: 'turmGebaut', dann: { turmLeben: 2 }, gesamt: 6 },
+    text: 'Er richtet die alten Mauern mit, wenn eine neue entsteht.' },
+  { id: 'baumeisterstolz', name: 'Baumeisterstolz', type: 'Macht', suit: '🔔', cost: 3, art: 'krone', sel: 'kostbar',
+    wenn: { ausloeser: 'turmGebaut', dann: { ziehe: 1, tatendrang: 1 }, gesamt: 6 },
+    text: 'Jeder fertige Turm treibt ihn zum nächsten.' },
+  { id: 'rachedermauer', name: 'Rache der Mauer', type: 'Macht', suit: '🔔', cost: 2, art: 'oel', sel: 'selten',
+    wenn: { ausloeser: 'burgGetroffen', dann: { flaeche: 3 }, jeZug: 2 },
+    text: 'Wer an das Tor schlägt, weckt das ganze Haus.' },
+  { id: 'ausderasche', name: 'Aus der Asche', type: 'Macht', suit: '🔔', cost: 1, art: 'feuer', sel: 'selten',
+    wenn: { ausloeser: 'turmFaellt', dann: { ziehe: 2, tatendrang: 2 } },
+    text: 'Ein gefallener Turm ist Baustoff für den nächsten.' },
+  { id: 'pfeilhagel', name: 'Pfeilhagel', type: 'Macht', suit: '🔔', cost: 3, art: 'wind', sel: 'kostbar',
+    wenn: { ausloeser: 'salve', dann: { flaeche: 1 }, jeZug: 3 },
+    text: 'Wo einer schießt, schießen alle mit.' },
+  { id: 'zehntermann', name: 'Der zehnte Mann', type: 'Macht', suit: '🔔', cost: 2, art: 'balliste', sel: 'selten',
+    wenn: { ausloeser: 'zugBeginn', dann: { flaeche: 1 } },
+    text: 'Einer wacht immer, auch wenn neun schlafen.' },
+  { id: 'morgenappell', name: 'Morgenappell', type: 'Macht', suit: '🔔', cost: 2, art: 'horn', sel: 'selten',
+    wenn: { ausloeser: 'zugBeginn', dann: { flickeAlle: 2, heileBurg: 1 } },
+    text: 'Vor dem ersten Licht wird gezählt und geflickt.' },
 ];
 
 // Der Stapel wird beim Laden einmal gegen dieselbe Regel geprueft.
@@ -1170,6 +1196,8 @@ let state = {
   ereignis: null,    // laufende Begegnung
   letzterSold: 0,    // was die letzte Station eingebracht hat
   maechte: {},       // anhaltende Wirkungen, gelten nur fuer diese Station
+  ausloeser: [],     // eingetragene Wenn-Wirkungen, gelten nur diese Station
+  gefallene: 0,      // wie viele Gegner an dieser Station schon gefallen sind
   zugLaeuft: false,  // das Aufgebot handelt gerade, der Spieler wartet
   handelnder: null,  // welcher Gegner in diesem Augenblick vortritt
   draw: [], hand: [], discard: [],
@@ -3875,6 +3903,7 @@ function attackWithTower(tower, enemy) {
   state.tatendrang -= ATTACK_COST;
   tower.attackedKey = state.runde + ':' + state.zug;
   enemy.hp -= schaden;
+  loeseAus('salve');
 
   const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d).length;
   const salve = anzahl > 1 ? ' (' + anzahl + ' Einheiten)' : '';
@@ -3935,6 +3964,8 @@ function raeumeGefallene(e) {
   const ey = e.vy === undefined ? e.row : e.vy;
   leichen.push({ vx: ex, vy: ey, typ: e.typ, t: 0, dauer: 0.65 });
   state.enemies = state.enemies.filter(x => x !== e);
+  state.gefallene = (state.gefallene || 0) + 1;
+  loeseAus('gegnerFaellt');
   return true;
 }
 
@@ -4020,9 +4051,11 @@ function bezahle(card) { state.tatendrang -= card.cost; }
  * oder ein Gegner, je nach zielArt.
  */
 function wirke(card, ziel) {
-  const w = card.sofort || {};
+  const w = wirkungVon(card);
   const m = card.macht || null;
   const teile = [];
+
+  if (card.wenn) teile.push(merkeAusloeser(card));
 
   if (w.ziehe) {
     const { drawn, reshuffled } = drawCards(w.ziehe);
@@ -4095,6 +4128,160 @@ function wirke(card, ziel) {
   return teile.filter(Boolean).join(' · ');
 }
 
+// ============================================================
+//  Ausloeser und Skalierung
+// ============================================================
+// Bis hierher war jede Karte eine feste Zahl: plus zwei Schaden, sechs
+// Schaden, ein Platz mehr. Damit gibt es nichts, was sich aufschaukelt. Zwei
+// Felder aendern das:
+//
+//   `je`   laesst eine Wirkung mit etwas mitwachsen, das gerade auf dem Feld
+//          steht. Drei Schaden, und einer mehr je Turm.
+//   `wenn` traegt eine Wirkung ein, die spaeter von selbst auslöst: jedes Mal,
+//          wenn ein Gegner faellt, wenn ein Turm gebaut wird, wenn die Burg
+//          getroffen wird. Erst damit kann ein Deck etwas bauen, statt nur
+//          Zahlen zu addieren.
+
+const ZAEHLER = {
+  proTurm:       { name: 'je Turm',              zaehle: () => state.towers.length },
+  proEinheit:    { name: 'je Einheit',           zaehle: () => state.towers.reduce((n, t) => n + towerUnits(t).length, 0) },
+  proGegner:     { name: 'je Gegner auf dem Feld', zaehle: () => state.enemies.length },
+  proGefallenen: { name: 'je gefallenem Gegner', zaehle: () => state.gefallene || 0 },
+  proHandkarte:  { name: 'je Karte auf der Hand', zaehle: () => state.hand.length },
+  proWunde:      { name: 'je fehlendem Burg-LP', zaehle: () => Math.max(0, CASTLE.maxHp - state.castleHp) },
+};
+
+const AUSLOESER = {
+  gegnerFaellt:  'Wenn ein Gegner fällt',
+  turmGebaut:    'Wenn du einen Turm errichtest',
+  turmFaellt:    'Wenn einer deiner Türme fällt',
+  burgGetroffen: 'Wenn die Burg getroffen wird',
+  salve:         'Wenn ein Turm schießt',
+  zugBeginn:     'Zu Beginn jedes Zuges',
+};
+
+function zaehlerWert(art) {
+  const z = ZAEHLER[art];
+  return z ? z.zaehle() : 0;
+}
+
+/**
+ * Die Sofortwirkung einer Karte, wie sie in diesem Augenblick wirklich
+ * ausfaellt. Ohne `je` ist das schlicht `sofort`.
+ */
+function wirkungVon(card) {
+  const w = { ...(card.sofort || {}) };
+  if (card.je) {
+    const n = zaehlerWert(card.je.zaehler);
+    for (const k in card.je.wirkung) w[k] = Math.floor((w[k] || 0) + n * card.je.wirkung[k]);
+  }
+  return w;
+}
+
+/** Traegt eine Ausloeserkarte ein. Sie gilt bis zum Ende der Station. */
+function merkeAusloeser(card) {
+  state.ausloeser.push({
+    name: card.name, ausloeser: card.wenn.ausloeser, dann: { ...card.wenn.dann },
+    jeZug: card.wenn.jeZug || 0, gesamt: card.wenn.gesamt || 0,
+    zaehlerZug: 0, zaehlerGesamt: 0,
+  });
+  return AUSLOESER[card.wenn.ausloeser] + ': ' + wirkungText(card.wenn.dann) + grenzText(card.wenn);
+}
+
+/** Der Zusatz, der eine Obergrenze benennt. Ohne ihn waere die Karte gelogen. */
+function grenzText(wenn) {
+  if (wenn.gesamt) return ' (höchstens ' + wenn.gesamt + 'mal je Station)';
+  if (wenn.jeZug) return ' (höchstens ' + wenn.jeZug + 'mal je Zug)';
+  return '';
+}
+
+/**
+ * Loest alles aus, was auf dieses Ereignis eingetragen ist. Die Tiefe wird
+ * begrenzt: Eine Wirkung, die selbst Gegner faellt, koennte sich sonst
+ * endlos selbst ausloesen.
+ */
+let ausloeserTiefe = 0;
+function loeseAus(ereignis) {
+  if (!state.ausloeser || !state.ausloeser.length) return;
+  if (ausloeserTiefe >= 3) return;
+  const treffer = state.ausloeser.filter(a => a.ausloeser === ereignis);
+  if (!treffer.length) return;
+
+  ausloeserTiefe++;
+  const teile = [];
+  for (const a of treffer) {
+    // Ohne Obergrenze schaukelt sich eine Maschine an einer Station mit
+    // sechzehn Gegnern ins Unermessliche.
+    if (a.jeZug && a.zaehlerZug >= a.jeZug) continue;
+    if (a.gesamt && a.zaehlerGesamt >= a.gesamt) continue;
+    a.zaehlerZug++; a.zaehlerGesamt++;
+    const m = wirkeAutomatisch(a.dann);
+    if (m) teile.push(a.name + ': ' + m);
+  }
+  ausloeserTiefe--;
+
+  if (teile.length) {
+    setMessage(teile.slice(0, 2).join(' · ') + (teile.length > 2 ? ' · und mehr' : ''));
+    schirmBlitz(0.25);
+  }
+}
+
+/**
+ * Wirkungen ohne Ziel, wie sie ein Ausloeser braucht. Was ein Ziel verlangt,
+ * hat hier nichts zu suchen: Ein Ausloeser kann niemanden fragen.
+ */
+function wirkeAutomatisch(dann) {
+  const teile = [];
+  if (dann.tatendrang) { state.tatendrang += dann.tatendrang; teile.push('+' + dann.tatendrang + ' Tatendrang'); }
+  if (dann.ziehe) { const { drawn } = drawCards(dann.ziehe); if (drawn) teile.push('+' + drawn + ' Karten'); }
+  if (dann.heileBurg) { const g = heileBurg(dann.heileBurg); if (g) teile.push('+' + g + ' Burg'); }
+  if (dann.sold) { state.sold += dann.sold; teile.push('+' + dann.sold + ' Sold'); }
+  if (dann.flaeche) {
+    let gefallen = 0;
+    for (const e of state.enemies.slice()) if (treffeGegner(e, dann.flaeche, 'Auslöser')) gefallen++;
+    teile.push(dann.flaeche + ' Schaden auf alle' + (gefallen ? ', ' + gefallen + ' gefallen' : ''));
+  }
+  if (dann.flickeAlle) {
+    let gesamt = 0;
+    for (const t of state.towers) {
+      const vorher = t.hp;
+      t.hp = Math.min(t.maxHp, t.hp + dann.flickeAlle);
+      gesamt += t.hp - vorher;
+    }
+    if (gesamt) teile.push('+' + gesamt + ' Turmleben');
+  }
+  const m = {};
+  for (const k of ['alleSchaden', 'alleReichweite', 'turmLeben', 'allePlaetze', 'handKarten', 'dornen']) {
+    if (dann[k]) m[k] = dann[k];
+  }
+  if (Object.keys(m).length) teile.push(wendeMachtAn(m));
+  return teile.filter(Boolean).join(', ');
+}
+
+/** Eine Wirkung in Worten, fuer Regelzeile und Meldung. */
+function wirkungText(w) {
+  const teile = [];
+  if (w.schaden) teile.push(w.schaden + ' Schaden auf einen Gegner');
+  if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
+  if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
+  if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
+  if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
+  if (w.flickeAlle) teile.push('flickt alle Türme um ' + w.flickeAlle);
+  if (w.turmSchild) teile.push('Turm +' + w.turmSchild + ' Leben dauerhaft');
+  if (w.heileBurg) teile.push('Burg +' + w.heileBurg);
+  if (w.ziehe) teile.push('zieht ' + w.ziehe + ' Karte' + (w.ziehe === 1 ? '' : 'n'));
+  if (w.tatendrang) teile.push('+' + w.tatendrang + ' Tatendrang');
+  if (w.sold) teile.push('+' + w.sold + ' Sold');
+  if (w.alleSchaden) teile.push('alle Einheiten +' + w.alleSchaden + ' Schaden');
+  if (w.alleReichweite) teile.push('alle Einheiten +' + w.alleReichweite + ' Reichweite');
+  if (w.allePlaetze) teile.push('alle Türme +' + w.allePlaetze + ' Platz');
+  if (w.turmLeben) teile.push('alle Türme +' + w.turmLeben + ' Leben');
+  if (w.handKarten) teile.push('+' + w.handKarten + ' Karte je Zug');
+  if (w.tatendrangDauer) teile.push('+' + w.tatendrangDauer + ' Tatendrang je Zug');
+  if (w.dornen) teile.push('Angreifer nehmen ' + w.dornen + ' Schaden');
+  return teile.join(', ');
+}
+
 /** Traegt eine anhaltende Macht ein und wendet sie auf das an, was schon steht. */
 function wendeMachtAn(m) {
   const teile = [];
@@ -4151,6 +4338,7 @@ function placeTower(col, row) {
   ruetteln(4);
   klang('bau');
   removeFromHand(card);
+  loeseAus('turmGebaut');
   state.pendingCard = null;
   state.hoverCell = null;
   state.selectedTower = null;
@@ -4276,6 +4464,7 @@ function handleGegner(e) {
       ruetteln(8);
       schirmBlitz(0.6);
       klang('fall');
+      loeseAus('turmFaellt');
       return { text: turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!' + dornenMeldung, art: 'fall' };
     }
     return { text: e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')' + dornenMeldung, art: 'schlag' };
@@ -4286,6 +4475,7 @@ function handleGegner(e) {
   ruetteln(7);
   schirmBlitz(0.8);
   klang('burg');
+  loeseAus('burgGetroffen');
   return { text: e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')', art: 'burg' };
 }
 
@@ -4383,6 +4573,8 @@ function betreteKnoten(id) {
   state.handelnder = null;
 
   state.maechte = {};
+  state.ausloeser = [];
+  state.gefallene = 0;
   state.maxTatendrang = maxTatendrangFuer(state.runde);
   state.tatendrang = state.maxTatendrang;
   state.zug = 1;
@@ -4466,6 +4658,8 @@ function neuerFeldzug(stufe) {
   projektile.length = 0;
   state.route = baueRoute();
   state.maechte = {};
+  state.ausloeser = [];
+  state.gefallene = 0;
   state.letzterSold = 0;
   state.letztesEreignis = null;
   state.haendler = [];
@@ -4558,6 +4752,8 @@ function neueKarte(proto) {
   if (proto.sofort) karte.sofort = { ...proto.sofort };
   if (proto.macht) karte.macht = { ...proto.macht };
   if (proto.plus) karte.plus = { ...proto.plus };
+  if (proto.je) karte.je = { zaehler: proto.je.zaehler, wirkung: { ...proto.je.wirkung } };
+  if (proto.wenn) karte.wenn = { ...proto.wenn, dann: { ...proto.wenn.dann } };
   return karte;
 }
 
@@ -4597,9 +4793,17 @@ function schaerfeKarte(c) {
   };
 
   if (c.type === 'Macht') {
-    // Eine Macht um einen Punkt zu heben waere zu viel. Sie wird billiger.
-    if (c.cost > 0) { c.cost -= 1; verbessert = true; }
-    else { hebe(c.macht, 'alleSchaden', 1); hebe(c.macht, 'handKarten', 1); }
+    const zieht = (c.wenn && c.wenn.dann.ziehe) || (c.macht && c.macht.handKarten);
+    if (c.cost > 0 && !zieht) {
+      // Eine Macht um einen Punkt zu heben waere zu viel. Sie wird billiger.
+      c.cost -= 1; verbessert = true;
+    } else if (c.wenn) {
+      if (c.wenn.gesamt) { c.wenn.gesamt += 2; verbessert = true; }
+      else if (c.wenn.jeZug) { c.wenn.jeZug += 1; verbessert = true; }
+      else for (const k in c.wenn.dann) hebe(c.wenn.dann, k, k === 'sold' ? 10 : 1);
+    } else {
+      hebe(c.macht, 'alleSchaden', 1); hebe(c.macht, 'handKarten', 1);
+    }
   } else {
     hebe(c, 'dmg', 1);
     hebe(c, 'hp', 2);
@@ -4619,6 +4823,13 @@ function schaerfeKarte(c) {
     hebe(c.sofort, 'sold', 15);
     hebe(c.sofort, 'fessel', 1);
     hebe(c.sofort, 'stoss', 2);
+    hebe(c.sofort, 'flickeAlle', 2);
+    if (c.je) for (const k in c.je.wirkung) hebe(c.je.wirkung, k, k === 'sold' ? 4 : 1);
+    if (c.wenn) {
+      if (c.wenn.gesamt) { c.wenn.gesamt += 2; verbessert = true; }
+      else if (c.wenn.jeZug) { c.wenn.jeZug += 1; verbessert = true; }
+      else for (const k in c.wenn.dann) hebe(c.wenn.dann, k, k === 'sold' ? 10 : 1);
+    }
   }
 
   if (!verbessert && c.cost > 0) { c.cost -= 1; verbessert = true; }
@@ -4634,7 +4845,8 @@ function schaerfeKarte(c) {
  * jede Karte, auch fuer spaeter hinzugefuegte.
  */
 function bezahlbarkeitSichern(c) {
-  const zieht = (c.sofort && c.sofort.ziehe) || (c.macht && c.macht.handKarten);
+  const zieht = (c.sofort && c.sofort.ziehe) || (c.macht && c.macht.handKarten) ||
+    (c.je && c.je.wirkung.ziehe) || (c.wenn && c.wenn.dann.ziehe);
   if (!zieht || c.dmg || c.hp) return c;
   const netto = c.cost - ((c.sofort && c.sofort.tatendrang) || 0);
   if (netto < 1) c.cost += 1 - netto;
@@ -5030,6 +5242,8 @@ function zugAbschluss(lauf) {
   state.pendingCard = null;
   state.hoverCell = null;
   state.selectedTower = null;
+  for (const a of state.ausloeser) a.zaehlerZug = 0;
+  loeseAus('zugBeginn');
 
   let text = kampfMeldung ? kampfMeldung + ' · ' : '';
   if (neu.length) text += neu.length + ' Gegner verlassen das Lager · ';
@@ -5108,39 +5322,53 @@ function kartenWerte(card) {
   return werte;
 }
 
-/** Was die Karte tut, in einem Satz. */
+/**
+ * Was die Karte tut, in einem Satz. Abgeleitet statt abgeschrieben, damit
+ * der Text nach dem Schaerfen noch stimmt. Bei mitwachsenden Karten steht
+ * dahinter, wie hoch sie gerade ausfaellt: Das ist die halbe Freude daran.
+ */
 function karteRegel(card) {
   const teile = [];
-  const w = card.sofort || {};
-  const m = card.macht || {};
   const p = card.plus || {};
 
   if (p.dmg) teile.push('Einheit +' + p.dmg + ' Schaden');
   if (p.range) teile.push('Einheit +' + p.range + ' Reichweite');
   if (p.durchschlag) teile.push('Einheit erhält Durchschlag');
 
-  if (w.schaden) teile.push(w.schaden + ' Schaden auf einen Gegner');
-  if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
-  if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
-  if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
-  if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
-  if (w.turmSchild) teile.push('Turm +' + w.turmSchild + ' Leben dauerhaft');
-  if (w.heileBurg) teile.push('Burg +' + w.heileBurg);
-  if (w.ziehe) teile.push('zieht ' + w.ziehe + ' Karte' + (w.ziehe === 1 ? '' : 'n'));
-  if (w.tatendrang) teile.push('+' + w.tatendrang + ' Tatendrang');
-  if (w.sold) teile.push('+' + w.sold + ' Sold');
+  const grund = wirkungText(card.sofort || {});
+  if (grund) teile.push(grund);
 
-  if (m.alleSchaden) teile.push('alle Einheiten +' + m.alleSchaden + ' Schaden');
-  if (m.alleReichweite) teile.push('alle Einheiten +' + m.alleReichweite + ' Reichweite');
-  if (m.allePlaetze) teile.push('alle Türme +' + m.allePlaetze + ' Platz');
-  if (m.turmLeben) teile.push('alle Türme +' + m.turmLeben + ' Leben');
-  if (m.handKarten) teile.push('+' + m.handKarten + ' Karte je Zug');
-  if (m.tatendrangDauer) teile.push('+' + m.tatendrangDauer + ' Tatendrang je Zug');
-  if (m.dornen) teile.push('Angreifer nehmen ' + m.dornen + ' Schaden');
+  if (card.je) {
+    const z = ZAEHLER[card.je.zaehler];
+    const jeFelder = Object.keys(card.je.wirkung);
+    const grundFelder = Object.keys(card.sofort || {});
+    // Steht dieselbe Wirkung schon im Grundtext, reicht die blosse Zahl.
+    const schonGesagt = jeFelder.length && jeFelder.every(k => grundFelder.includes(k));
+    teile.push(schonGesagt
+      ? 'dazu +' + jeFelder.map(k => card.je.wirkung[k]).join(' und +') + ' ' + (z ? z.name : '')
+      : 'dazu ' + wirkungText(card.je.wirkung) + ' ' + (z ? z.name : ''));
+  }
+
+  const m = card.macht || {};
+  const mt = wirkungText(m);
+  if (mt) teile.push(mt);
+
+  if (card.wenn) {
+    teile.push(AUSLOESER[card.wenn.ausloeser] + ': ' + wirkungText(card.wenn.dann) + grenzText(card.wenn));
+  }
 
   if (!teile.length) return '';
-  const satz = teile.join(', ');
+  const satz = teile.join('. ');
   return satz.charAt(0).toUpperCase() + satz.slice(1) + '.';
+}
+
+/** Wie hoch eine mitwachsende Karte gerade ausfaellt, oder null. */
+function karteJetzt(card) {
+  if (!card.je || state.phase !== 'kampf') return null;
+  const n = zaehlerWert(card.je.zaehler);
+  if (!n) return null;
+  const t = wirkungText(wirkungVon(card));
+  return t ? 'Jetzt: ' + t : null;
 }
 
 /** Baut die Darstellung einer Karte samt Halter. */
@@ -5216,6 +5444,13 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
     rz.className = 'card-rule';
     rz.textContent = regel;
     unten.appendChild(rz);
+  }
+  const jetzt = karteJetzt(card);
+  if (jetzt) {
+    const jz = document.createElement('div');
+    jz.className = 'card-jetzt';
+    jz.textContent = jetzt;
+    unten.appendChild(jz);
   }
   const txt = document.createElement('div');
   txt.className = 'card-text';
