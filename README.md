@@ -265,9 +265,17 @@ Drei Dinge gehören dazu:
 
   Es trägt den **Sandstein des Walls**, nicht den grauen `stein` der Burg. Mit
   dem grauen verschmolz es aus der Entfernung mit der Burg zu einem Klumpen.
-- **Basteien**, 2×2-Podeste, die nach Osten aus dem Wall treten. **Nur dort
-  darf gebaut werden.** Damit steht die Zahl der Türme einer Station mit ihrem
-  Layout fest, und das Layout ist das Rätsel.
+
+  Gebaut ist es als **ein Baukörper mit einem Loch darin**, nicht als zwei
+  Pfeiler nebeneinander — genau so las sich die erste Fassung nämlich: zwei
+  Türmchen mit einer Lücke. In der Durchfahrt hängt beidseitig eine
+  **Gittertür**, in die dunkle Laibung geclippt, mit Stangen, zwei Bändern und
+  einem Schlussstein über dem Bogen.
+- **Türme überall am Wall.** Ein Turm zählt als aufgesetzt, wenn mindestens
+  zwei seiner vier Felder auf Mauerwerk stehen — sonst gibt es keine Regel.
+  Vorher gab es dafür Basteien: 2×2-Podeste mit einer gelben Marke darüber.
+  Das machte aus dem Wall ein Brett mit Steckplätzen, und es waren nur sechs.
+  Jetzt sind es rund **25 Stellen** je Station.
 
 ### Dicht ist nicht selbstverständlich
 
@@ -280,7 +288,26 @@ Der Test dafür mauert das Tor zu und flutet vom rechten Rand: erreicht dann noc
 irgendetwas die Burg, leckt der Wall. **46 von 200 Layouts leckten.** Vier
 Zeilen in einer Flucht um das Tor herum, und es sind 0 von 200.
 
-### Wer durchs Tor geht und wer nicht
+### Wer auf was zielt
+
+Zwei Regeln geben dem Wall seinen Brennpunkt:
+
+**Nahkampf will ans Tor.** Wer nur eine Armlänge weit reicht (`reach <= 2`),
+geht auf das Torhaus zu — egal, wo er steht und welcher Turm näher wäre. Dort
+staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus,
+klafft ein 2×3-Loch im Wall, und das Fußvolk sucht sich wieder den nächsten
+Turm. Fernkampf bleibt beim nächsten Ziel: ein Armbrustschütze hat keinen
+Grund, an einem besetzten Turm vorbeizulaufen, um am Tor anzustehen.
+
+**Schützen zielen auf Männer, nicht auf Stein.** Steht jemand auf dem Turm,
+bekommt er den Treffer; ist die Krone leer, nehmen sie das Mauerwerk. Dafür
+haben Einheiten jetzt eigene Lebenspunkte (`6 + 2 × zaeh`) und einen eigenen,
+schmalen grünen Balken dicht unter den Figuren. Zinnen helfen dagegen nicht —
+sie decken den Turm, nicht den Kopf. Vorher war der Turm das einzige Ziel und
+wer oben stand unantastbar: ein Armbrustschütze schoss auf Mauerwerk statt auf
+Männer.
+
+## Wer durchs Tor geht und wer nicht
 
 Der Wall sperrt (`blockiert` kennt ihn jetzt) und er fällt (jedes Feld hat 24
 LP). Damit das keine Formel wird, sondern eine Entscheidung, läuft die Bewegung
@@ -333,17 +360,22 @@ verdeckt und kommen beim Fall des Turms wieder zum Vorschein.
 | ohne Wall | 18/48 (38 %) | 30 % | 9,5 |
 | Wall, Frist 8 | 12/48 (25 %) | 32 % | 9,1 |
 | Wall, Frist 9 | 16/48 (33 %) | 31 % | 9,8 |
-| …mit Torhaus als Tor | **18/48 (38 %)** | **27 %** | 9,7 |
+| …mit Torhaus als Tor | 18/48 (38 %) | 27 % | 9,7 |
+| …frei am Wall bauen, Wall bei 6–8 | **22/48 (46 %)** | **27 %** | 9,6 |
 
 Der Festungskampf ist strukturell länger — alles muss durchs Tor, und das Feuer
 steht auf einer festen Linie statt verteilt auf dem Feld. Dafür bekommt er
 **einen Zug mehr Frist** (`9 + ⌊Runde/4⌋`).
 
-Die letzte Zeile war eine Überraschung: das Torhaus als echtes Tor hat die
-Bilanz nicht nur nicht gekostet, sondern sie auf den Stand vor dem Wall
-gehoben. Der Grund ist der **engere Durchlass** — vorher zwei Felder Lücke,
-jetzt eine Einfahrt von einem Feld. Die Belagerer stauen sich davor, und jeder
-gestaute Zug ist ein Schussfenster mehr.
+Die letzten beiden Zeilen waren Überraschungen. Das Torhaus als echtes Tor hat
+die Bilanz nicht gekostet, sondern sie auf den Stand vor dem Wall gehoben — der
+**engere Durchlass** (vorher zwei Felder Lücke, jetzt eine Einfahrt von einem
+Feld) staut die Belagerer, und jeder gestaute Zug ist ein Schussfenster mehr.
+
+Und das freie Bauen am Wall hat sie darüber hinaus gehoben, obwohl der Wall
+gleichzeitig zwei Spalten **nach vorn** rückte (von 4–6 auf 6–8, weil er der
+Burg auf den Füßen stand). Fünfundzwanzig Stellen statt sechs Podesten wiegen
+den kürzeren Anmarsch mehr als auf.
 
 Eine Warnung an mich selbst aus dieser Runde: Ich hatte zwischendurch den
 Testbot zweimal geändert und danach gegen die *alte* Messzahl verglichen. Das

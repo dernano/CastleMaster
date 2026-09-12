@@ -1018,8 +1018,10 @@
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung, die quer über die Karte abschließt. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich.</li>
-        <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, und die <b>Durchfahrt geht mitten hindurch</b> — das ist die einzige offene Stelle. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1. Besetze sie zuerst: dort staut sich alles.</li>
-        <li><b>Basteien:</b> Die hellen Podeste im Wall mit der goldenen Marke. <b>Nur dort</b> darfst du bauen — wie viele Türme du an einer Station bekommst, sagt dir ihr Layout. Fällt ein Turm, ist seine Bastei wieder frei.</li>
+        <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, die <b>Durchfahrt geht hindurch</b>, hinter einer Gittertür. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1.</li>
+        <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
+        <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
+        <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
@@ -1606,7 +1608,7 @@ let state = {
   pendingCard: null,
   selectedTower: null,   // Turm, der schiessen soll
   hoverCell: null,
-  wall: new Map(), basteien: [], tor: [],
+  wall: new Map(), tor: [],
   nextTowerId: 1,
   nextEnemyId: 1,
 };
@@ -1756,57 +1758,22 @@ function rectsOverlap(a, b) {
   return a.col < b.col + b.w && a.col + a.w > b.col && a.row < b.row + b.h && a.row + a.h > b.row;
 }
 /*
- * Gebaut wird nur auf den Basteien - den 2x2-Podesten, die der Wall
- * mitbringt. Damit steht die Zahl der Tuerme einer Station mit ihrem Layout
- * fest, und das Layout ist das Raetsel. Frueher war jedes freie Feld recht,
- * und jede Station sah gleich aus.
+ * Ein Turm gehoert auf den Wall, aber nicht auf einen vorgegebenen Punkt.
+ * Vorher gab es dafuer Basteien - 2x2-Podeste mit einer gelben Marke darueber.
+ * Das machte aus dem Wall ein Brett mit Steckplaetzen. Jetzt zaehlt nur: der
+ * Turm muss mit mindestens zwei seiner vier Felder auf Mauerwerk stehen, dann
+ * sitzt er auf dem Wall und darf ueberall daran entlang.
  */
 function isValidTowerPlacement(col, row, w, h) {
   if (col < 0 || row < 0 || col + w > COLS || row + h > ROWS) return false;
   const rect = { col, row, w, h };
   if (rectsOverlap(rect, CASTLE)) return false;
   for (const t of state.towers) if (rectsOverlap(rect, t)) return false;
-  const b = (state.basteien || []).find(x => x.col === col && x.row === row);
-  if (!b || w !== b.w || h !== b.h) return false;
-  // Eine weggeschlagene Bastei traegt keinen Turm mehr.
+  let aufWall = 0;
   for (let c = col; c < col + w; c++) for (let r = row; r < row + h; r++) {
-    if (!istWall(c, r)) return false;
+    if (istWall(c, r)) aufWall++;
   }
-  return true;
-}
-
-/** Freie Bastei, auf der noch gebaut werden kann. */
-function freieBastei() {
-  return (state.basteien || []).some(b => isValidTowerPlacement(b.col, b.row, b.w, b.h));
-}
-
-/** Ist die Bastei mit dieser Nummer noch bebaubar? */
-function basteiFrei(nr) {
-  const b = (state.basteien || []).find(x => x.nr === nr);
-  return Boolean(b) && isValidTowerPlacement(b.col, b.row, b.w, b.h);
-}
-
-/** Schwebende Marke ueber einer freien Bastei - sichtbar ueber allem. */
-function drawBasteiMarke(b) {
-  const x = isoX(b.col + 1, b.row + 1);
-  const y = isoY(b.col + 1, b.row + 1) - 40 - (wenigerBewegung ? 0 : Math.sin(animZeit * 2.4 + b.nr) * 3);
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = '#f0c766';
-  ctx.strokeStyle = 'rgba(24,16,6,0.8)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 9);
-  ctx.lineTo(x - 6, y);
-  ctx.lineTo(x - 2.2, y);
-  ctx.lineTo(x - 2.2, y - 8);
-  ctx.lineTo(x + 2.2, y - 8);
-  ctx.lineTo(x + 2.2, y);
-  ctx.lineTo(x + 6, y);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
-  ctx.restore();
+  return aufWall >= 2;
 }
 
 function findNearestTower(enemy) {
@@ -1826,8 +1793,19 @@ function towerLabel(t) { return t.name + ' (' + t.col + ',' + t.row + ')'; }
  * aus: Wer erst heranrücken muss, kommt in derselben Runde nicht mehr zum
  * Schlag. Dieselbe Auskunft speist die Anzeige und den tatsaechlichen Zug.
  */
+/*
+ * Wer nur eine Armlaenge weit reicht, will durchs Tor - also geht er auf das
+ * Torhaus zu, nicht auf den naechstbesten Turm. Das gibt der Station ihren
+ * Brennpunkt: am Tor draengt sich alles, und dort entscheidet es sich. Faellt
+ * das Torhaus, sucht sich auch das Fussvolk wieder den naechsten Turm.
+ *
+ * Fernkampf bleibt beim naechsten Ziel. Ein Armbrustschuetze hat keinen Grund,
+ * an einem besetzten Turm vorbeizulaufen, um am Tor anzustehen.
+ */
 function enemyPlan(e) {
-  const turm = findNearestTower(e);
+  const nah = e.reach <= 2;
+  const torhaus = nah ? state.towers.find(t => t.torhaus) : null;
+  const turm = torhaus || findNearestTower(e);
   const ziel = turm || CASTLE;
   const zielPunkt = closestPointOnRect(e.col, e.row, ziel);
   const abstand = chebyshev(e.col, e.row, zielPunkt.col, zielPunkt.row);
@@ -2901,48 +2879,73 @@ const MODELLE = {
    * ein Torhaus eben.
    */
   torhaus: (g, f) => {
-    const H = 44 * f;          // Pfeiler bis zur Wehrplatte
-    const BOGEN = 21 * f;      // lichte Hoehe der Durchfahrt
+    /*
+     * Das Torhaus ist ein Block, kein Tuermchenpaar. Die erste Fassung setzte
+     * zwei Pfeiler nebeneinander, und genau so las es sich auch: zwei Tuerme
+     * mit einer Luecke. Jetzt steht ein geschlossener Baukoerper da, in den
+     * die Durchfahrt hineingeschnitten ist, mit einer Gittertuer darin und
+     * einer Wehrplatte obendrauf.
+     */
+    const H = 46 * f;          // bis zur Wehrplatte
+    const BOGEN = 22 * f;      // lichte Hoehe der Durchfahrt
     const W = 2, D = 3;
 
-    // Die beiden Pfeiler, zwischen ihnen bleibt die Fahrgasse offen
+    // Der Baukoerper: voll bis zur Durchfahrt, darueber durchgehend.
     teilQuader(g, 0, 0, 0, W, 1.0, H, 'wallstein', 90);
     teilQuader(g, 0, 2.0, 0, W, 1.0, H, 'wallstein', 91);
     if (f < 0.5) return;
-
-    // Der Riegel ueber der Durchfahrt
     teilQuader(g, 0, 1.0, BOGEN, W, 1.0, H - BOGEN, 'wallstein', 92);
 
-    // Die Wehrplatte kragt ringsum vor und traegt die Zinnen
-    teilQuader(g, -0.12, -0.12, H, W + 0.24, D + 0.24, 6, 'wallstein2', 93);
-    teilZinnen(g, -0.12, -0.12, H + 6, W + 0.24, D + 0.24, 'wallstein');
+    // Vorlage und Zinnenkranz. Die Platte kragt ringsum vor, wie beim Vorbild.
+    teilQuader(g, -0.14, -0.14, H, W + 0.28, D + 0.28, 7, 'wallstein2', 93);
+    teilZinnen(g, -0.14, -0.14, H + 7, W + 0.28, D + 0.28, 'wallstein');
 
-    // Der dunkle Bogen auf der Feldseite, mit Fallgitter
-    const bogen = (xk, spiegel) => {
+    /*
+     * Der Torbogen mit Gittertuer, auf beiden Seiten. Erst die dunkle
+     * Laibung, dann das Fallgitter darin: senkrechte Stangen und zwei
+     * waagerechte Baender, oben dem Bogen folgend.
+     */
+    const bogen = (xk, nachAussen) => {
       const gx = mx(xk, 1.5), gy = my(xk, 1.5, 0);
-      const r = spiegel ? -1 : 1;
-      g.fillStyle = '#1d1622';
+      const r = nachAussen ? 1 : -1;
+      const b = 11, hoch = BOGEN;
+      g.save();
       g.beginPath();
       g.moveTo(gx, gy + 2);
-      g.lineTo(gx - r * 11, gy - 4);
-      g.lineTo(gx - r * 11, gy - 4 - BOGEN * 0.5);
-      g.quadraticCurveTo(gx - r * 5.5, gy - 8 - BOGEN, gx, gy - 2 - BOGEN);
+      g.lineTo(gx - r * b, gy - 4);
+      g.lineTo(gx - r * b, gy - 4 - hoch * 0.55);
+      g.quadraticCurveTo(gx - r * b * 0.5, gy - 9 - hoch, gx, gy - 3 - hoch);
       g.closePath();
+      g.fillStyle = '#1b1520';
       g.fill();
-      g.strokeStyle = 'rgba(208,188,148,0.45)';
-      g.lineWidth = 1;
-      for (let i = 1; i <= 3; i++) {
-        const t = i / 4;
+      g.clip();
+
+      // Gittertuer: Stangen und Baender, warmes Eisen im Schatten
+      g.strokeStyle = '#6d6352';
+      g.lineWidth = 1.4;
+      for (let i = 1; i <= 4; i++) {
+        const t = i / 5;
         g.beginPath();
-        g.moveTo(gx - r * 11 * t, gy + 2 - 6 * t);
-        g.lineTo(gx - r * 11 * t, gy - 4 - BOGEN * (0.5 + 0.4 * (1 - Math.abs(0.5 - t) * 2)));
+        g.moveTo(gx - r * b * t, gy + 2 - 6 * t);
+        g.lineTo(gx - r * b * t, gy - 4 - hoch * 1.1);
         g.stroke();
       }
-    };
-    bogen(W, false);   // Feldseite
-    bogen(0, true);    // Hofseite
+      for (const q of [0.34, 0.68]) {
+        g.beginPath();
+        g.moveTo(gx, gy + 2 - hoch * q);
+        g.lineTo(gx - r * b, gy - 4 - hoch * q);
+        g.stroke();
+      }
+      g.restore();
 
-    teilFahne(g, W - 0.3, 0.2, H + 6, '#2f5fa8');
+      // Der Schlussstein ueber dem Bogen
+      g.fillStyle = 'rgba(232,216,180,0.55)';
+      g.fillRect(gx - r * 2 - 1, gy - 6 - hoch, 3, 3);
+    };
+    bogen(W, true);    // Feldseite
+    bogen(0, false);   // Hofseite
+
+    teilFahne(g, W - 0.32, 0.22, H + 7, '#2f5fa8');
   },
 };
 
@@ -3245,9 +3248,8 @@ function drawMerlons(col, row, w, h, height, col3) {
 // Jetzt steht an jeder Station ein fertiger Riegel: eine geschlossene Linie vom
 // oberen zum unteren Kartenrand, die nicht an der Burg haengt, sondern seitlich
 // hereinkommt und abschliesst. In der Mitte ein Tor, daneben das Torhaus, das
-// von Zug eins an besetzt werden darf. Tuerme gehen nur noch auf die Basteien -
-// die 2x2-Podeste im Wall. Damit ist das Layout das Raetsel, nicht das leere
-// Feld.
+// von Zug eins an besetzt werden darf. Tuerme gehen nur noch an den Wall,
+// ueberall daran entlang. Damit ist das Layout das Raetsel, nicht das leere Feld.
 //
 // Der Wall sperrt wirklich, und er faellt. Wer keinen Weg findet, schlaegt sich
 // einen; die Ramme doppelt so schnell wie alle anderen. Was Reichweite hat,
@@ -3274,10 +3276,6 @@ const MAUER_KOSTEN_RAMME = 1;
 const RAMM_FAKTOR = 2;            // und gegen Stein schlaegt sie doppelt so hart
 const WALL = { oben: '#bfb08c', links: '#5f5442', rechts: '#8b7d5f' };
 const WALL_RISS = { oben: '#9d8f70', links: '#4b4134', rechts: '#6f6349' };
-// Eine freie Bastei traegt einen waermeren Stein, damit sie sich vom Wall
-// abhebt. Die Bodenmarkierung allein reichte nicht: der Wall wird darueber
-// gezeichnet und deckte sie zu.
-const WALL_BASTEI = { oben: '#d8bd82', links: '#6e5a2e', rechts: '#a08a4e' };
 
 const wkey = (c, r) => c + ',' + r;
 
@@ -3289,7 +3287,7 @@ function istWall(c, r) {
 
 /**
  * Baut den Wall einer Station. Vier Grundformen, dazu eine gewuerfelte
- * Grundspalte, Torzeile und Basteienverteilung - so sieht keine Station aus
+ * Grundspalte und Torzeile - so sieht keine Station aus
  * wie die davor, aber innerhalb einer Station steht alles fest.
  */
 function baueWall(runde) {
@@ -3309,13 +3307,14 @@ function baueWall(runde) {
   const formen = ['gerade', 'knick', 'bug', 'bucht'];
   const form = formen[Math.floor(Math.random() * formen.length)];
   /*
-   * Grundspalte 4..6, nicht 6..9. Der Wall stand zu weit vorn: weil Tuerme nur
-   * noch auf ihn duerfen, wanderte damit die ganze Verteidigungslinie fuenf
-   * Spalten nach Osten, und der Anmarsch unter Beschuss wurde um ebenso viele
-   * Zuege kuerzer. Gemessen ueber je 48 Feldzuege: 6 Siege bei Spalte 6..9,
-   * 14 bei 4..6 - gegenueber 18 ohne Wall, also wieder im Rauschen.
+   * Grundspalte 6..8. Bei 4..6 stand der Wall der Burg auf den Fuessen und das
+   * Torhaus klebte an ihr. Weiter vorn war er schon einmal (6..9), und das kam
+   * teuer: weil Tuerme nur an den Wall duerfen, wandert mit ihm die ganze
+   * Verteidigungslinie, und der Anmarsch unter Beschuss wird kuerzer.
+   * Ausgeglichen wird das jetzt dadurch, dass ueberall am Wall gebaut werden
+   * darf statt nur auf sechs Podesten.
    */
-  const basis = 4 + Math.floor(Math.random() * 3);
+  const basis = 6 + Math.floor(Math.random() * 3);
   const torZeile = 5 + Math.floor(Math.random() * 3);   // Torhaus auf Zeile 5..7, drei Felder hoch
   const mitte = (ROWS - 1) / 2;
 
@@ -3377,39 +3376,11 @@ function baueWall(runde) {
     for (let r = torhaus.row; r < torhaus.row + torhaus.h; r++) wall.delete(wkey(c, r));
   }
 
-  // Basteien: 2x2-Podeste, die nach Osten aus dem Wall treten. Nur dort darf
-  // gebaut werden, und damit steht die Zahl der Tuerme mit dem Layout fest.
-  const basteien = [];
-  const frei = (col, row) => {
-    if (col < 1 || row < 0 || col + 2 > COLS || row + 2 > ROWS) return false;
-    const feld = { col, row, w: 2, h: 2 };
-    if (rectsOverlap(feld, CASTLE) || rectsOverlap(feld, torhaus)) return false;
-    for (let r = row; r < row + 2; r++) if (istTor(r)) return false;
-    // Nur nicht ueberlappen. Mit einem Feld Abstand ringsum passten bloss
-    // drei Basteien an den Wall, und drei Tuerme sind in spaeten Stationen
-    // zu wenig Feuer - der Bot gewann damit keinen einzigen Feldzug.
-    return !basteien.some(b => rectsOverlap(feld, b));
-  };
-  const kandidaten = [];
-  for (let r = 0; r + 2 <= ROWS; r++) kandidaten.push(r);
-  for (let i = kandidaten.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [kandidaten[i], kandidaten[j]] = [kandidaten[j], kandidaten[i]];
-  }
-  for (const r of kandidaten) {
-    if (basteien.length >= 6) break;
-    const col = Math.max(spalte[r], spalte[r + 1]);
-    if (!frei(col, r)) continue;
-    const nr = basteien.length;
-    basteien.push({ col, row: r, w: 2, h: 2, nr });
-    for (let c = col; c < col + 2; c++) for (let rr = r; rr < r + 2; rr++) setz(c, rr, { bastei: nr });
-  }
-
   // Der Wall laeuft oben und unten aus dem Bild heraus.
   for (const r of [-2, -1]) setz(spalte[0], r);
   for (const r of [ROWS, ROWS + 1]) setz(spalte[ROWS - 1], r);
 
-  return { wall, basteien, torhaus, durchfahrt, form, tor: durchfahrt };
+  return { wall, torhaus, durchfahrt, form, tor: durchfahrt };
 }
 
 /**
@@ -3420,7 +3391,6 @@ function baueWall(runde) {
 function setzeWall(runde) {
   const w = baueWall(runde);
   state.wall = w.wall;
-  state.basteien = w.basteien;
   state.tor = w.tor;
   state.wallForm = w.form;
   weltStand++;
@@ -3540,8 +3510,7 @@ function drawWallFeld(m) {
   const anteil = Math.max(0.2, m.hp / m.maxHp);
   const wanken = m.riss > 0 ? (Math.random() - 0.5) * m.riss * 2 : 0;
   const H = WALL_HOEHE * ueberschwingen(f) * (0.6 + 0.4 * anteil);
-  const baubar = m.bastei !== undefined && basteiFrei(m.bastei);
-  const farbe = anteil < 0.6 ? WALL_RISS : (baubar ? WALL_BASTEI : WALL);
+  const farbe = anteil < 0.6 ? WALL_RISS : WALL;
   drawBlock(m.col, m.row, 1, 1, H, farbe);
   /*
    * Zinnen nur auf den beiden Kanten, die der Betrachter sieht (+Spalte und
@@ -4551,6 +4520,19 @@ function drawTower(t) {
     drawBanner(cx + 22, cy - 2, '#2f5fa8');
   }
 
+  /*
+   * Angeschlagene Besatzung bekommt einen eigenen, schmalen Balken dicht unter
+   * den Figuren - getrennt vom Turmbalken darueber. Ohne ihn sieht der Spieler
+   * nicht, dass ein Fernkaempfer gerade seine Maenner wegschiesst statt den
+   * Stein.
+   */
+  const wund = einheiten.filter(u => u.hp < u.maxHp);
+  if (wund.length) {
+    const gesamt = einheiten.reduce((a, u) => a + u.hp, 0);
+    const voll = einheiten.reduce((a, u) => a + u.maxHp, 0);
+    drawHpBar(cx, cy - 18, 22, gesamt, voll, '#7fb36a');
+  }
+
   if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
   if (t.zinnen > 0) drawZinnen(cx, cy - 38, t.zinnen);
 
@@ -5333,7 +5315,7 @@ function draw() {
   drawWolken();
 
   // Das Tor liegt als Schwelle im Boden, nicht als Bauwerk - es ist ein Loch
-  // im Wall, kein Hindernis. Genauso die Basteien, solange nichts darauf steht.
+  // im Wall, kein Hindernis.
   for (const t of state.tor) drawTor(t);
 
 
@@ -5348,7 +5330,6 @@ function draw() {
   }
 
   drawHover();
-  drawPlacementPreview();
 
   const objekte = [];
   objekte.push({
@@ -5384,11 +5365,9 @@ function draw() {
   const geordnet = zeichenReihenfolge(objekte);
   for (const o of geordnet) o.zeichne();
 
-  // Die Marken der freien Basteien liegen ueber allem. Als Bodenmarkierung
-  // verschwanden sie unter dem Wall, der ja selbst auf ihnen steht.
-  if (state.phase === 'kampf') {
-    for (const b of state.basteien) if (basteiFrei(b.nr)) drawBasteiMarke(b);
-  }
+  // Die Bauvorschau liegt ueber allem: als Bodenmarkierung verschwand sie
+  // unter dem Wall, auf den ja gerade gebaut werden soll.
+  drawPlacementPreview();
 
   // Roentgenblick: Ein hoher Turm verdeckt alles, was dahinter steht. Das ist
   // zwar richtig gerechnet, im Spiel aber unbrauchbar. Wer verschwindet, wird
@@ -5436,10 +5415,6 @@ function drawMinimap() {
     if (m.row < 0 || m.row >= ROWS) continue;
     mctx.fillStyle = m.hp < m.maxHp ? '#8a7248' : '#bfb08c';
     mctx.fillRect(m.col * sx, m.row * sy, sx, sy);
-  }
-  for (const t of state.tor) {
-    mctx.fillStyle = '#5a4527';
-    mctx.fillRect(t.col * sx, t.row * sy, sx, sy);
   }
   mctx.fillStyle = '#2f5fa8';
   mctx.fillRect(CASTLE.col * sx, CASTLE.row * sy, CASTLE.w * sx, CASTLE.h * sy);
@@ -6670,7 +6645,12 @@ function hatZiel(card) {
 }
 
 /** Steht irgendwo noch Platz fuer einen Turm? */
-function freiesBaufeld() { return freieBastei(); }
+function freiesBaufeld() {
+  for (let c = 0; c + 2 <= COLS; c++) {
+    for (let r = 0; r + 2 <= ROWS; r++) if (isValidTowerPlacement(c, r, 2, 2)) return true;
+  }
+  return false;
+}
 
 function spielbar(card) {
   return state.phase === 'kampf' && state.castleHp > 0 && !state.zugLaeuft &&
@@ -6999,11 +6979,10 @@ function placeTower(col, row) {
   const card = state.pendingCard;
   bezahle(card);
   /*
-   * Eine Bastei ist ein breites Podest, kein Fleck Wiese: Wer darauf baut,
-   * bekommt einen Platz dazu. Das ist nicht nur Thema, sondern noetig. Seit
-   * Tuerme nur noch an den Wall duerfen, steht das ganze Feuer auf einer
-   * Linie, und wer sie passiert, hat freie Bahn zur Burg - mit einem Platz je
-   * Turm gewann der Bot keinen einzigen Feldzug mehr.
+   * Ein Turm auf dem Wall steht auf einer breiten Wehrplatte, nicht auf einem
+   * Fleck Wiese: er bekommt einen Platz dazu. Das ist nicht nur Thema, sondern
+   * noetig - seit Tuerme nur noch an den Wall duerfen, steht das ganze Feuer
+   * auf einer Linie, und wer sie passiert, hat freie Bahn zur Burg.
    */
   const plaetze = (card.plaetze || 1) + (state.maechte.allePlaetze || 0) + 1;
   const turm = {
@@ -7017,11 +6996,11 @@ function placeTower(col, row) {
     bauZeit: wenigerBewegung ? BAU_DAUER : 0, rueckstoss: 0,
   };
   /*
-   * Die Mauerfelder der Bastei werden nur verdeckt, nicht geloescht. Geloescht
-   * waren sie ein stiller Verlust: `isValidTowerPlacement` verlangt Stein unter
-   * dem Turm, also war der Bauplatz nach dem Fall des Turms fuer den Rest der
-   * Station verloren. Wer Tuerme verlor, konnte irgendwann gar nicht mehr
-   * bauen - gemessen 7 von 48 Feldzuegen gegen 18 von 48 ohne Wall.
+   * Die Mauerfelder unter dem Turm werden nur verdeckt, nicht geloescht.
+   * Geloescht waren sie ein stiller Verlust: `isValidTowerPlacement` verlangt
+   * Stein unter dem Turm, also war die Stelle nach dem Fall des Turms fuer den
+   * Rest der Station unbebaubar - gemessen 7 von 48 Feldzuegen gegen 18 ohne
+   * Wall.
    */
   for (let c = col; c < col + 2; c++) for (let r = row; r < row + 2; r++) {
     const m = state.wall.get(wkey(c, r));
@@ -7046,9 +7025,15 @@ function placeTower(col, row) {
 function placeUnit(tower, slotIdx) {
   const card = state.pendingCard;
   bezahle(card);
+  /*
+   * Einheiten haben eigene Lebenspunkte, seit Fernkaempfer auf sie zielen
+   * duerfen. Vorher war der Turm das einzige Ziel, und wer oben stand, war
+   * unantastbar - ein Armbrustschuetze schoss auf Mauerwerk statt auf Maenner.
+   */
   const einheit = {
     name: card.name, dmg: card.dmg, range: card.range,
     durchschlag: card.durchschlag || 0, boosted: false,
+    hp: 6 + 2 * (card.zaeh || 0), maxHp: 6 + 2 * (card.zaeh || 0),
     art: card.art,            // damit der Turm die richtige Figur zeigt
   };
   tower.slots[slotIdx] = einheit;
@@ -7206,6 +7191,32 @@ function handleGegner(e) {
       geraet ? 1 : ENEMY_TYPES[e.typ].scale + 1);
     klang('schuss');
   }
+  /*
+   * Fernkaempfer schiessen auf die Maenner, nicht auf den Stein. Steht jemand
+   * auf dem Turm, bekommt er den Treffer; ist die Krone leer, nehmen sie das
+   * Mauerwerk. Zinnen helfen hier nicht - sie decken den Turm, nicht den Kopf.
+   */
+  if (plan.turm && e.reach >= 3) {
+    const turm = plan.turm;
+    const oben = turm.slots.map((u, i) => [u, i]).filter(([u]) => u);
+    if (oben.length) {
+      const [wer, platz] = oben.sort((a, b) => a[0].hp - b[0].hp)[0];
+      wer.hp -= e.dmg;
+      const mx2 = turm.col + turm.w / 2, my2 = turm.row + turm.h / 2;
+      zeigeZahl(mx2, my2 - 1.2, '-' + e.dmg, '#ffc7a2');
+      staub(mx2, my2, 4, '#d8c4a0');
+      ruetteln(2);
+      if (wer.hp <= 0) {
+        turm.slots[platz] = null;
+        klang('fall');
+        schirmBlitz(0.3);
+        return { text: wer.name + ' fällt von ' + turm.name + '!', art: 'fall' };
+      }
+      return { text: e.name + ' trifft ' + wer.name + ' auf ' + turm.name +
+        ' (' + wer.hp + '/' + wer.maxHp + ')', art: 'schlag' };
+    }
+  }
+
   if (plan.turm) {
     const turm = plan.turm;
     // Zinnen zuerst: was am Stein zerspringt, erreicht den Turm nicht.
@@ -7227,7 +7238,7 @@ function handleGegner(e) {
     if (turm.hp <= 0) {
       const besatzung = turm.slots.filter(x => x).length;
       state.towers = state.towers.filter(t => t.id !== turm.id);
-      // Die Bastei darunter kommt wieder zum Vorschein und darf neu bebaut werden.
+      // Das Mauerwerk darunter kommt wieder zum Vorschein und traegt neu.
       for (let c = turm.col; c < turm.col + turm.w; c++) {
         for (let r = turm.row; r < turm.row + turm.h; r++) {
           const m = state.wall.get(wkey(c, r));
@@ -7406,7 +7417,6 @@ function betreteKnoten(id) {
   projektile.length = 0;
   staubkoerner.length = 0;
   state.wall = new Map();
-  state.basteien = [];
   state.tor = [];
   wegCache = new Map();
   gegnerzug = null;
@@ -7440,7 +7450,7 @@ function betreteKnoten(id) {
     deployFromLager();
     zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
     klang('runde');
-    setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. Besetze das Torhaus und baue auf die Basteien.');
+    setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. Besetze das Torhaus und baue Türme an den Wall.');
   } else if (k.typ === 'haendler') {
     oeffneHaendler();
   } else if (k.typ === 'lager') {
