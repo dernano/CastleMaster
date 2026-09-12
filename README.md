@@ -113,6 +113,33 @@ Hast du alle Gegner erschlagen, ist die Station gehalten. Du bekommst Sold und
 wählst eine von drei Karten für dein Deck, oder überspringst die Auswahl, um
 das Deck schlank zu halten. Danach geht es zurück auf die Route.
 
+### Die Frist
+
+Lange fehlte dem Spiel jeder Druck. Die Burg nahm fast nie Schaden: Türme
+fingen alles ab, und weil an jeder Station kostenlos neu gebaut wird, kostete
+ein verlorener Turm nichts. Man konnte beliebig lange bauen, bis das Aufgebot
+irgendwann zerschossen war. Ein Kampf dauerte im Schnitt zehn Züge, und ein
+Bot gewann sechzehn von sechzehn Läufen. Wo nichts schiefgehen kann, gibt es
+auch nichts zu entscheiden.
+
+Jede Kampfstation hat deshalb eine **Frist**:
+
+    Frist = 7 + Runde / 4        Züge
+    Vorhut  + 1
+    Meister + 3
+
+Die Anzeige oben in der Mitte zählt herunter und wird in den letzten beiden
+Zügen rot. Ist die Frist verstrichen, kommt **der Sturm**: alles, was noch
+steht — auf dem Feld wie im Lager — rennt gemeinsam ins Tor und bringt seinen
+vollen Schaden mit. Bei sieben Belagerern sind das schnell zwanzig bis dreißig
+Punkte auf fünfunddreißig Burgleben. Wer das übersteht, hat die Station
+gehalten, aber teuer bezahlt; die Burg heilt nur an Rastplätzen.
+
+Damit ist das Burgleben die eigentliche Währung des Feldzugs, nicht mehr nur
+eine Anzeige, die selten fällt. Messung über vierundzwanzig Läufe: Siege von
+16/16 auf 11/24, ein Viertel aller Kämpfe endet im Sturm, 8,4 statt 9,9 Züge
+je Kampf.
+
 ### Der Takt des Gegnerzugs
 
 Früher handelte das ganze Aufgebot in einem einzigen Augenblick: Ein Klick auf
@@ -411,6 +438,45 @@ dort.
 
 Bei den Angreifern tauscht der Gegnertyp `r` und `R` gegen seine eigene Farbe,
 alles andere bleibt. Deshalb reicht **eine** Zeichnung für alle Farbvarianten.
+
+## Die Anzeige ohne Emoji
+
+Emoji waren die deutlichste Ansage, dass hier etwas im Browser läuft: jedes
+System zeichnet sie anders, und keines zeichnet sie in unserem Stil. Ein 🏰
+neben gehauenem Stein sieht aus wie ein Fremdkörper, weil es einer ist.
+
+Alle Sinnbilder sind deshalb eigene Pixelbilder, gebaut wie die Figuren — ein
+Raster aus Buchstaben, eine Palette, und `ikoneBild()` malt daraus ein
+Bildchen, das als Hintergrund an jedem `[data-ikone]` hängt:
+
+    fackel  Tatendrang      muenze   Sold
+    burg    Burgleben       stapel   Zugstapel
+    ablage  Ablagestapel    sanduhr  Die Frist
+    schwerter Gegner        horn     Ton
+    pinsel  Werkstatt       rolle    Hilfe
+
+Gezeichnet wird in glattem Vierfachen auf ein Kästchen von zweiundzwanzig
+Punkten, also genau zwei Bildpunkte je Rasterfeld. Krumme Vergrößerungen
+verwischen die Kanten, und verwischte Pixelbilder sehen aus wie ein Versehen.
+
+Dazu ein paar Änderungen an derselben Stelle:
+
+- **Tatendrang als Flammen statt als Bruchzahl.** Sechs kleine Lichter, von
+  denen erlischt, was du ausgibst. Abzählbar, ohne lesen zu müssen.
+- **Der Knopf ist eine eisenbeschlagene Bohle**, keine rote Farbverlauf-Pille:
+  Maserung in Streifen, vier Nieten, eine dicke Fase nach unten. Steht eine
+  Salve bereit, glüht das Eisen.
+- **Das Standartentuch statt des schwarzen Balkens.** Früher fuhr eine
+  Einblendung über die volle Breite herein, wie sie jede Netzseite hat. Jetzt
+  fällt ein Tuch an zwei Seilen herab, mit Schwalbenschwanz, Falten, Naht und
+  Goldlinie.
+- **Karten aus gebüttelter Pappe.** `#fffdf4` war das Lauteste am Bildschirm;
+  jetzt liegt eine warme Tönung mit feiner Faserung darunter, und die Hand
+  ruht in einer Leiste aus Holz, statt über dem Feld zu schweben.
+- **Tieferes Gelände.** Boden, Mauer und Himmel hatten denselben Hellwert, und
+  ohne Wertunterschied gibt es kein Bild. Der Grund ist jetzt erdig und dunkel,
+  damit gehauener Stein darauf der hellste Fleck bleibt; die Vignette ist
+  kräftiger und hat unten einen Sockel, in dem die Kartenhand liegt.
 
 ## Ton
 
