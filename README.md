@@ -244,8 +244,9 @@ Drei Dinge, die der Spieler nie merken soll:
 - **Browser lassen Ton erst nach einer Berührung zu.** Die Musik beginnt darum
   beim ersten Klick oder Tastendruck, nicht beim Laden, und ein abgelehntes
   `play()` wird geschluckt statt gemeldet.
-- **Sie liegt unter den Klängen** (`MUSIK_LAUT = 0.34`). Die Salve, der Schritt
-  und das Horn tragen das Spiel; die Musik trägt den Raum.
+- **Sie liegt unter den Klängen** (`MUSIK_LAUT = 0.15`). Die Salve, der Schritt
+  und das Horn tragen das Spiel; die Musik trägt den Raum. Erste Einstellung
+  waren 0.34 — das legte sich über die Klänge statt darunter.
 
 Der Schalter merkt sich seinen Zustand im Browser (`cm-musik`), getrennt vom
 Klangschalter (`cm-ton`).

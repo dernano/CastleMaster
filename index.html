@@ -1929,7 +1929,9 @@ const PFEIL_DAUER = 0.28;     // Sekunden bis zum Einschlag
 const MUSIK = [
   'musik/soundtrack.mp3',
 ];
-const MUSIK_LAUT = 0.34;   // deutlich unter den Klaengen, sie tragen das Spiel
+// Leise. 0.34 war zu laut - die Musik legte sich ueber Salve, Schritt und
+// Horn, statt darunter zu liegen. 0.15 sind rund sieben Dezibel weniger.
+const MUSIK_LAUT = 0.15;
 
 let musikAn = true;
 try { musikAn = localStorage.getItem('cm-musik') !== 'aus'; } catch (e) { /* ohne Speicher eben so */ }
