@@ -102,7 +102,7 @@ Begegnung hintereinander kommt nicht vor.
 ## Stationen und Züge
 
 Eine **Kampfstation** ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
-davon zählen **Züge**: erst handelst du, dann die Gegner.
+davon zählen **Züge**: erst handelst du, dann das Aufgebot.
 
 Das Aufgebot wartet zu Beginn vollständig im **Lager** rechts neben dem
 Spielfeld. Dort sind die Gegner geschützt, du kannst sie nicht angreifen,
@@ -112,6 +112,24 @@ ihnen aufs Feld.
 Hast du alle Gegner erschlagen, ist die Station gehalten. Du bekommst Sold und
 wählst eine von drei Karten für dein Deck, oder überspringst die Auswahl, um
 das Deck schlank zu halten. Danach geht es zurück auf die Route.
+
+### Der Takt des Gegnerzugs
+
+Früher handelte das ganze Aufgebot in einem einzigen Augenblick: Ein Klick auf
+*Zug beenden*, dreiundsiebzig Millisekunden Rechenzeit, und acht Gegner waren
+gleichzeitig gelaufen und hatten zugeschlagen. Man sah nichts davon und konnte
+nichts lesen; in der Meldezeile standen drei zusammengezogene Bruchstücke.
+
+Jetzt tritt einer nach dem anderen vor. Jeder bekommt eine kurze Pause, einen
+Ring unter den Füßen und seine eigene Zeile. Sieben Gegner brauchen so rund
+drei Sekunden statt eines Wimpernschlags. Solange das läuft, sind die Karten
+gesperrt und der Knopf heißt *Aufgebot zieht*.
+
+Der Takt steckt in `TAKT`, angestoßen von `starteGegnerzug` und fortgeschrieben
+von `schreiteGegnerzug` aus der Bildschleife heraus. Was ein einzelner Gegner
+tut, steht in `handleGegner`; `resolveEnemyTurn` ruft das in einer Schleife auf
+und bleibt für Tests und für `prefers-reduced-motion` erhalten. `endTurn` stößt
+nur noch an, den Abschluss macht `zugAbschluss`.
 
 ## Bewegung und Darstellung
 
@@ -360,6 +378,9 @@ Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 
 ## Was noch fehlt
 
+- **Nichts wächst über den Feldzug hinweg.** Türme fallen an jeder Station weg,
+  Mächte gelten nur für eine Station. Das Einzige, was mitwächst, ist das Deck.
+  Ein Lauf fühlt sich deshalb nicht an, als würde er zu etwas werden.
 - **Wenig Ton.** Die neuen Kartenwirkungen klingen alle gleich.
 - **Keine eigenen Bilder.** Alles ist im Code gezeichnet. Eingespielte Grafiken
   und Klänge fehlen noch; dafür bräuchte es einen Lader, und im veröffentlichten

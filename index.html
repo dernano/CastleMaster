@@ -221,7 +221,8 @@
   #hand .card-slot:nth-child(6) { transform: rotate(4.5deg) translateY(6px); }
   #hand .card-slot:hover { transform: none; }
 
-  #side { display: flex; flex-direction: column; gap: 6px; align-items: stretch; margin-bottom: 4px; }
+  #side { display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+    margin-bottom: 4px; width: 146px; }
 
   button.endround {
     background: linear-gradient(180deg, #d8503f, var(--herz) 55%, #6d1722);
@@ -630,7 +631,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #3a0d14; }
     #deck-pile { font-size: 8px; padding: 3px 5px; border-width: 1px; line-height: 1.2; }
     #deck-pile b { font-size: 13px; }
-    #side { gap: 3px; margin-bottom: 2px; }
+    #side { gap: 3px; margin-bottom: 2px; width: 86px; }
 
     #lines { bottom: 22%; }
     #message { font-size: 11px; padding: 0 8px; min-height: 14px; }
@@ -1167,6 +1168,8 @@ let state = {
   ereignis: null,    // laufende Begegnung
   letzterSold: 0,    // was die letzte Station eingebracht hat
   maechte: {},       // anhaltende Wirkungen, gelten nur fuer diese Station
+  zugLaeuft: false,  // das Aufgebot handelt gerade, der Spieler wartet
+  handelnder: null,  // welcher Gegner in diesem Augenblick vortritt
   draw: [], hand: [], discard: [],
   pendingCard: null,
   selectedTower: null,   // Turm, der schiessen soll
@@ -1442,7 +1445,7 @@ const istWasser = (c, r) => (c < 0 || r < 0) && c < COLS && r < ROWS;
 
 // ---------- Animation ----------
 // Die Logik bleibt sofort gueltig, nur die Darstellung laeuft nach.
-const BEWEGUNG_TEMPO = 5.5;   // Felder je Sekunde
+const BEWEGUNG_TEMPO = 4.4;   // Felder je Sekunde
 const PFEIL_DAUER = 0.28;     // Sekunden bis zum Einschlag
 // ---------- Ton ----------
 // Alles wird zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
@@ -1490,7 +1493,8 @@ function klang(art) {
     q.start(jetzt);
   };
 
-  if (art === 'schuss') { ton('sawtooth', 900, 260, 0.13, 0.05); rauschen(0.09, 0.05, 2600); }
+  if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
+  else if (art === 'schuss') { ton('sawtooth', 900, 260, 0.13, 0.05); rauschen(0.09, 0.05, 2600); }
   else if (art === 'treffer') { ton('square', 240, 90, 0.12, 0.06); rauschen(0.1, 0.07, 900); }
   else if (art === 'bau') { ton('triangle', 180, 70, 0.3, 0.09); rauschen(0.26, 0.09, 700); }
   else if (art === 'fall') { ton('sawtooth', 150, 45, 0.45, 0.1); rauschen(0.4, 0.12, 500); }
@@ -1529,6 +1533,10 @@ const leichen = [];
 
 const wenigerBewegung = window.matchMedia
   && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Der Gegnerzug laeuft im Takt ab, einer nach dem anderen. Wer wenig Bewegung
+// will, bekommt ihn weiterhin in einem Rutsch; Tests schalten ihn ebenso ab.
+let zugTheater = !wenigerBewegung;
 
 const staubkoerner = [];
 
@@ -2303,6 +2311,20 @@ function drawTower(t) {
 }
 
 function drawEnemy(e, geist = false) {
+  // Der Gegner, der gerade vortritt, bekommt einen Ring. Ohne ihn sieht man
+  // im Takt nicht, wer von acht gerade handelt.
+  if (!geist && state.handelnder === e.id) {
+    const c = Math.round(e.vx === undefined ? e.col : e.vx);
+    const r = Math.round(e.vy === undefined ? e.row : e.vy);
+    const puls = wenigerBewegung ? 0.4 : 0.28 + Math.sin(animZeit * 9) * 0.16;
+    fillDiamond(c, r, 'rgba(224,80,60,' + puls.toFixed(2) + ')');
+    const x = isoX(c, r), y = isoY(c, r) + TH / 2;
+    ctx.strokeStyle = '#e0503c'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y - TH / 2); ctx.lineTo(x + TW / 2, y);
+    ctx.lineTo(x, y + TH / 2); ctx.lineTo(x - TW / 2, y);
+    ctx.closePath(); ctx.stroke();
+  }
   // Zielt eine Karte auf Gegner, bekommen alle einen Ring, damit klar ist,
   // worauf der naechste Klick geht.
   if (!geist && state.pendingCard && zielArt(state.pendingCard) === 'gegner') {
@@ -2715,6 +2737,7 @@ function updateAnimations(dt) {
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
   }
 
+  schreiteGegnerzug(dt);
   pruefeMauer();
   for (const m of mauerWerk.stuecke) {
     if (m.wachsen < MAUER_WACHSEN) m.wachsen = Math.min(MAUER_WACHSEN, m.wachsen + dt);
@@ -3339,7 +3362,7 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 canvas.addEventListener('click', (evt) => {
-  if (state.castleHp <= 0 || state.phase !== 'kampf') return;
+  if (state.castleHp <= 0 || state.phase !== 'kampf' || state.zugLaeuft) return;
   const p = canvasPoint(evt);
   const treffer = pickAt(p);
   const cell = cellFromPoint(p);
@@ -3567,7 +3590,7 @@ function freiesBaufeld() {
 }
 
 function spielbar(card) {
-  return state.phase === 'kampf' && state.castleHp > 0 &&
+  return state.phase === 'kampf' && state.castleHp > 0 && !state.zugLaeuft &&
     state.tatendrang >= card.cost && hatZiel(card);
 }
 
@@ -3811,70 +3834,127 @@ function schrittRichtung(e, ziel) {
  * seine eigene Angriffsreichweite heran und schlaegt dann zu. Zurueckgeschlagen
  * wird nicht mehr: Schaden richten nur Angriffe an, die du selbst ansetzt.
  */
-function resolveEnemyTurn() {
-  const meldungen = [];
-
-  for (const e of [...state.enemies]) {
-    // Gefesselt heisst: Der Gegner steht und tut in diesem Zug gar nichts.
-    if (e.gefesselt > 0) {
-      e.gefesselt--;
-      staub(e.col, e.row, 3, '#9fb6d0');
-      meldungen.push(e.name + ' kommt nicht vom Fleck');
-      continue;
-    }
-
-    const plan = enemyPlan(e);
-
-    // Bewegen oder schlagen, nie beides in derselben Runde.
-    if (plan.aktion === 'vorruecken') {
-      let rest = e.move;
-      let punkt = plan.zielPunkt;
-      while (rest > 0 && chebyshev(e.col, e.row, punkt.col, punkt.row) > e.reach) {
-        if (!schrittRichtung(e, punkt)) break;
-        rest--;
-        punkt = closestPointOnRect(e.col, e.row, plan.ziel);
-      }
-      continue;
-    }
-
-    e.lunge = 1;
-    if (plan.turm) {
-      const turm = plan.turm;
-      turm.hp -= e.dmg;
-      zeigeZahl(turm.col + turm.w / 2, turm.row + turm.h / 2, '-' + e.dmg, '#ff8b6b');
-      // Dornen: Wer sich am Mauerwerk vergreift, zahlt dafuer.
-      if (state.maechte.dornen) {
-        if (treffeGegner(e, state.maechte.dornen, 'Dornen')) {
-          meldungen.push(e.name + ' verblutet an den Dornen');
-        }
-      }
-      staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, '#cbbc98');
-      ruetteln(3);
-      klang('treffer');
-      if (turm.hp <= 0) {
-        const besatzung = turm.slots.filter(x => x).length;
-        state.towers = state.towers.filter(t => t.id !== turm.id);
-        if (state.selectedTower === turm.id) state.selectedTower = null;
-        staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, '#cbbc98');
-        ruetteln(8);
-        schirmBlitz(0.6);
-        klang('fall');
-        meldungen.push(turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!');
-      } else {
-        meldungen.push(e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')');
-      }
-    } else {
-      state.castleHp -= e.dmg;
-      zeigeZahl(CASTLE.col + CASTLE.w / 2, CASTLE.row + CASTLE.h / 2, '-' + e.dmg, '#ff6b6b');
-      ruetteln(7);
-      schirmBlitz(0.8);
-      klang('burg');
-      meldungen.push(e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')');
-    }
+/**
+ * Ein einzelner Gegner handelt. Gibt zurueck, was darueber zu melden ist,
+ * oder null. Frueher stand das alles in einer Schleife und lief in einem
+ * einzigen Augenblick ab; jetzt ruft der Takt es Gegner fuer Gegner auf.
+ */
+function handleGegner(e) {
+  // Gefesselt heisst: Der Gegner steht und tut in diesem Zug gar nichts.
+  if (e.gefesselt > 0) {
+    e.gefesselt--;
+    staub(e.col, e.row, 3, '#9fb6d0');
+    return { text: e.name + ' kommt nicht vom Fleck', art: 'fessel' };
   }
 
+  const plan = enemyPlan(e);
+
+  // Bewegen oder schlagen, nie beides in derselben Runde.
+  if (plan.aktion === 'vorruecken') {
+    let rest = e.move;
+    let punkt = plan.zielPunkt;
+    let gegangen = 0;
+    while (rest > 0 && chebyshev(e.col, e.row, punkt.col, punkt.row) > e.reach) {
+      if (!schrittRichtung(e, punkt)) break;
+      rest--; gegangen++;
+      punkt = closestPointOnRect(e.col, e.row, plan.ziel);
+    }
+    if (!gegangen) return null;
+    klang('schritt');
+    return { text: e.name + ' rückt ' + gegangen + ' Feld' + (gegangen === 1 ? '' : 'er') + ' vor', art: 'zug' };
+  }
+
+  e.lunge = 1;
+  if (plan.turm) {
+    const turm = plan.turm;
+    turm.hp -= e.dmg;
+    zeigeZahl(turm.col + turm.w / 2, turm.row + turm.h / 2, '-' + e.dmg, '#ff8b6b');
+    // Dornen: Wer sich am Mauerwerk vergreift, zahlt dafuer.
+    let dornenMeldung = '';
+    if (state.maechte.dornen) {
+      if (treffeGegner(e, state.maechte.dornen, 'Dornen')) dornenMeldung = ', und verblutet an den Dornen';
+    }
+    staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, '#cbbc98');
+    ruetteln(3);
+    klang('treffer');
+    if (turm.hp <= 0) {
+      const besatzung = turm.slots.filter(x => x).length;
+      state.towers = state.towers.filter(t => t.id !== turm.id);
+      if (state.selectedTower === turm.id) state.selectedTower = null;
+      staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, '#cbbc98');
+      ruetteln(8);
+      schirmBlitz(0.6);
+      klang('fall');
+      return { text: turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!' + dornenMeldung, art: 'fall' };
+    }
+    return { text: e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')' + dornenMeldung, art: 'schlag' };
+  }
+
+  state.castleHp -= e.dmg;
+  zeigeZahl(CASTLE.col + CASTLE.w / 2, CASTLE.row + CASTLE.h / 2, '-' + e.dmg, '#ff6b6b');
+  ruetteln(7);
+  schirmBlitz(0.8);
+  klang('burg');
+  return { text: e.name + ' trifft die Burg (' + Math.max(0, state.castleHp) + '/' + CASTLE.maxHp + ')', art: 'burg' };
+}
+
+/** Alle Gegner auf einen Schlag. Nur fuer Tests und fuer wenig Bewegung. */
+function resolveEnemyTurn() {
+  const meldungen = [];
+  for (const e of [...state.enemies]) {
+    if (!state.enemies.includes(e)) continue;
+    const m = handleGegner(e);
+    if (m && !m.leise) meldungen.push(m.text);
+  }
   if (meldungen.length) setMessage(meldungen.slice(0, 3).join(' · ') +
     (meldungen.length > 3 ? ' · und ' + (meldungen.length - 3) + ' weitere' : ''));
+}
+
+// ---------- Der Takt des Gegnerzugs ----------
+// Frueher handelte das ganze Aufgebot in einem einzigen Augenblick. Man sah
+// nichts und konnte nichts lesen. Jetzt tritt einer nach dem anderen vor,
+// mit einer kurzen Pause dazwischen, und jeder Schritt steht in der Zeile.
+const TAKT = { vorlauf: 0.3, zug: 0.3, schlag: 0.44, fessel: 0.34, fall: 0.62, nachlauf: 0.42 };
+let gegnerzug = null;
+
+function starteGegnerzug() {
+  state.zugLaeuft = true;
+  state.pendingCard = null;
+  state.selectedTower = null;
+  state.hoverCell = null;
+  gegnerzug = { liste: [...state.enemies], i: 0, warten: TAKT.vorlauf, abschluss: false };
+  state.handelnder = null;
+  renderAll();
+}
+
+function schreiteGegnerzug(dt) {
+  if (!gegnerzug) return;
+  gegnerzug.warten -= dt;
+  if (gegnerzug.warten > 0) return;
+
+  if (gegnerzug.abschluss) { const g = gegnerzug; gegnerzug = null; state.handelnder = null; zugAbschluss(g); return; }
+
+  // Den naechsten Gegner suchen, der noch steht
+  while (gegnerzug.i < gegnerzug.liste.length) {
+    const e = gegnerzug.liste[gegnerzug.i++];
+    if (!state.enemies.includes(e)) continue;
+    state.handelnder = e.id;
+    const m = handleGegner(e);
+    if (m) {
+      if (!m.leise) setMessage(m.text);
+      gegnerzug.warten = TAKT[m.art] || TAKT.zug;
+    } else {
+      gegnerzug.warten = 0.12;      // wer nichts tut, haelt nicht auf
+    }
+    if (state.castleHp <= 0) { gegnerzug.i = gegnerzug.liste.length; }
+    renderAll();
+    return;
+  }
+
+  // Alle durch: eine Atempause, dann der Abschluss des Zuges
+  state.handelnder = null;
+  gegnerzug.abschluss = true;
+  gegnerzug.warten = TAKT.nachlauf;
 }
 
 /** Der Knoten, auf dem der Spieler gerade steht. */
@@ -3907,6 +3987,9 @@ function betreteKnoten(id) {
   projektile.length = 0;
   staubkoerner.length = 0;
   mauerWerk = { schluessel: '', stuecke: [] };
+  gegnerzug = null;
+  state.zugLaeuft = false;
+  state.handelnder = null;
 
   state.maechte = {};
   state.maxTatendrang = maxTatendrangFuer(state.runde);
@@ -4519,13 +4602,26 @@ function ereignisSicht(e, meldung, erledigt) {
 }
 
 /** Ein Zug innerhalb der Runde: Gegner handeln, dann Nachschub und Nachziehen. */
+/**
+ * Der Spieler gibt ab. Der Gegnerzug laeuft danach im Takt ab, nicht in einem
+ * Augenblick; erst wenn er durch ist, folgt der Abschluss des Zuges.
+ */
 function endTurn() {
-  if (state.phase !== 'kampf' || state.castleHp <= 0) return;
-
-  // Zuerst leeren, damit nur die Meldung dieses Zuges uebrig bleibt.
+  if (state.phase !== 'kampf' || state.castleHp <= 0 || state.zugLaeuft) return;
   setMessage('');
-  resolveEnemyTurn();
-  const kampfMeldung = document.getElementById('message').textContent;
+  if (!zugTheater) {
+    resolveEnemyTurn();
+    zugAbschluss({ stumm: true });
+    return;
+  }
+  starteGegnerzug();
+}
+
+/** Was nach dem Aufgebot kommt: Nachschub, neue Hand, naechster Zug. */
+function zugAbschluss(lauf) {
+  state.zugLaeuft = false;
+  const kampfMeldung = lauf && lauf.stumm
+    ? document.getElementById('message').textContent : '';
 
   if (state.castleHp <= 0) { feldzugVerloren(); return; }
 
@@ -4551,6 +4647,7 @@ function endTurn() {
   text += drawn + ' nachgezogen.';
   if (reshuffled) text += ' Ablagestapel neu gemischt.';
   setMessage(text);
+  if (neu.length) klang('runde');
   renderAll();
 }
 
@@ -4975,7 +5072,9 @@ function renderAll() {
   document.getElementById('draw-count').textContent = state.draw.length;
   document.getElementById('discard-count').textContent = state.discard.length;
   document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
-  document.getElementById('endround-btn').disabled = state.phase !== 'kampf';
+  const knopf = document.getElementById('endround-btn');
+  knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
+  knopf.textContent = state.zugLaeuft ? 'Aufgebot zieht' : 'Zug beenden';
 
   const bar = document.getElementById('enemy-bar');
   const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0) +
