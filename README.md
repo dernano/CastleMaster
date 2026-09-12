@@ -244,12 +244,27 @@ Torzeile und Basteienverteilung:
 
 Drei Dinge gehören dazu:
 
-- **Das Tor**, zwei Felder in der Mitte. Es ist ein Loch im Stein, kein
-  Hindernis — alles, was nicht über den Wall hinwegschießt, muss hier durch.
-- **Das Torhaus**, ein 2×2-Bauwerk unmittelbar nördlich des Durchlasses, mit
-  **zwei Plätzen von Zug 1 an**. Es läuft absichtlich durch `state.towers`:
-  damit gilt für es alles, was für Türme gilt — zielen, Zinnen, Plakette, und
-  es kann fallen.
+- **Das Torhaus**, ein 2×3-Bauwerk, das *quer im Wall* sitzt — und die
+  **Durchfahrt geht mitten hindurch**, nicht daran vorbei. Zwei Pfeiler tragen
+  einen Riegel über der Einfahrt, darüber läuft eine durchgehende Wehrplatte
+  mit Zinnen, auf der die Besatzung steht (**zwei Plätze ab Zug 1**).
+
+  Die erste Fassung hatte hier eine Lücke im Wall und ein Türmchen daneben.
+  Das war kein Tor, sondern ein fehlendes Mauerstück mit einem Turm in der
+  Nähe. Jetzt ist das Tor das Gebäude:
+
+  ```js
+  // Die Einfahrt gehoert zum Bauwerk, sperrt aber nicht.
+  durchfahrt: [{ col: c, row: g + 1 }, { col: c + 1, row: g + 1 }]
+  ```
+
+  `blockiert` und `feldKosten` fragen `inDurchfahrt` ab, bevor sie das Bauwerk
+  prüfen — sonst wäre das Torhaus eine Mauer mit Dach. Es läuft ansonsten
+  absichtlich durch `state.towers`: damit gilt für es alles, was für Türme
+  gilt — zielen, Zinnen, Plakette, und es kann fallen.
+
+  Es trägt den **Sandstein des Walls**, nicht den grauen `stein` der Burg. Mit
+  dem grauen verschmolz es aus der Entfernung mit der Burg zu einem Klumpen.
 - **Basteien**, 2×2-Podeste, die nach Osten aus dem Wall treten. **Nur dort
   darf gebaut werden.** Damit steht die Zahl der Türme einer Station mit ihrem
   Layout fest, und das Layout ist das Rätsel.
@@ -318,11 +333,17 @@ verdeckt und kommen beim Fall des Turms wieder zum Vorschein.
 | ohne Wall | 18/48 (38 %) | 30 % | 9,5 |
 | Wall, Frist 8 | 12/48 (25 %) | 32 % | 9,1 |
 | Wall, Frist 9 | 16/48 (33 %) | 31 % | 9,8 |
+| …mit Torhaus als Tor | **18/48 (38 %)** | **27 %** | 9,7 |
 
 Der Festungskampf ist strukturell länger — alles muss durchs Tor, und das Feuer
 steht auf einer festen Linie statt verteilt auf dem Feld. Dafür bekommt er
-**einen Zug mehr Frist** (`9 + ⌊Runde/4⌋`). Damit liegt der Rest des
-Unterschieds bei 0,6 Standardabweichungen, also im Rauschen.
+**einen Zug mehr Frist** (`9 + ⌊Runde/4⌋`).
+
+Die letzte Zeile war eine Überraschung: das Torhaus als echtes Tor hat die
+Bilanz nicht nur nicht gekostet, sondern sie auf den Stand vor dem Wall
+gehoben. Der Grund ist der **engere Durchlass** — vorher zwei Felder Lücke,
+jetzt eine Einfahrt von einem Feld. Die Belagerer stauen sich davor, und jeder
+gestaute Zug ist ein Schussfenster mehr.
 
 Eine Warnung an mich selbst aus dieser Runde: Ich hatte zwischendurch den
 Testbot zweimal geändert und danach gegen die *alte* Messzahl verglichen. Das

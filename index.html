@@ -1017,8 +1017,8 @@
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
-        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung, die quer über die Karte abschließt. Sie ist bei jeder Station anders, steht dann aber fest. Sie sperrt wirklich — alles muss durchs <b>Tor</b> in der Mitte.</li>
-        <li><b>Das Torhaus:</b> Steht von Zug 1 an am Tor und hat zwei Plätze. Besetze es zuerst; es ist der Ort, an dem sich alles staut.</li>
+        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung, die quer über die Karte abschließt. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich.</li>
+        <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, und die <b>Durchfahrt geht mitten hindurch</b> — das ist die einzige offene Stelle. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1. Besetze sie zuerst: dort staut sich alles.</li>
         <li><b>Basteien:</b> Die hellen Podeste im Wall mit der goldenen Marke. <b>Nur dort</b> darfst du bauen — wie viele Türme du an einer Station bekommst, sagt dir ihr Layout. Fällt ein Turm, ist seine Bastei wieder frei.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
@@ -2330,6 +2330,11 @@ const STOFF = {
   ziegel:    { grund: '#b4462e', textur: 'ziegel' },
   schiefer:  { grund: '#4e5f72', textur: 'ziegel' },
   stroh:     { grund: '#c6a052', textur: 'stroh' },
+  // Der Sandstein des Walls. Das Torhaus trug zuerst den grauen 'stein' der
+  // Burg und verschmolz mit ihr zu einem Klumpen; im Ton des Walls liest es
+  // sich als das, was es ist - ein Stueck Wall, nur groesser.
+  wallstein: { grund: '#c3b492', textur: 'quader' },
+  wallstein2:{ grund: '#d5c7a4', textur: 'quader' },
 };
 for (const k in STOFF) STOFF[k].f = flaechen(STOFF[k].grund);
 
@@ -2887,6 +2892,58 @@ const MODELLE = {
     g.fillStyle = 'rgba(255,170,70,' + (0.5 * flacker).toFixed(2) + ')';
     g.beginPath(); g.ellipse(fx, fy, 7, 4, 0, 0, 6.2832); g.fill();
   },
+
+  /*
+   * Das Torhaus. Es sitzt quer im Wall, und die Durchfahrt geht mitten
+   * hindurch - nicht daran vorbei. Zwei Pfeiler tragen einen Riegel ueber der
+   * Einfahrt, darueber laeuft eine durchgehende Wehrplatte mit Zinnen, auf der
+   * die Besatzung steht. Es ist merklich hoeher und dicker als der Wall, wie
+   * ein Torhaus eben.
+   */
+  torhaus: (g, f) => {
+    const H = 44 * f;          // Pfeiler bis zur Wehrplatte
+    const BOGEN = 21 * f;      // lichte Hoehe der Durchfahrt
+    const W = 2, D = 3;
+
+    // Die beiden Pfeiler, zwischen ihnen bleibt die Fahrgasse offen
+    teilQuader(g, 0, 0, 0, W, 1.0, H, 'wallstein', 90);
+    teilQuader(g, 0, 2.0, 0, W, 1.0, H, 'wallstein', 91);
+    if (f < 0.5) return;
+
+    // Der Riegel ueber der Durchfahrt
+    teilQuader(g, 0, 1.0, BOGEN, W, 1.0, H - BOGEN, 'wallstein', 92);
+
+    // Die Wehrplatte kragt ringsum vor und traegt die Zinnen
+    teilQuader(g, -0.12, -0.12, H, W + 0.24, D + 0.24, 6, 'wallstein2', 93);
+    teilZinnen(g, -0.12, -0.12, H + 6, W + 0.24, D + 0.24, 'wallstein');
+
+    // Der dunkle Bogen auf der Feldseite, mit Fallgitter
+    const bogen = (xk, spiegel) => {
+      const gx = mx(xk, 1.5), gy = my(xk, 1.5, 0);
+      const r = spiegel ? -1 : 1;
+      g.fillStyle = '#1d1622';
+      g.beginPath();
+      g.moveTo(gx, gy + 2);
+      g.lineTo(gx - r * 11, gy - 4);
+      g.lineTo(gx - r * 11, gy - 4 - BOGEN * 0.5);
+      g.quadraticCurveTo(gx - r * 5.5, gy - 8 - BOGEN, gx, gy - 2 - BOGEN);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = 'rgba(208,188,148,0.45)';
+      g.lineWidth = 1;
+      for (let i = 1; i <= 3; i++) {
+        const t = i / 4;
+        g.beginPath();
+        g.moveTo(gx - r * 11 * t, gy + 2 - 6 * t);
+        g.lineTo(gx - r * 11 * t, gy - 4 - BOGEN * (0.5 + 0.4 * (1 - Math.abs(0.5 - t) * 2)));
+        g.stroke();
+      }
+    };
+    bogen(W, false);   // Feldseite
+    bogen(0, true);    // Hofseite
+
+    teilFahne(g, W - 0.3, 0.2, H + 6, '#2f5fa8');
+  },
 };
 
 // Grundflaeche und lichte Hoehe jedes Modells. Danach richtet sich, wie gross
@@ -2903,11 +2960,13 @@ const MODELL_MASS = {
   bergfried: { w: 2, d: 2, hoch: 96 }, trutzburg: { w: 2, d: 2, hoch: 76 },
   grenzfeste: { w: 2, d: 2, hoch: 106 },
   burg: { w: 2, d: 5, hoch: 116 },
+  torhaus: { w: 2, d: 3, hoch: 92 },
 };
 
 // Auf welcher Hoehe die Besatzung eines Modells steht. Ohne das stuende der
 // Bogenschuetze beim Lugaus in der Luft und beim Erdwall im Stein.
 const MODELL_HOEHE = {
+  torhaus: 52,
   palisade: 26, schanze: 30, wallgraben: 25, erdwall: 26,
   wehrgang: 27, bollwerk: 28,
   wachturm: 37, steinturm: 36, turmwache: 32, alterturm: 33,
@@ -3257,7 +3316,7 @@ function baueWall(runde) {
    * 14 bei 4..6 - gegenueber 18 ohne Wall, also wieder im Rauschen.
    */
   const basis = 4 + Math.floor(Math.random() * 3);
-  const torZeile = 6 + Math.floor(Math.random() * 3);   // Tor auf Zeile 6..8, zwei Felder hoch
+  const torZeile = 5 + Math.floor(Math.random() * 3);   // Torhaus auf Zeile 5..7, drei Felder hoch
   const mitte = (ROWS - 1) / 2;
 
   // Fuer jede Zeile die Spalte, in der der Wall steht.
@@ -3283,8 +3342,14 @@ function baueWall(runde) {
     if (r >= 0 && r < ROWS) spalte[r] = torSpalte;
   }
 
-  const torZeilen = [torZeile, torZeile + 1];
-  const istTor = (r) => torZeilen.includes(r);
+  /*
+   * Das Torhaus steht quer im Wall und ist drei Zeilen hoch; die mittlere ist
+   * die Durchfahrt. Frueher lag hier eine Luecke im Wall und das Torhaus
+   * daneben - das war kein Tor, sondern ein fehlendes Mauerstueck mit einem
+   * Turm in der Naehe.
+   */
+  const thZeilen = [torZeile, torZeile + 1, torZeile + 2].filter(r => r >= 0 && r < ROWS);
+  const istTor = (r) => thZeilen.includes(r);
 
   // Die Linie ziehen und die Spalte'nwechsel waagerecht schliessen, sonst
   // bleibt zwischen zwei Zeilen eine diagonale Luecke offen.
@@ -3300,13 +3365,16 @@ function baueWall(runde) {
     }
   }
 
-  // Das Torhaus sitzt unmittelbar noerdlich des Durchlasses, im Wall, und
-  // ragt ein Feld nach innen. So deckt es das Tor, durch das alles muss.
-  const thZeile = Math.max(0, torZeile - 2);
-  const thSpalte = Math.max(1, spalte[thZeile] - 1);
-  const torhaus = { col: thSpalte, row: thZeile, w: 2, h: 2 };
-  for (let c = torhaus.col; c < torhaus.col + 2; c++) {
-    for (let r = torhaus.row; r < torhaus.row + 2; r++) wall.delete(wkey(c, r));
+  // Es sitzt mit seiner Dicke quer zur Linie: eine Spalte nach innen, eine
+  // auf der Wallspalte selbst. Die Durchfahrt ist die mittlere Zeile.
+  const thSpalte = Math.max(1, torSpalte - 1);
+  const torhaus = { col: thSpalte, row: torZeile, w: 2, h: 3 };
+  const durchfahrt = [
+    { col: thSpalte, row: torZeile + 1 },
+    { col: thSpalte + 1, row: torZeile + 1 },
+  ];
+  for (let c = torhaus.col; c < torhaus.col + torhaus.w; c++) {
+    for (let r = torhaus.row; r < torhaus.row + torhaus.h; r++) wall.delete(wkey(c, r));
   }
 
   // Basteien: 2x2-Podeste, die nach Osten aus dem Wall treten. Nur dort darf
@@ -3341,10 +3409,7 @@ function baueWall(runde) {
   for (const r of [-2, -1]) setz(spalte[0], r);
   for (const r of [ROWS, ROWS + 1]) setz(spalte[ROWS - 1], r);
 
-  return {
-    wall, basteien, torhaus, form,
-    tor: torZeilen.map(r => ({ col: torSpalte, row: r })),
-  };
+  return { wall, basteien, torhaus, durchfahrt, form, tor: durchfahrt };
 }
 
 /**
@@ -3362,10 +3427,13 @@ function setzeWall(runde) {
 
   const th = w.torhaus;
   state.towers.push({
-    id: state.nextTowerId++, name: 'Torhaus', col: th.col, row: th.row, w: 2, h: 2,
-    hp: 18, maxHp: 18, rangeBonus: 2, zinnen: 0,
-    modell: 'doppelturm',
+    id: state.nextTowerId++, name: 'Torhaus', col: th.col, row: th.row, w: th.w, h: th.h,
+    hp: 22, maxHp: 22, rangeBonus: 2, zinnen: 0,
+    modell: 'torhaus',
     slots: [null, null],
+    // Durch diese Felder laeuft die Einfahrt: sie gehoeren zum Bauwerk,
+    // sperren aber nicht. Sonst waere das Torhaus eine Mauer mit Dach.
+    durchfahrt: w.durchfahrt,
     bauZeit: BAU_DAUER, rueckstoss: 0, torhaus: true,
   });
 }
@@ -3384,6 +3452,7 @@ let wegStand = -1;
 function feldKosten(c, r, mauerKosten) {
   if (!imFeld(c, r)) return Infinity;
   if (cellInsideRect(c, r, CASTLE)) return Infinity;
+  if (inDurchfahrt(c, r)) return 1;
   if (state.towers.some(t => cellInsideRect(c, r, t))) return Infinity;
   return istWall(c, r) ? mauerKosten : 1;
 }
@@ -3474,13 +3543,16 @@ function drawWallFeld(m) {
   const baubar = m.bastei !== undefined && basteiFrei(m.bastei);
   const farbe = anteil < 0.6 ? WALL_RISS : (baubar ? WALL_BASTEI : WALL);
   drawBlock(m.col, m.row, 1, 1, H, farbe);
-  // Die Krone: Zinnen an den Kanten, hinter denen keine Mauer mehr steht.
+  /*
+   * Zinnen nur auf den beiden Kanten, die der Betrachter sieht (+Spalte und
+   * +Zeile). Auf allen vier Kanten wirkte die Krone unruhig und der Wall
+   * zerfiel optisch in Einzelstuecke; die Rueckkanten sind ohnehin vom Block
+   * selbst verdeckt.
+   */
   if (anteil > 0.55 && f > 0.7) {
-    const s = 0.3;
-    if (!istWall(m.col + 1, m.row)) drawBlock(m.col + 1 - s - 0.04, m.row + 0.1, s, s, 8, farbe, H);
-    if (!istWall(m.col, m.row + 1)) drawBlock(m.col + 0.1, m.row + 1 - s - 0.04, s, s, 8, farbe, H);
-    if (!istWall(m.col - 1, m.row)) drawBlock(m.col + 0.04, m.row + 0.6, s, s, 8, farbe, H);
-    if (!istWall(m.col, m.row - 1)) drawBlock(m.col + 0.6, m.row + 0.04, s, s, 8, farbe, H);
+    const s = 0.34;
+    if (!istWall(m.col + 1, m.row)) drawBlock(m.col + 1 - s - 0.02, m.row + 0.33 - s / 2, s, s, 9, farbe, H);
+    if (!istWall(m.col, m.row + 1)) drawBlock(m.col + 0.33 - s / 2, m.row + 1 - s - 0.02, s, s, 9, farbe, H);
   }
   if (m.hp < m.maxHp) {
     drawHpBar(isoX(m.col + 0.5, m.row + 0.5) + wanken, isoY(m.col + 0.5, m.row + 0.5) - H - 8,
@@ -3494,15 +3566,13 @@ function drawWallFeld(m) {
  * und rechts und links steht ein Pfosten, damit die Luecke als Tor lesbar
  * ist und nicht als fehlendes Mauerstueck.
  */
+/**
+ * Die Einfahrt: eine ausgefahrene Piste im Boden des Torhauses. Sie liegt im
+ * Gebaeude, nicht daneben - darum kein Pfosten, kein Rahmen, nur der Weg.
+ */
 function drawTor(t) {
-  fillDiamond(t.col, t.row, 'rgba(44,32,18,0.55)');
-  drawBlock(t.col + 0.12, t.row + 0.12, 0.76, 0.76, 2, { oben: '#8a7048', links: '#4a3a22', rechts: '#6b5535' });
-  // Pfosten an den Kanten, an denen Mauer anschliesst
-  const pfosten = (c, r) => drawBlock(c, r, 0.2, 0.2, 13, HOLZ);
-  if (istWall(t.col, t.row - 1)) pfosten(t.col + 0.4, t.row + 0.02);
-  if (istWall(t.col, t.row + 1)) pfosten(t.col + 0.4, t.row + 0.78);
-  if (istWall(t.col - 1, t.row)) pfosten(t.col + 0.02, t.row + 0.4);
-  if (istWall(t.col + 1, t.row)) pfosten(t.col + 0.78, t.row + 0.4);
+  fillDiamond(t.col, t.row, 'rgba(40,29,16,0.6)');
+  drawBlock(t.col + 0.1, t.row + 0.1, 0.8, 0.8, 2, { oben: '#8a7048', links: '#4a3a22', rechts: '#6b5535' });
 }
 
 const STEIN = { oben: '#cbbc98', links: '#6e6149', rechts: '#9a8a68' };
@@ -7016,10 +7086,17 @@ function removeFromHand(card) {
 // ---------- Gegnerzug ----------
 
 /** Steht auf diesem Feld Mauerwerk? Dort laeuft niemand hindurch. */
+/** Liegt dieses Feld in der Einfahrt eines Torhauses? Dann ist es frei. */
+function inDurchfahrt(col, row) {
+  return state.towers.some(t => t.durchfahrt &&
+    t.durchfahrt.some(d => d.col === col && d.row === row));
+}
+
 function blockiert(col, row) {
   if (col < 0 || row < 0 || col >= COLS || row >= ROWS) return true;
   if (cellInsideRect(col, row, CASTLE)) return true;
   if (istWall(col, row)) return true;
+  if (inDurchfahrt(col, row)) return false;
   return state.towers.some(t => cellInsideRect(col, row, t));
 }
 
