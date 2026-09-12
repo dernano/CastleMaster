@@ -544,11 +544,21 @@ wie viele Züge bis zum Sturm bleiben, wie viel die Burg noch hält. In der
 Pixelschrift sind bei zwölf Punkten **2 und 8, 1 und 7, 6 und 9** kaum
 auseinanderzuhalten. Aus `35/35` wurde `38/35`.
 
-Zahlen tragen deshalb eine eigene Schrift (`--zahl`), mit Ziffern gleicher
-Breite und fett. Das gilt in der Anzeige, auf den Karten, in den Plaketten auf
-dem Feld und bei den Schadenszahlen. Die Pixelschrift bleibt für Namen,
-Überschriften und Meldungen — dort macht sie den Ton, und dort steht nichts,
-was man auf den Punkt lesen muss.
+Der erste Versuch zog die Grenze falsch: nur Zahlen bekamen eine eigene
+Schrift, alles andere blieb in der Pixelschrift. Das war Flickwerk — die
+Pixelschrift trägt schlicht erst **ab etwa achtzehn Punkten**. Darunter wird
+sie zur Ratearbeit, bei Kartennamen und Legenden genauso wie bei Ziffern.
+
+Die Grenze läuft jetzt an der Schriftgröße, nicht am Inhalt:
+
+| | |
+| --- | --- |
+| Pixelschrift | die vier großen Überschriften (21–26 px), das Standartentuch (38 px) |
+| Anzeigeschrift | **alles andere** — Kartennamen, Meldungen, Legende, Knöpfe, Werte, Preise |
+
+Zahlen bekommen darin zusätzlich Ziffern gleicher Breite. Der Ton des Spiels
+hängt ohnehin nicht an der Beschriftung, sondern an der Pixelgrafik; die
+Schrift muss vor allem lesbar sein.
 
 ## Die Feldzugskarte
 
