@@ -222,6 +222,49 @@ im Aufgebot.
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
 
+## Kein Schuss von allein
+
+Es gab einmal die **Salve**: am Zugende feuerte jeder Turm, der noch geladen
+war, von selbst auf sein bestes Ziel — Turm für Turm im Takt, mit steigendem
+Ton und einer großen Schadenszahl in der Bildmitte. Gedacht war sie als
+Rhythmus und als Ersparnis an Klickarbeit.
+
+Sie hat aber die Entscheidung mitgenommen. Wer von Hand zielte, korrigierte
+nur noch eine Automatik, die meistens recht hatte — und die wusste nicht
+einmal, was gefährlich ist:
+
+```js
+const wert = (schaden >= e.hp ? 1000 : 0) + schaden * 10 - e.hp - d;
+```
+
+`e.dmg` kommt darin nicht vor, und `d` ist der Abstand zum *Turm*, nicht zur
+Burg. Die Salve zählte Abschüsse, nicht Bedrohung, und knallte lieber einen
+halbtoten Späher ab, als das Katapult zu bearbeiten.
+
+**Jetzt schießt kein Turm mehr von allein.** Jeder Schuss ist ein Klick, jeder
+Zug eine Reihe von Entscheidungen. Was du nicht anweist, bleibt ungenutzt.
+Drei Dinge tragen das:
+
+- Die **⚔-Plakette** am Turm hat drei Zustände: grau `⚔ –` (hat geschossen),
+  grün (geladen, aber nichts in Reichweite) und **gold** (geladen und ein Ziel
+  da — hier wartet ein Schuss auf dich).
+- Der **Zug-beenden-Knopf** glüht rot statt gold, solange Türme ungenutzt sind.
+  Aus einer Verheißung ist eine Warnung geworden.
+- Die **Zugzeile** zählt sie mit: `◎ 3 Türme ungenutzt`.
+
+Geblieben ist der **Tonaufstieg**. Der erste Schuss eines Zuges klingt am
+tiefsten, jeder weitere eine Stufe höher (`schussKlang`, zurückgesetzt in
+`zugAbschluss`). Die Tonleiter spielt jetzt der Finger des Spielers statt der
+Rechner.
+
+Zielen kostet weiterhin keinen Tatendrang. Der gehört den Karten; die
+Entscheidung am Turm ist *worauf*, nicht *ob*.
+
+Gemessen über 24 Bot-Feldzüge, mit einem Bot, der jeden Turm selbst anweist:
+**11 von 24 Siegen, 28 Prozent Stürme, 8,5 Züge je Kampf** — dieselben Zahlen
+wie mit Salve. Wer jeden Turm anweist, richtet genauso viel aus wie die
+Automatik; er entscheidet nur selbst, wohin.
+
 ## Gewicht gegen Tempo
 
 Lange liefen alle Belagerer ungefähr gleich schnell und trafen ungefähr gleich

@@ -335,14 +335,18 @@
     box-shadow: inset 0 2px 0 rgba(255,220,160,0.18), 0 0 0 #1d1008;
   }
   button.endround:disabled { filter: grayscale(0.6) brightness(0.6); cursor: not-allowed; }
-  /* Steht eine Salve bereit, glueht das Eisen. */
-  button.endround.scharf {
-    border-color: #6d4212; color: #ffe4a8;
-    animation: scharf 1.5s ease-in-out infinite;
+  /*
+   * Frueher glomm der Knopf, weil eine Salve bereitstand - eine Verheissung.
+   * Jetzt warnt er: hier ist noch ein Turm geladen, und der Schuss verfaellt
+   * mit dem Zug. Darum Rot statt Gold.
+   */
+  button.endround.ungenutzt {
+    border-color: #7d2a16; color: #ffcdb4;
+    animation: ungenutzt 1.5s ease-in-out infinite;
   }
-  @keyframes scharf {
-    0%, 100% { box-shadow: inset 0 2px 0 rgba(255,220,160,0.24), 0 5px 0 #1d1008, 0 0 0 0 rgba(240,199,102,0.55); }
-    50%      { box-shadow: inset 0 2px 0 rgba(255,220,160,0.24), 0 5px 0 #1d1008, 0 0 0 8px rgba(240,199,102,0); }
+  @keyframes ungenutzt {
+    0%, 100% { box-shadow: inset 0 2px 0 rgba(255,220,160,0.24), 0 5px 0 #1d1008, 0 0 0 0 rgba(224,80,60,0.6); }
+    50%      { box-shadow: inset 0 2px 0 rgba(255,220,160,0.24), 0 5px 0 #1d1008, 0 0 0 8px rgba(224,80,60,0); }
   }
 
   #deck-pile {
@@ -1011,7 +1015,7 @@
         <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
         <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
-        <li><b>Die Salve:</b> Was du nicht selbst angewiesen hast, feuert am Zugende von allein, Turm für Turm auf sein bestes Ziel. Du musst also nicht jeden Schuss setzen — aber du kannst.</li>
+        <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
@@ -1782,6 +1786,9 @@ function currentIntentText() {
   const vorrueckend = state.enemies.length - schlagbereit - gefesselt;
   if (vorrueckend) teile.push('➤ ' + vorrueckend + ' rücken vor');
   if (gefesselt) teile.push('✖ ' + gefesselt + ' stehen fest');
+  // Und was auf deiner Seite noch offen ist. Kein Turm feuert von selbst.
+  const offen = state.zugLaeuft ? 0 : ungenutzteTuerme();
+  if (offen) teile.push('◎ ' + offen + ' Turm' + (offen === 1 ? '' : 'e') + ' ungenutzt');
   return teile.join(' · ');
 }
 
@@ -1901,12 +1908,7 @@ function klang(art) {
     q.start(jetzt);
   };
 
-  if (art === 'salveEnde') {
-    ton('triangle', 520, 780, 0.3, 0.06);
-    ton('sine', 260, 390, 0.36, 0.05);
-    rauschen(0.2, 0.05, 1800);
-  }
-  else if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
+  if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
   else if (art === 'schuss') { ton('sawtooth', 900, 260, 0.13, 0.05); rauschen(0.09, 0.05, 2600); }
   else if (art === 'treffer') { ton('square', 240, 90, 0.12, 0.06); rauschen(0.1, 0.07, 900); }
   else if (art === 'bau') { ton('triangle', 180, 70, 0.3, 0.09); rauschen(0.26, 0.09, 700); }
@@ -4208,12 +4210,18 @@ function drawTower(t) {
 
   if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
 
-  const salve = towerDamageAt(t, 0);
-  if (salve > 0) {
+  /*
+   * Drei Zustaende, seit kein Turm mehr von selbst feuert: geschossen (grau,
+   * erledigt), geladen mit Ziel (gold - hier wartet ein Schuss auf dich) und
+   * geladen ohne Ziel (gruen, nichts zu tun). Der goldene ist der Ruf.
+   */
+  const schlag = towerDamageAt(t, 0);
+  if (schlag > 0) {
     const bx = isoX(t.col + t.w / 2, t.row + t.h / 2);
     const by = isoY(t.col + t.w / 2, t.row + t.h / 2) + TH / 2 - 2;
     if (towerHasFired(t)) drawBadge(bx, by, '⚔ –', '#7d7466', '#4a4438');
-    else drawBadge(bx, by, '⚔ ' + salve, '#bfe39a', '#5c7a30');
+    else if (turmHatZiel(t)) drawBadge(bx, by, '⚔ ' + schlag, '#ffe3a8', '#8a5c12');
+    else drawBadge(bx, by, '⚔ ' + schlag, '#bfe39a', '#5c7a30');
   }
 
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
@@ -4910,9 +4918,7 @@ function updateAnimations(dt) {
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
   }
 
-  schreiteSalve(dt);
   schreiteGegnerzug(dt);
-  if (letzteSalve && !salve) letzteSalve.t += dt;
   pruefeMauer();
   for (const m of mauerWerk.stuecke) {
     if (m.wachsen < WALL_WACHSEN) m.wachsen = Math.min(WALL_WACHSEN, m.wachsen + dt);
@@ -5057,7 +5063,6 @@ function draw() {
     ctx.fillStyle = 'rgba(255,232,190,' + Math.min(0.5, blitzSchirm * 0.42).toFixed(3) + ')';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  drawSalveZahl();
   drawBanner_Runde();
 }
 
@@ -6119,7 +6124,7 @@ canvas.addEventListener('click', (evt) => {
  */
 function handleSelectionClick(treffer, cell) {
   // Erst einen Turm waehlen, dann den Gegner: so zielt der Spieler selbst.
-  // Was er nicht selbst anweist, feuert am Zugende in der Salve mit.
+  // Was er nicht anweist, schiesst nicht - es gibt keine Salve mehr.
   const gegner = treffer && treffer.art === 'enemy'
     ? treffer.ref
     : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
@@ -6208,6 +6213,10 @@ function attackWithTower(tower, enemy) {
   zeigeZahl(ex, ey, '-' + schaden, '#ffd166');
   staub(ex, ey, 5, '#e8d5a8');
   klang('schuss');
+  // Die Tonleiter der alten Salve, jetzt vom Spieler gespielt: je mehr Tuerme
+  // er in einem Zug durchklickt, desto hoeher steigt der Ton.
+  schussKlang(++schuesseImZug);
+  schirmBlitz(0.16);
 
   const gefallen = raeumeGefallene(enemy);
   if (gefallen) setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
@@ -6228,7 +6237,7 @@ function attackWithTower(tower, enemy) {
   if (rundeGewonnen()) { beginneBelohnung(); return; }
   // Der naechste Turm, der noch schiessen kann, ist gleich angewaehlt. So
   // klickt man eine ganze Reihe durch, ohne jedes Mal neu zu greifen.
-  const naechster = state.towers.find(t => !towerHasFired(t) && towerUnits(t).length && salveZiel(t));
+  const naechster = state.towers.find(t => !towerHasFired(t) && towerUnits(t).length && turmHatZiel(t));
   state.selectedTower = naechster ? naechster.id : null;
   renderAll();
 }
@@ -6805,107 +6814,46 @@ function resolveEnemyTurn() {
 }
 
 // ============================================================
-//  Die Salve
+//  Zielen
 // ============================================================
-// Gemessen: dreizehn Zuege je Kampf, vierhundertvierundachtzig je Lauf, und
-// in jedem Zug fuenf kleine Handgriffe fuer sieben Schaden. Das ist Arbeit,
-// kein Sog. Es fehlte der Augenblick, in dem etwas Grosses passiert.
+// Hier stand einmal die Salve: am Zugende feuerte jeder Turm von selbst auf
+// sein bestes Ziel. Das war als Rhythmus gedacht, hat aber die Entscheidung
+// mitgenommen. Wer von Hand zielte, korrigierte nur noch eine Automatik, die
+// meistens recht hatte - und die wusste nicht einmal, was gefaehrlich ist:
+// sie zaehlte Abschuesse, nicht Bedrohung, und knallte lieber einen halbtoten
+// Spaeher ab, als das Katapult zu bearbeiten.
 //
-// Darum feuert jetzt nicht mehr jeder Turm einzeln auf Zuruf, sondern das
-// ganze Werk auf einmal: Turm fuer Turm, jeder Treffer zaehlt auf einen
-// Gesamtschaden, der in der Mitte des Bildes steht und mitwaechst, und der
-// Ton steigt mit ihm. Der Tatendrang geht dafuer ganz in die Karten.
+// Jetzt schiesst kein Turm mehr von allein. Jeder Schuss ist ein Klick, jeder
+// Zug eine Reihe von Entscheidungen. Was nicht angewiesen wird, bleibt
+// ungenutzt - das ist der Preis dafuer, es nicht bedacht zu haben.
+//
+// Geblieben ist der Tonaufstieg: der erste Schuss eines Zuges klingt am
+// tiefsten, jeder weitere eine Stufe hoeher. Die Tonleiter spielt jetzt der
+// Finger des Spielers statt der Rechner.
 
-const SALVE_TAKT = 0.26;        // Sekunden je Turm
-let salve = null;
-
-/** Das beste Ziel eines Turms: was er trifft und am ehesten faellt. */
-function salveZiel(t) {
+/**
+ * Hat dieser Turm etwas in Reichweite, das er verwunden kann?
+ * Heisst `turmHatZiel`, weil `hatZiel` schon den Karten gehoert.
+ */
+function turmHatZiel(t) {
   const reichweite = towerReach(t);
-  // Der Startwert muss unter jedem moeglichen Wert liegen. Mit -1 blieb ein
-  // Turm stumm, sobald das beste Ziel mehr Leben hatte als er Schaden macht:
-  // schaden*10 - hp wird dann negativ, und kein Gegner kam je durch.
-  let bestes = null, bestWert = -Infinity;
-  for (const e of state.enemies) {
+  return state.enemies.some(e => {
     const d = distanceTo(t, e);
-    if (d > reichweite) continue;
-    const schaden = towerDamageAt(t, d);
-    if (schaden <= 0) continue;
-    // Was der Turm umwirft, ist mehr wert als was er nur ankratzt
-    const wert = (schaden >= e.hp ? 1000 : 0) + schaden * 10 - e.hp - d;
-    if (wert > bestWert) { bestWert = wert; bestes = e; }
-  }
-  return bestes;
+    return d <= reichweite && towerDamageAt(t, d) > 0;
+  });
+}
+
+/** Tuerme, die in diesem Zug noch schiessen koennten und es nicht getan haben. */
+function ungenutzteTuerme() {
+  return state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && turmHatZiel(t)).length;
 }
 
 /**
- * Wie viele Tuerme in diesem Zug noch von selbst feuern. Wer schon von Hand
- * gezielt hat, ist durch: sonst schoesse derselbe Turm zweimal.
+ * Der Ton steigt mit jedem Schuss eines Zuges, wie eine Tonleiter hinauf.
+ * `schuesseImZug` zaehlt mit; `zugAbschluss` setzt ihn zurueck.
  */
-function salveBereit() {
-  return state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && salveZiel(t)).length;
-}
-
-function starteSalve(danach) {
-  const schuetzen = state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length);
-  salve = {
-    liste: schuetzen, i: 0, warten: 0.12,
-    gesamt: 0, treffer: 0, gefallen: 0, danach,
-    zeit: 0,
-  };
-  state.zugLaeuft = true;
-  renderAll();
-}
-
-function schreiteSalve(dt) {
-  if (!salve) return;
-  salve.zeit += dt;
-  salve.warten -= dt;
-  if (salve.warten > 0) return;
-
-  while (salve.i < salve.liste.length) {
-    const t = salve.liste[salve.i++];
-    if (!state.towers.includes(t) || towerHasFired(t)) continue;
-    const ziel = salveZiel(t);
-    if (!ziel) continue;
-    t.attackedKey = state.runde + ':' + state.zug;
-
-    const d = distanceTo(t, ziel);
-    const schaden = towerDamageAt(t, d);
-    const anzahl = towerUnits(t).filter(u => unitRange(t, u) >= d).length;
-    const ex = ziel.vx === undefined ? ziel.col : ziel.vx;
-    const ey = ziel.vy === undefined ? ziel.row : ziel.vy;
-    schussSalve(t.col + t.w / 2, t.row + t.h / 2, ex, ey, '#f0e2bd');
-    t.rueckstoss = 1;
-    loeseAus('salve');
-    const gefallen = treffeGegner(ziel, schaden, t.name);
-
-    salve.gesamt += schaden;
-    salve.treffer++;
-    if (gefallen) salve.gefallen++;
-    salveKlang(salve.treffer);
-    schirmBlitz(gefallen ? 0.4 : 0.16);
-    salve.warten = SALVE_TAKT;
-    renderAll();
-    return;
-  }
-
-  // Durch. Der Schlussakkord, dann weiter.
-  const g = salve;
-  salve = null;
-  if (g.treffer) {
-    schirmBlitz(0.5 + Math.min(0.8, g.gesamt / 90));
-    ruetteln(3 + Math.min(9, g.gesamt / 12));
-    klang('salveEnde');
-    setMessage('Salve: ' + g.gesamt + ' Schaden' + (g.gefallen ? ', ' + g.gefallen + ' gefallen' : '') + '.');
-  }
-  letzteSalve = { gesamt: g.gesamt, treffer: g.treffer, t: 0 };
-  if (rundeGewonnen()) { state.zugLaeuft = false; beginneBelohnung(); return; }
-  g.danach();
-}
-
-/** Der Ton steigt mit jedem Treffer, wie eine Tonleiter hinauf. */
-function salveKlang(nummer) {
+let schuesseImZug = 0;
+function schussKlang(nummer) {
   if (!tonAn) return;
   const stufe = Math.min(14, nummer - 1);
   const grund = 330 * Math.pow(2, stufe / 12);
@@ -6921,51 +6869,6 @@ function salveKlang(nummer) {
     o.connect(gg); gg.connect(k.destination);
     o.start(jetzt); o.stop(jetzt + 0.2);
   } catch (e) { /* ohne Ton eben still */ }
-}
-
-// Die Zahl bleibt nach der Salve noch kurz stehen
-let letzteSalve = null;
-
-/**
- * Der Gesamtschaden der laufenden Salve, gross in der Mitte des Bildes. Er
- * waechst mit jedem Turm, und bei jedem Treffer springt er kurz auf.
- */
-function drawSalveZahl() {
-  const s = salve || letzteSalve;
-  if (!s || !s.gesamt) return;
-  const frisch = salve ? Math.max(0, 1 - salve.zeit % SALVE_TAKT / 0.16) : 0;
-  const ausklang = salve ? 1 : Math.max(0, 1 - letzteSalve.t / 1.1);
-  if (ausklang <= 0) { letzteSalve = null; return; }
-
-  const x = canvas.width / 2;
-  const y = 188;
-  const gross = 1 + Math.min(1.1, s.gesamt / 80) + frisch * 0.3;
-  ctx.save();
-  ctx.globalAlpha = ausklang;
-  ctx.translate(x, y);
-  ctx.scale(gross, gross);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  ctx.font = '700 13px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(255,232,180,0.75)';
-  ctx.fillText('SALVE', 0, -22);
-
-  const text = String(s.gesamt);
-  ctx.font = '700 38px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = 'rgba(20,12,6,0.8)';
-  ctx.strokeText(text, 0, 0);
-  const hitze = Math.min(1, s.gesamt / 70);
-  ctx.fillStyle = hitze > 0.7 ? '#ffd166' : hitze > 0.35 ? '#ffb347' : '#f0e2bd';
-  ctx.fillText(text, 0, 0);
-
-  if (s.treffer > 1) {
-    ctx.font = '700 12px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(255,214,140,0.8)';
-    ctx.fillText(s.treffer + ' Türme', 0, 24);
-  }
-  ctx.restore();
 }
 
 // ---------- Der Takt des Gegnerzugs ----------
@@ -7046,8 +6949,7 @@ function betreteKnoten(id) {
   staubkoerner.length = 0;
   mauerWerk = { schluessel: '', stuecke: [] };
   gegnerzug = null;
-  salve = null;
-  letzteSalve = null;
+  schuesseImZug = 0;
   state.zugLaeuft = false;
   state.handelnder = null;
 
@@ -7696,23 +7598,14 @@ function endTurn() {
   state.pendingCard = null;
   state.selectedTower = null;
 
+  // Wer nicht geschossen hat, schiesst nicht. Ein ungenutzter Turm ist ein
+  // verlorener Zug - das ist die Entscheidung, die der Spieler hier trifft.
   if (!zugTheater) {
-    // Ohne Takt laeuft alles sofort: erst die Salve, dann das Aufgebot.
-    for (const t of state.towers.slice()) {
-      if (towerHasFired(t)) continue;
-      const ziel = salveZiel(t);
-      if (!ziel) continue;
-      loeseAus('salve');
-      treffeGegner(ziel, towerDamageAt(t, distanceTo(t, ziel)), t.name);
-    }
-    if (rundeGewonnen()) { beginneBelohnung(); return; }
     resolveEnemyTurn();
     zugAbschluss({ stumm: true });
     return;
   }
-
-  // Erst feuert das ganze Werk, dann rueckt das Aufgebot nach.
-  starteSalve(() => starteGegnerzug());
+  starteGegnerzug();
 }
 
 /**
@@ -7741,6 +7634,7 @@ function derSturm() {
 /** Was nach dem Aufgebot kommt: Nachschub, neue Hand, naechster Zug. */
 function zugAbschluss(lauf) {
   state.zugLaeuft = false;
+  schuesseImZug = 0;   // die Tonleiter faengt in jedem Zug wieder unten an
   const kampfMeldung = lauf && lauf.stumm
     ? document.getElementById('message').textContent : '';
 
@@ -8769,12 +8663,14 @@ function renderAll() {
   document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
   const knopf = document.getElementById('endround-btn');
   knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
-  const bereit = state.phase === 'kampf' ? salveBereit() : 0;
-  knopf.textContent = state.zugLaeuft ? 'Es feuert' : (bereit ? 'SALVE · ' + bereit : 'Zug beenden');
-  knopf.title = bereit
-    ? bereit + ' Turm' + (bereit === 1 ? '' : 'e') + ' feuern von selbst. Ziele vorher selbst, wenn du es besser weißt.'
+  // Der Knopf kuendigte frueher die Salve an. Jetzt warnt er: was hier noch
+  // geladen ist, geht mit dem Zug verloren.
+  const ungenutzt = state.phase === 'kampf' ? ungenutzteTuerme() : 0;
+  knopf.textContent = state.zugLaeuft ? 'Der Feind zieht' : 'Zug beenden';
+  knopf.title = ungenutzt
+    ? ungenutzt + ' Turm' + (ungenutzt === 1 ? ' hat' : 'e haben') + ' noch nicht geschossen. Der Schuss verfällt.'
     : 'Alle Türme haben geschossen.';
-  knopf.classList.toggle('scharf', bereit > 0 && !state.zugLaeuft);
+  knopf.classList.toggle('ungenutzt', ungenutzt > 0 && !state.zugLaeuft);
 
   // Ausserhalb des Kampfes sagen die Zahlen nichts; die Routenkarte und die
   // Stationsfenster zeigen dasselbe an der richtigen Stelle.
