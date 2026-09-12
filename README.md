@@ -254,6 +254,34 @@ Gemalt wird jedes Modell einmal in ein eigenes Bild, in Zehntelschritten der
 Bauhöhe, und danach nur noch aufgesetzt. Fünf Turmarten auf dem Feld brauchen
 fünf Bilder. Ein Bildaufbau kostet damit rund 16 Millisekunden.
 
+## Das Gelände
+
+Vorher würfelte jede Kachel ihre Farbe für sich. Das Ergebnis war Rauschen:
+technisch variiert, aber ohne Form. Jetzt liegen **zusammenhängende Flächen**
+auf dem Feld — trockenes Gras, Sand, Geröll und festgetretene Erde.
+
+Gemacht wird das mit weichem Rauschen in **zwei Lagen**: eine grobe bestimmt,
+wo eine Fläche liegt, eine feinere bricht ihre Ränder auf. Mit nur einer Lage
+entstehen rechteckige Klötze — das war beim ersten Versuch deutlich zu sehen.
+
+Dazu ein **Weg vom Lager zum Burgtor**: festgetretene Erde mit zwei Rillen und
+Randsteinen, auf der Linie, auf der das Belagerungsgerät heranrollt.
+
+Der Boden folgt derselben Lichtordnung wie die Bauwerke: warm in der Höhe,
+kühl in der Senke. Und `bodenVerschattung` dunkelt die Kachel dort ab, wo sie
+an Mauerwerk stößt — die Kehle zwischen Wand und Grund. Ohne sie stehen die
+Bauwerke *auf* dem Boden statt *darin*. Das kann nicht in den vorgemalten
+Boden, weil sich die Türme ändern, wird also live gerechnet, aber nur für die
+Felder ringsum.
+
+### Jedes Bauwerk steht über seinem Wall
+
+Palisade, Erdwall und Wallgraben waren mit 15 bis 19 Bildpunkten **niedriger
+als die Ringmauer**, die sie tragen sollen. Das sah aus, als hätte man einen
+Turm in den Graben gebaut. Die Untergrenze liegt jetzt bei 25, also sieben
+Punkte über der Wallhöhe von 18; Palisade und Erdwall haben dafür einen
+Flechtzaun beziehungsweise eine höhere Krone bekommen.
+
 ## Mauerwerk und Boden
 
 Lange war jede Wand **eine einzige Farbfüllung** mit ein paar blassen Strichen

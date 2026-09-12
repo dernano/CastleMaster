@@ -2192,7 +2192,7 @@ function teilFenster(g, x, y, z, hoehe, warm) {
 const MODELLE = {
   // ---- Holz und Erde, niedrig ----
   palisade: (g, f) => {
-    const h = 15 * f;
+    const h = 24 * f;
     for (let i = 0; i < 5; i++) {
       teilPfahl(g, 0.08 + i * 0.44, 0.05, 0, h * (0.85 + noise(i, 1) * 0.3), 'stamm');
       teilPfahl(g, 0.08 + i * 0.44, 1.78, 0, h * (0.85 + noise(i, 5) * 0.3), 'stamm');
@@ -2204,24 +2204,35 @@ const MODELLE = {
     if (f > 0.8) teilQuader(g, 0.05, 0.05, h * 0.55, 1.9, 1.9, 2, 'holz', 2);
   },
   schanze: (g, f) => {
-    teilQuader(g, 0, 0, 0, 2, 2, 13 * f, 'erde', 4);
+    const h = 17 * f;
+    teilQuader(g, 0, 0, 0, 2, 2, h, 'erde', 4);
     if (f < 0.6) return;
     for (let i = 0; i < 4; i++) {
-      teilPfahl(g, 0.15 + i * 0.5, 0.12, 13 * f, 9, 'stamm');
-      teilPfahl(g, 0.15 + i * 0.5, 1.72, 13 * f, 9, 'stamm');
+      teilPfahl(g, 0.15 + i * 0.5, 0.12, h, 11, 'stamm');
+      teilPfahl(g, 0.15 + i * 0.5, 1.72, h, 11, 'stamm');
     }
+    teilQuader(g, 0.1, 0.1, h, 1.8, 1.8, 3, 'holz', 5);
   },
   wallgraben: (g, f) => {
-    teilQuader(g, 0, 0, 0, 2, 2, 11 * f, 'erde', 6);
+    const h = 19 * f;
+    teilQuader(g, 0, 0, 0, 2, 2, h, 'erde', 6);
     if (f < 0.6) return;
+    teilQuader(g, 0.15, 0.15, h, 1.7, 1.7, 4, 'erde', 7);
     for (let i = 0; i < 6; i++) {
       const n = noise(i * 3.1, 2);
-      teilPfahl(g, 0.1 + (i % 3) * 0.7, 0.1 + Math.floor(i / 3) * 1.5, 11 * f, 7 + n * 4, 'stamm');
+      teilPfahl(g, 0.1 + (i % 3) * 0.7, 0.1 + Math.floor(i / 3) * 1.5, h, 8 + n * 5, 'stamm');
     }
   },
   erdwall: (g, f) => {
-    teilQuader(g, 0, 0, 0, 2, 2, 14 * f, 'erde', 8);
-    if (f > 0.7) teilQuader(g, 0.2, 0.2, 14 * f, 1.6, 1.6, 3, 'erde', 9);
+    const h = 19 * f;
+    teilQuader(g, 0, 0, 0, 2, 2, h, 'erde', 8);
+    if (f < 0.7) return;
+    teilQuader(g, 0.18, 0.18, h, 1.64, 1.64, 5, 'erde', 9);
+    // Ein Flechtzaun auf der Krone, damit der Wall nicht bloss ein Huegel ist
+    for (let i = 0; i < 5; i++) {
+      teilPfahl(g, 0.22 + i * 0.36, 0.2, h + 5, 6, 'stamm', false);
+      teilPfahl(g, 0.22 + i * 0.36, 1.64, h + 5, 6, 'stamm', false);
+    }
   },
 
   // ---- Mauern und Gaenge ----
@@ -2234,9 +2245,9 @@ const MODELLE = {
     teilDach(g, -0.05, 0.3, h + 12, 2.1, 1.4, 9, 'schiefer');
   },
   bollwerk: (g, f) => {
-    teilQuader(g, 0, 0, 0, 2, 2, 12 * f, 'bruch', 13);
-    teilQuader(g, 0.22, 0.22, 12 * f, 1.56, 1.56, 9 * f, 'stein', 14);
-    if (f > 0.8) teilZinnen(g, 0.22, 0.22, 12 * f + 9 * f, 1.56, 1.56, 'stein');
+    teilQuader(g, 0, 0, 0, 2, 2, 14 * f, 'bruch', 13);
+    teilQuader(g, 0.22, 0.22, 14 * f, 1.56, 1.56, 12 * f, 'stein', 14);
+    if (f > 0.8) teilZinnen(g, 0.22, 0.22, 26 * f, 1.56, 1.56, 'steinHell');
   },
 
   // ---- Tuerme ----
@@ -2449,8 +2460,8 @@ const MODELL_MASS = {
 // Auf welcher Hoehe die Besatzung eines Modells steht. Ohne das stuende der
 // Bogenschuetze beim Lugaus in der Luft und beim Erdwall im Stein.
 const MODELL_HOEHE = {
-  palisade: 17, schanze: 22, wallgraben: 18, erdwall: 17,
-  wehrgang: 29, bollwerk: 21,
+  palisade: 26, schanze: 30, wallgraben: 25, erdwall: 26,
+  wehrgang: 29, bollwerk: 28,
   wachturm: 37, steinturm: 36, turmwache: 32, alterturm: 33,
   lugaus: 49, pechnase: 27, hoherhorst: 53,
   doppelturm: 32, zwinger: 26,
@@ -3182,14 +3193,63 @@ function addPick(art, ref, x, y, w, h) { pickables.push({ art, ref, x, y, w, h }
 // Der Boden aendert sich nie, also wird er einmal vorgemalt.
 let bodenBild = null;
 
+// ---------- Gelaende ----------
+// Vorher wuerfelte jede Kachel ihre Farbe fuer sich, und das Feld sah aus wie
+// Rauschen. Jetzt liegen zusammenhaengende Flaechen darauf: Gras, Sand, Geroell
+// und festgetretene Erde, dazu ein Weg vom Lager zum Tor.
+
+/** Weiches Rauschen: grob gewuerfelt und dazwischen verschliffen. */
+function glattesRauschen(c, r, mass) {
+  const x = c / mass, y = r / mass;
+  const x0 = Math.floor(x), y0 = Math.floor(y);
+  const fx = x - x0, fy = y - y0;
+  const weich = (t) => t * t * (3 - 2 * t);
+  const misch = (a, b, t) => a + (b - a) * weich(t);
+  return misch(
+    misch(noise(x0, y0), noise(x0 + 1, y0), fx),
+    misch(noise(x0, y0 + 1), noise(x0 + 1, y0 + 1), fx),
+    fy);
+}
+
+const GELAENDE = {
+  gras:  { farbe: '#8d9159', halme: 0.9 },
+  sand:  { farbe: '#d2ab77', halme: 0.08 },
+  erde:  { farbe: '#b08a5c', halme: 0.3 },
+  kies:  { farbe: '#b2a892', halme: 0.05 },
+  weg:   { farbe: '#ab9573', halme: 0 },
+};
+
+/** Liegt die Kachel auf dem Weg vom Lager zum Burgtor? */
+function aufDemWeg(c, r) {
+  const ax = COLS + 0.5, ay = ROWS / 2;
+  const bx = CASTLE.col + CASTLE.w, by = CASTLE.row + CASTLE.h / 2;
+  const dx = bx - ax, dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((c - ax) * dx + (r - ay) * dy) / (dx * dx + dy * dy)));
+  const abstand = Math.hypot(c - (ax + dx * t), r - (ay + dy * t));
+  return abstand < 1.15 + glattesRauschen(c, r, 5) * 0.7;
+}
+
+function gelaendeArt(c, r) {
+  if (imFeld(c, r) && aufDemWeg(c, r)) return 'weg';
+  const n = glattesRauschen(c, r, 4.5) * 0.65 + glattesRauschen(c + 31, r + 7, 1.7) * 0.35;
+  const n2 = glattesRauschen(c + 40, r + 17, 3.2) * 0.7 + glattesRauschen(c + 3, r + 29, 1.3) * 0.3;
+  if (n > 0.58 && n2 > 0.44) return 'gras';
+  if (n < 0.33) return 'kies';
+  if (n2 > 0.68) return 'erde';
+  return 'sand';
+}
+
 function bodenFarbe(c, r) {
-  const n = noise(c, r);
-  if (istWasser(c, r)) return n < 0.5 ? '#1b4e66' : '#215a75';
-  if (imFeld(c, r)) return n < 0.34 ? '#d6b07e' : n < 0.7 ? '#cda772' : '#c49a64';
+  const art = gelaendeArt(c, r);
+  const grund = GELAENDE[art].farbe;
+  // Dieselbe Lichtordnung wie bei den Bauwerken: warm in der Hoehe, kuehl
+  // in der Senke. Ohne das liegt der Boden flach unter gebautem Stein.
+  const h = glattesRauschen(c * 1.4 + 9, r * 1.4 + 3, 2.5);
+  const ton = mischen(grund, h > 0.5 ? LICHT.warm : LICHT.kalt, Math.abs(h - 0.5) * 0.24);
   if (c >= LAGER_COL && c < LAGER_COL + LAGER_BREITE && r >= 0 && r < ROWS) {
-    return n < 0.5 ? '#6d5233' : '#63492d';
+    return mischen(ton, '#3a2a18', 0.32);
   }
-  return n < 0.5 ? '#bb9a68' : '#b08f5e';
+  return imFeld(c, r) ? ton : mischen(ton, LICHT.kalt, 0.1);
 }
 
 /**
@@ -3314,10 +3374,11 @@ function baueBoden() {
         g.fillRect(kx - gr, ky, gr, 1);
       }
 
-      // Trockene Grasbueschel, aussen haeufiger als im Hof
-      if (n > 0.52 && n < 0.6) {
-        const bx = x - 4 + n2 * 8, by = y + 3;
-        g.strokeStyle = drin ? 'rgba(108,124,64,0.5)' : 'rgba(122,132,70,0.6)';
+      // Grasbueschel, aber nur dort wo Gras waechst
+      const art = gelaendeArt(c, r);
+      if (n3 < GELAENDE[art].halme && n2 > 0.4) {
+        const bx = x - 6 + n2 * 12, by = y + 2 + n * 4;
+        g.strokeStyle = 'rgba(96,116,58,0.65)';
         g.lineWidth = 1;
         for (let i = -1; i <= 1; i++) {
           g.beginPath();
@@ -3325,18 +3386,30 @@ function baueBoden() {
           g.lineTo(bx + i * 2.5, by - 4 - (i === 0 ? 2 : 0));
           g.stroke();
         }
+        g.strokeStyle = 'rgba(150,170,96,0.4)';
+        g.beginPath(); g.moveTo(bx, by); g.lineTo(bx - 1, by - 5); g.stroke();
       }
 
-      // Wagenspuren: der Weg, auf dem das Geraet herangerollt wird
-      const spur = Math.abs(r - Math.round(ROWS / 2));
-      if (drin && spur === 0 && c > 3) {
-        g.strokeStyle = 'rgba(88,66,38,0.22)';
+      // Auf dem Weg zwei Rillen und Randsteine
+      if (art === 'weg') {
+        g.fillStyle = 'rgba(84,64,40,0.13)';
+        g.beginPath();
+        g.moveTo(x, y - TH / 2); g.lineTo(x + TW / 2, y);
+        g.lineTo(x, y + TH / 2); g.lineTo(x - TW / 2, y);
+        g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(88,66,38,0.36)';
         g.lineWidth = 1.5;
         for (const d of [-3, 3]) {
           g.beginPath();
-          g.moveTo(x - TW / 2, y + d);
-          g.lineTo(x + TW / 2, y + d);
+          g.moveTo(x - TW / 2 + 4, y + d);
+          g.lineTo(x + TW / 2 - 4, y + d);
           g.stroke();
+        }
+        if (!aufDemWeg(c, r - 1)) {
+          for (let i = 0; i < 3; i++) {
+            g.fillStyle = '#9c927c';
+            g.fillRect(x - 12 + i * 10, y - TH / 2 + 2, 3, 2);
+          }
         }
       }
 
@@ -3550,6 +3623,35 @@ function drawGround() {
   if (!bodenBild) baueBoden();
   ctx.drawImage(bodenBild, 0, 0);
   drawWasser();
+  bodenVerschattung();
+}
+
+/**
+ * Der Boden wird dunkler, wo er an Mauerwerk stoesst. Das ist kein echter
+ * Schattenwurf, sondern die Kehle zwischen Wand und Grund; ohne sie stehen
+ * die Bauwerke auf dem Boden auf statt darin.
+ *
+ * Das kann nicht in den vorgemalten Boden, weil sich die Bauwerke aendern.
+ * Gerechnet wird darum live, aber nur fuer die Felder ringsum.
+ */
+function bodenVerschattung() {
+  const bauten = [CASTLE, ...state.towers];
+  if (!bauten.length) return;
+  const gesehen = new Set();
+  for (const b of bauten) {
+    for (let c = b.col - 1; c <= b.col + b.w; c++) {
+      for (let r = b.row - 1; r <= b.row + b.h; r++) {
+        if (!imFeld(c, r)) continue;
+        if (bauten.some(x => cellInsideRect(c, r, x))) continue;
+        const sch = c + ',' + r;
+        if (gesehen.has(sch)) continue;
+        gesehen.add(sch);
+        // Zum Licht hin schwaecher, vom Licht weg staerker
+        const vorn = c >= b.col + b.w || r >= b.row + b.h;
+        fillDiamond(c, r, vorn ? 'rgba(40,32,64,0.1)' : 'rgba(40,32,64,0.2)');
+      }
+    }
+  }
 }
 
 /** Reichweitenfeld: alle Kacheln im Chebyshev-Abstand markieren. */
