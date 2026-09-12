@@ -1782,22 +1782,24 @@ function rectsOverlap(a, b) {
   return a.col < b.col + b.w && a.col + a.w > b.col && a.row < b.row + b.h && a.row + a.h > b.row;
 }
 /*
- * Ein Turm gehoert auf den Wall, aber nicht auf einen vorgegebenen Punkt.
+ * Ein Turm gehoert in den Wall, aber nicht auf einen vorgegebenen Punkt.
  * Vorher gab es dafuer Basteien - 2x2-Podeste mit einer gelben Marke darueber.
- * Das machte aus dem Wall ein Brett mit Steckplaetzen. Jetzt zaehlt nur: der
- * Turm muss mit mindestens zwei seiner vier Felder auf Mauerwerk stehen, dann
- * sitzt er auf dem Wall und darf ueberall daran entlang.
+ * Das machte aus dem Wall ein Brett mit Steckplaetzen.
+ *
+ * Verlangt werden jetzt alle vier Felder auf Mauerwerk, nicht zwei. Mit zwei
+ * hing der Turm zur Haelfte ueber den Wall hinaus, und die Mauer stiess hinten
+ * an seine halbe Breite - das sah nach Bruch aus, nicht nach Mauerwerk. Weil
+ * der Wall zwei Felder dick ist, geht das ueberall an ihm entlang.
  */
 function isValidTowerPlacement(col, row, w, h) {
   if (col < 0 || row < 0 || col + w > COLS || row + h > ROWS) return false;
   const rect = { col, row, w, h };
   if (rectsOverlap(rect, CASTLE)) return false;
   for (const t of state.towers) if (rectsOverlap(rect, t)) return false;
-  let aufWall = 0;
   for (let c = col; c < col + w; c++) for (let r = row; r < row + h; r++) {
-    if (istWall(c, r)) aufWall++;
+    if (!istWall(c, r)) return false;
   }
-  return aufWall >= 2;
+  return true;
 }
 
 function findNearestTower(enemy) {
@@ -3054,8 +3056,10 @@ const MODELLE = {
     g.fillRect(Math.round(kx) - 2, Math.round(ky) - 3, 4, 5);
 
     // Wehrplatte mit Zinnenkranz, ringsum vorkragend
-    teilQuader(g, -0.16, -0.16, H, W + 0.32, D + 0.32, 7, 'wallstein2', 93);
-    teilZinnen(g, -0.16, -0.16, H + 7, W + 0.32, D + 0.32, 'wallstein');
+    // Nur knapp vorkragend: mit 0.16 griff die Platte in die Nachbarfelder
+    // und legte sich als Stufe ueber den anschliessenden Wall.
+    teilQuader(g, -0.05, -0.05, H, W + 0.10, D + 0.10, 7, 'wallstein2', 93);
+    teilZinnen(g, -0.05, -0.05, H + 7, W + 0.10, D + 0.10, 'wallstein');
     teilFahne(g, W - 0.34, 0.24, H + 7, '#2f5fa8');
   },
 };
@@ -3129,12 +3133,12 @@ function modellBild(name, stufe) {
 }
 
 /** Setzt ein Bauwerk aufs Feld. */
-function zeichneModell(name, col, row, wachstum) {
+function zeichneModell(name, col, row, wachstum, sockel = 0) {
   const stufe = Math.max(1, Math.min(10, Math.round(wachstum * 10)));
   const bild = modellBild(name, stufe);
   ctx.drawImage(bild.cv,
     Math.round(isoX(col, row) - bild.ankerX),
-    Math.round(isoY(col, row) - bild.ankerY));
+    Math.round(isoY(col, row) - bild.ankerY - sockel));
 }
 
 // ---------- Mauerwerk ----------
@@ -3461,13 +3465,23 @@ function baueWall(runde) {
   const thZeilen = [torZeile, torZeile + 1, torZeile + 2].filter(r => r >= 0 && r < ROWS);
   const istTor = (r) => thZeilen.includes(r);
 
-  // Die Linie ziehen und die Spalte'nwechsel waagerecht schliessen, sonst
+  /*
+   * Der Wall ist ZWEI Felder dick. Mit einem Feld hingen Tuerme und Torhaus,
+   * beide zwei Felder breit, zur Haelfte darueber hinaus: hinten traf die
+   * Mauer nur auf die halbe Gebaeudebreite, und es entstand ein Versatz, der
+   * nach Bruch aussah statt nach Mauerwerk. Zwei Felder dick heisst, dass ein
+   * Bauwerk vollstaendig im Wall sitzt und buendig abschliesst - so wie es
+   * aussehen soll.
+   */
+  const WALL_DICK = 2;
+
+  // Die Linie ziehen und die Spaltenwechsel waagerecht schliessen, sonst
   // bleibt zwischen zwei Zeilen eine diagonale Luecke offen.
   for (let r = 0; r < ROWS; r++) {
-    if (!istTor(r)) setz(spalte[r], r);
+    if (!istTor(r)) for (let d = 0; d < WALL_DICK; d++) setz(spalte[r] + d, r);
     if (r + 1 < ROWS) {
       const von = Math.min(spalte[r], spalte[r + 1]);
-      const bis = Math.max(spalte[r], spalte[r + 1]);
+      const bis = Math.max(spalte[r], spalte[r + 1]) + WALL_DICK - 1;
       for (let c = von; c <= bis; c++) {
         if (!istTor(r)) setz(c, r);
         if (!istTor(r + 1)) setz(c, r + 1);
@@ -3475,9 +3489,9 @@ function baueWall(runde) {
     }
   }
 
-  // Es sitzt mit seiner Dicke quer zur Linie: eine Spalte nach innen, eine
-  // auf der Wallspalte selbst. Die Durchfahrt ist die mittlere Zeile.
-  const thSpalte = Math.max(1, torSpalte - 1);
+  // Es fuellt genau die beiden Spalten des Walls, also sitzt es buendig
+  // darin. Die Durchfahrt ist die mittlere Zeile, beide Felder tief.
+  const thSpalte = torSpalte;
   const torhaus = { col: thSpalte, row: torZeile, w: 2, h: 3 };
   const durchfahrt = [
     { col: thSpalte, row: torZeile + 1 },
@@ -3488,8 +3502,8 @@ function baueWall(runde) {
   }
 
   // Der Wall laeuft oben und unten aus dem Bild heraus.
-  for (const r of [-2, -1]) setz(spalte[0], r);
-  for (const r of [ROWS, ROWS + 1]) setz(spalte[ROWS - 1], r);
+  for (const r of [-2, -1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[0] + d, r);
+  for (const r of [ROWS, ROWS + 1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[ROWS - 1] + d, r);
 
   return { wall, torhaus, durchfahrt, form, tor: durchfahrt };
 }
@@ -4572,7 +4586,8 @@ function drawTower(t) {
   const bauF = t.bauZeit === undefined ? 1 : Math.min(1, t.bauZeit / BAU_DAUER);
   const gewachsen = wenigerBewegung ? 1 : ueberschwingen(bauF);
   const fertig = bauF >= 1;
-  const H = Math.max(2, MODELL_HOEHE[t.modell || 'wachturm'] * gewachsen - (t.rueckstoss || 0) * 4);
+  const H = Math.max(2, MODELL_HOEHE[t.modell || 'wachturm'] * gewachsen
+    + (t.imWall ? WALL_HOEHE * gewachsen : 0) - (t.rueckstoss || 0) * 4);
   const sel = getSelectedTower();
   const ausgewaehlt = sel && sel.id === t.id;
   const zielArtJetzt = state.pendingCard ? zielArt(state.pendingCard) : null;
@@ -4583,9 +4598,25 @@ function drawTower(t) {
   );
 
   drawBauSchatten(t.col, t.row, t.w, t.h, H * 0.8);
+  /*
+   * Ein Turm im Wall bekommt einen Sockel aus Wallstein ueber seine ganze
+   * Grundflaeche. Ohne ihn stand er in einem Loch: die Mauerfelder darunter
+   * werden verdeckt, und weil die Modelle ringsum einen Rand lassen, klaffte
+   * zwischen Turm und anschliessendem Wall ein Streifen blanker Boden. Jetzt
+   * laeuft der Wall durch die Grundflaeche hindurch und der Turm waechst
+   * daraus hervor.
+   */
+  const sockel = t.imWall ? Math.round(WALL_HOEHE * gewachsen) : 0;
+  if (t.imWall) drawBlock(t.col, t.row, t.w, t.h, WALL_HOEHE * gewachsen, WALL);
+  /*
+   * Das Modell sitzt AUF dem Sockel, nicht darin. Ohne die Anhebung steckte
+   * der Steinkoerper des Wachturms (30 hoch) fast vollstaendig im Sockel (27),
+   * und heraus schaute nur seine hoelzerne Hurde - eine braune Kiste auf einer
+   * Steinmauer. Angehoben waechst der Turm aus dem Wall heraus, wie er soll.
+   */
   // Jede Gebaeudekarte hat ihr eigenes Modell, also auch ihre eigene
   // Silhouette. Der Wachturm sieht nicht mehr aus wie die Grenzfeste.
-  zeichneModell(t.modell || 'wachturm', t.col, t.row, gewachsen);
+  zeichneModell(t.modell || 'wachturm', t.col, t.row, gewachsen, sockel);
 
   // Der angewaehlte oder anzielbare Turm bekommt einen warmen Schein,
   // statt dass die Steine die Farbe wechseln.
@@ -5201,7 +5232,8 @@ function drawZiellinie() {
     ? state.enemies.find(e => e.id === state.hoverGegner) : null;
   if (!ziel) return;
 
-  const hoehe = MODELL_HOEHE[turm.modell || 'wachturm'] || 30;
+  // Der Zielbogen geht von der Krone aus, also samt Sockel im Wall.
+  const hoehe = (MODELL_HOEHE[turm.modell || 'wachturm'] || 30) + (turm.imWall ? WALL_HOEHE : 0);
   const vx = isoX(turm.col + turm.w / 2, turm.row + turm.h / 2);
   const vy = isoY(turm.col + turm.w / 2, turm.row + turm.h / 2) - hoehe + 4;
   const ex = ziel.vx === undefined ? ziel.col : ziel.vx;
@@ -7146,10 +7178,12 @@ function placeTower(col, row) {
    * Rest der Station unbebaubar - gemessen 7 von 48 Feldzuegen gegen 18 ohne
    * Wall.
    */
+  let imWall = 0;
   for (let c = col; c < col + 2; c++) for (let r = row; r < row + 2; r++) {
     const m = state.wall.get(wkey(c, r));
-    if (m) m.verdeckt = true;
+    if (m) { m.verdeckt = true; imWall++; }
   }
+  turm.imWall = imWall > 0;
   weltStand++;
   state.towers.push(turm);
   staub(col + 1, row + 1, 18, '#d8c4a0');

@@ -345,11 +345,33 @@ Drei Dinge gehören dazu:
   Wandfläche läuft hier aber schräg: bei festem `x` trägt jeder Schritt in `y`
   zugleich nach rechts und nach unten. Jetzt gehen alle Punkte durch `mx/my`,
   dann sitzt er in der Wand statt darauf.
-- **Türme überall am Wall.** Ein Turm zählt als aufgesetzt, wenn mindestens
-  zwei seiner vier Felder auf Mauerwerk stehen — sonst gibt es keine Regel.
-  Vorher gab es dafür Basteien: 2×2-Podeste mit einer gelben Marke darüber.
-  Das machte aus dem Wall ein Brett mit Steckplätzen, und es waren nur sechs.
-  Jetzt sind es rund **25 Stellen** je Station.
+- **Türme überall im Wall.** Alle vier Felder eines Turms müssen auf Mauerwerk
+  stehen — dann sitzt er vollständig darin. Vorher gab es dafür Basteien:
+  2×2-Podeste mit einer gelben Marke darüber. Das machte aus dem Wall ein Brett
+  mit sechs Steckplätzen; jetzt geht es überall an ihm entlang.
+
+### Zwei Felder dick, und warum das nötig war
+
+Der Wall war ein Feld dick, Türme und Torhaus sind zwei Felder breit. Sie hingen
+also zur Hälfte darüber hinaus, und hinten stieß die Mauer nur auf ihre halbe
+Breite. Das sah nach Bruch aus, nicht nach Mauerwerk — und es war kein
+Zeichenfehler, sondern ein Maßfehler.
+
+Jetzt ist der Wall **zwei Felder dick**. Ein Bauwerk sitzt vollständig darin und
+schließt bündig ab; das Torhaus füllt genau die beiden Wallspalten. Nebenbei
+verschwinden die Zinnen an den Innenkanten von selbst, weil dort ein Nachbarfeld
+Mauer steht.
+
+Dazu zwei Griffe beim Zeichnen eines eingebauten Turms:
+
+- **Ein Sockel aus Wallstein** über seine ganze Grundfläche. Ohne ihn stand er in
+  einem Loch: die Mauerfelder darunter werden verdeckt, und weil die Modelle
+  ringsum einen Rand lassen, klaffte ein Streifen blanker Boden.
+- **Das Modell sitzt auf dem Sockel, nicht darin** (`zeichneModell(..., sockel)`).
+  Ohne die Anhebung steckte der Steinkörper des Wachturms (30 hoch) fast
+  vollständig im Sockel (27), und heraus schaute nur seine hölzerne Hurde — eine
+  braune Kiste auf einer Steinmauer. Angehoben wächst der Turm aus dem Wall
+  heraus. Figurenhöhe und Zielbogen wachsen um denselben Betrag mit.
 
 ### Dicht ist nicht selbstverständlich
 
