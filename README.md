@@ -113,6 +113,28 @@ Hast du alle Gegner erschlagen, ist die Station gehalten. Du bekommst Sold und
 wählst eine von drei Karten für dein Deck, oder überspringst die Auswahl, um
 das Deck schlank zu halten. Danach geht es zurück auf die Route.
 
+### Zielen und die Salve
+
+Eine Zeit lang schoss das Spiel für dich: alle Türme feuerten am Zugende in
+einer Salve, jeder auf sein bestes Ziel. Das gab den Kämpfen einen
+Höhepunkt, nahm aber die Entscheidung weg, auf die es ankommt — **worauf**.
+Ob ein Turm feuert, stand ohnehin fest; wen er umwirft, ist das Spiel.
+
+Beides gilt jetzt nebeneinander:
+
+- **Selbst zielen.** Turm anklicken, dann über einen Gegner fahren. Ein roter
+  Bogen spannt sich vom Turm zum Ziel, mit Spitze, Fadenkreuz und der Zahl,
+  die dieser Schuss wirklich macht — `⚔ 7 · 12 LP`, oder `⚔ 7 · fällt`, wenn
+  er reicht. Reicht der Turm nicht so weit, bricht die Linie gestrichelt ab
+  und sagt, wie viele Felder fehlen. Klick feuert.
+- **Die Salve räumt den Rest.** Am Zugende feuert nur noch, was du nicht
+  selbst angewiesen hast. Ein Turm schießt nie zweimal.
+
+Schießen kostet **keinen Tatendrang**. Die Entscheidung ist das Ziel, nicht
+die Frage, ob man sich den Schuss leisten kann; der Tatendrang gehört den
+Karten. Nach einem Schuss wählt sich der nächste bereite Turm von selbst an,
+damit man eine Reihe durchklicken kann, ohne jedes Mal neu zu greifen.
+
 ### Die Frist
 
 Lange fehlte dem Spiel jeder Druck. Die Burg nahm fast nie Schaden: Türme

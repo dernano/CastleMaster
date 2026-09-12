@@ -885,7 +885,8 @@
       <ul>
         <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
         <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
-        <li><b>Die Salve:</b> Du schießt nicht selbst. Am Ende deines Zuges feuert das ganze Werk, Turm für Turm, jeder auf sein bestes Ziel. Dein Tatendrang gehört allein den Karten.</li>
+        <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
+        <li><b>Die Salve:</b> Was du nicht selbst angewiesen hast, feuert am Zugende von allein, Turm für Turm auf sein bestes Ziel. Du musst also nicht jeden Schuss setzen — aber du kannst.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
@@ -1325,7 +1326,9 @@ const STARTER_DECK = [
 const HAND_SIZE = 5;
 /** Wie viele Karten ein Zug bringt, samt anhaltender Maechte. */
 const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0);
-const ATTACK_COST = 1;
+// Zielen kostet nichts. Gefeuert wird ohnehin jeden Zug; die Entscheidung
+// ist, WORAUF, nicht OB. Der Tatendrang gehoert weiter den Karten.
+const ATTACK_COST = 0;
 
 /**
  * Baut die Route eines Feldzugs. Es werden mehrere Wege von unten nach oben
@@ -4093,7 +4096,7 @@ function drawEnemy(e, geist = false) {
   const sel = getSelectedTower();
 
   if (sel) {
-    const treffbar = enemyInRange(sel, e) && !towerHasFired(sel) && state.tatendrang >= ATTACK_COST;
+    const treffbar = enemyInRange(sel, e) && !towerHasFired(sel);
     ctx.strokeStyle = treffbar ? '#8fbf55' : 'rgba(192,57,43,0.55)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -4498,6 +4501,90 @@ function drawBusch(x, y, s) {
   ctx.fillRect(x - s + 1, y - s * 1.8, s, 2);
 }
 
+/**
+ * Die Ziellinie. Ist ein Turm gewaehlt und steht ein Gegner unter dem Zeiger,
+ * spannt sich ein roter Bogen vom Turm zu ihm, mit einer Spitze am Ziel und
+ * der Zahl, die dieser Schuss wirklich macht. Reicht der Turm nicht so weit,
+ * bricht die Linie ab und sagt, wie weit es noch ist.
+ */
+function drawZiellinie() {
+  if (state.phase !== 'kampf' || state.pendingCard || state.zugLaeuft) return;
+  const turm = getSelectedTower();
+  if (!turm || towerHasFired(turm)) return;
+  const ziel = state.hoverGegner != null
+    ? state.enemies.find(e => e.id === state.hoverGegner) : null;
+  if (!ziel) return;
+
+  const hoehe = MODELL_HOEHE[turm.modell || 'wachturm'] || 30;
+  const vx = isoX(turm.col + turm.w / 2, turm.row + turm.h / 2);
+  const vy = isoY(turm.col + turm.w / 2, turm.row + turm.h / 2) - hoehe + 4;
+  const ex = ziel.vx === undefined ? ziel.col : ziel.vx;
+  const ey = ziel.vy === undefined ? ziel.row : ziel.vy;
+  const zx = isoX(ex, ey);
+  const zy = isoY(ex, ey) + TH / 2 - 14;
+
+  const d = distanceTo(turm, ziel);
+  const schaden = towerDamageAt(turm, d);
+  const reicht = schaden > 0;
+  const toedlich = reicht && schaden >= ziel.hp;
+
+  // Ein flacher Bogen, damit die Linie nicht durch das halbe Bild schneidet
+  const mx2 = (vx + zx) / 2;
+  const my2 = (vy + zy) / 2 - Math.max(18, Math.hypot(zx - vx, zy - vy) * 0.16);
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Erst ein dunkler Unterstrich, damit die Linie auf hellem Boden steht
+  for (const [breite, farbe, strich] of reicht
+      ? [[5, 'rgba(20,6,4,0.55)', []], [2.5, toedlich ? '#ff7a4d' : '#e23b2c', []]]
+      : [[5, 'rgba(20,6,4,0.45)', []], [2, 'rgba(150,120,110,0.8)', [5, 5]]]) {
+    ctx.setLineDash(strich);
+    ctx.lineWidth = breite;
+    ctx.strokeStyle = farbe;
+    ctx.beginPath();
+    ctx.moveTo(vx, vy);
+    ctx.quadraticCurveTo(mx2, my2, zx, zy);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Spitze am Ziel, ausgerichtet nach dem letzten Stueck der Kurve
+  const w = Math.atan2(zy - my2, zx - mx2);
+  ctx.fillStyle = reicht ? (toedlich ? '#ff7a4d' : '#e23b2c') : 'rgba(150,120,110,0.8)';
+  ctx.beginPath();
+  ctx.moveTo(zx, zy);
+  ctx.lineTo(zx - Math.cos(w - 0.42) * 13, zy - Math.sin(w - 0.42) * 13);
+  ctx.lineTo(zx - Math.cos(w) * 8, zy - Math.sin(w) * 8);
+  ctx.lineTo(zx - Math.cos(w + 0.42) * 13, zy - Math.sin(w + 0.42) * 13);
+  ctx.closePath();
+  ctx.fill();
+
+  // Der Fadenkreuzring um das Ziel, pulsend
+  const puls = wenigerBewegung ? 0 : Math.sin(animZeit * 6) * 1.6;
+  ctx.strokeStyle = reicht ? (toedlich ? '#ff7a4d' : '#e23b2c') : 'rgba(150,120,110,0.7)';
+  ctx.lineWidth = 1.6;
+  const rx = TW / 2 - 5 + puls, ry = TH / 2 - 2 + puls * 0.5;
+  const zyRing = isoY(ex, ey) + TH / 2;
+  for (let i = 0; i < 4; i++) {
+    const a0 = i * Math.PI / 2 + 0.32, a1 = (i + 1) * Math.PI / 2 - 0.32;
+    ctx.beginPath();
+    ctx.ellipse(zx, zyRing, rx, ry, 0, a0, a1);
+    ctx.stroke();
+  }
+
+  // Die Zahl, um die es geht
+  const text = reicht
+    ? (toedlich ? '\u2694 ' + schaden + ' \u00b7 f\u00e4llt' : '\u2694 ' + schaden + ' \u00b7 ' + ziel.hp + ' LP')
+    : (towerReach(turm) < d ? '\u2716 ' + d + ' Felder, Reichweite ' + towerReach(turm)
+                            : '\u2716 zu weit f\u00fcr diese Besatzung');
+  drawBadge(zx, zyRing - 9 * (ENEMY_TYPES[ziel.typ].scale) - 30, text,
+    reicht ? (toedlich ? '#ffd0b0' : '#ffb3a7') : '#cfc0a0',
+    reicht ? (toedlich ? '#c4451f' : '#8c2230') : '#6b5535');
+  ctx.restore();
+}
+
 /** Dezente Markierung unter dem Mauszeiger. */
 function drawHover() {
   if (state.pendingCard || !state.hoverCell || state.phase !== 'kampf') return;
@@ -4717,6 +4804,7 @@ function draw() {
   drawLeichen();
   drawStaub();
   drawLager();
+  drawZiellinie();
   drawProjektile();
   drawZahlen();
   drawFlusen();
@@ -5383,11 +5471,15 @@ canvas.addEventListener('mousemove', (evt) => {
   const p = canvasPoint(evt);
   state.hoverCell = cellFromPoint(p);
   const treffer = pickAt(p);
+  // Wer unter dem Zeiger steht, ist das Ziel, auf das der rote Pfeil geht.
+  state.hoverGegner = treffer && treffer.art === 'enemy' ? treffer.ref.id
+    : (state.enemies.find(e => e.col === state.hoverCell.col && e.row === state.hoverCell.row) || {}).id;
   canvas.style.cursor = treffer || (state.pendingCard && zielArt(state.pendingCard) === 'feld')
     ? 'pointer' : 'default';
 });
 
 canvas.addEventListener('mouseleave', () => {
+  state.hoverGegner = null;
   if (state.hoverCell) { state.hoverCell = null; draw(); }
 });
 
@@ -5440,15 +5532,17 @@ canvas.addEventListener('click', (evt) => {
  * zur naechsten Einheit darauf.
  */
 function handleSelectionClick(treffer, cell) {
-  // Auf einen Gegner zu klicken schiesst nicht mehr. Gefeuert wird die ganze
-  // Salve auf einmal, am Zugende.
+  // Erst einen Turm waehlen, dann den Gegner: so zielt der Spieler selbst.
+  // Was er nicht selbst anweist, feuert am Zugende in der Salve mit.
   const gegner = treffer && treffer.art === 'enemy'
     ? treffer.ref
     : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
   if (gegner) {
+    const turm = getSelectedTower();
+    if (turm) { attackWithTower(turm, gegner); return; }
     const art = ENEMY_TYPES[gegner.typ];
     setMessage(gegner.name + ': ' + gegner.hp + '/' + gegner.maxHp + ' LP, ' +
-      art.dmg + ' Schaden, Reichweite ' + art.reach + '. Die Salve trifft am Zugende.');
+      art.dmg + ' Schaden, Reichweite ' + art.reach + '. Wähle erst einen Turm, dann zielst du.');
     renderAll();
     return;
   }
@@ -5471,9 +5565,7 @@ function handleSelectionClick(treffer, cell) {
     const besetzung = einheiten.length === 1 ? '1 Einheit' : einheiten.length + ' Einheiten';
 
     if (towerHasFired(tower)) {
-      setMessage(tower.name + ' hat in dieser Runde bereits geschossen.');
-    } else if (state.tatendrang < ATTACK_COST) {
-      setMessage(tower.name + ' ist bereit, aber der Tatendrang reicht nicht.');
+      setMessage(tower.name + ' hat in diesem Zug bereits geschossen.');
     } else if (!state.enemies.length) {
       setMessage(tower.name + ': Reichweite ' + rw + ', ' + salve + ' Schaden aus ' + besetzung + '. Kein Gegner auf dem Feld.');
     } else {
@@ -5483,7 +5575,7 @@ function handleSelectionClick(treffer, cell) {
         setMessage(tower.name + ': Reichweite ' + rw + ', der nächste Gegner steht ' + d + ' Felder entfernt.');
       } else {
         setMessage(tower.name + ': Reichweite ' + rw + ', ' + salve + ' Schaden aus ' + besetzung + ', ' +
-          erreichbar + ' Ziel' + (erreichbar === 1 ? '' : 'e') + ' erreichbar. Gegner anklicken.');
+          erreichbar + ' Ziel' + (erreichbar === 1 ? '' : 'e') + ' erreichbar. Fahre über einen Gegner und klicke.');
       }
     }
     renderAll();
@@ -5503,8 +5595,7 @@ function handleSelectionClick(treffer, cell) {
  */
 function attackWithTower(tower, enemy) {
   if (!enemy || !state.enemies.includes(enemy)) { setMessage('Dieses Ziel gibt es nicht mehr.'); renderAll(); return; }
-  if (towerHasFired(tower)) { setMessage(tower.name + ' hat in dieser Runde bereits geschossen.'); renderAll(); return; }
-  if (state.tatendrang < ATTACK_COST) { setMessage('Nicht genug Tatendrang für einen Angriff.'); renderAll(); return; }
+  if (towerHasFired(tower)) { setMessage(tower.name + ' hat in diesem Zug bereits geschossen.'); renderAll(); return; }
 
   const d = distanceTo(tower, enemy);
   const schaden = towerDamageAt(tower, d);
@@ -5514,7 +5605,6 @@ function attackWithTower(tower, enemy) {
     return;
   }
 
-  state.tatendrang -= ATTACK_COST;
   tower.attackedKey = state.runde + ':' + state.zug;
   enemy.hp -= schaden;
   loeseAus('salve');
@@ -5552,6 +5642,10 @@ function attackWithTower(tower, enemy) {
   }
 
   if (rundeGewonnen()) { beginneBelohnung(); return; }
+  // Der naechste Turm, der noch schiessen kann, ist gleich angewaehlt. So
+  // klickt man eine ganze Reihe durch, ohne jedes Mal neu zu greifen.
+  const naechster = state.towers.find(t => !towerHasFired(t) && towerUnits(t).length && salveZiel(t));
+  state.selectedTower = naechster ? naechster.id : null;
   renderAll();
 }
 
@@ -6125,7 +6219,10 @@ let salve = null;
 /** Das beste Ziel eines Turms: was er trifft und am ehesten faellt. */
 function salveZiel(t) {
   const reichweite = towerReach(t);
-  let bestes = null, bestWert = -1;
+  // Der Startwert muss unter jedem moeglichen Wert liegen. Mit -1 blieb ein
+  // Turm stumm, sobald das beste Ziel mehr Leben hatte als er Schaden macht:
+  // schaden*10 - hp wird dann negativ, und kein Gegner kam je durch.
+  let bestes = null, bestWert = -Infinity;
   for (const e of state.enemies) {
     const d = distanceTo(t, e);
     if (d > reichweite) continue;
@@ -6138,13 +6235,16 @@ function salveZiel(t) {
   return bestes;
 }
 
-/** Wie viele Tuerme in diesem Zug ueberhaupt etwas treffen. */
+/**
+ * Wie viele Tuerme in diesem Zug noch von selbst feuern. Wer schon von Hand
+ * gezielt hat, ist durch: sonst schoesse derselbe Turm zweimal.
+ */
 function salveBereit() {
-  return state.towers.filter(t => towerUnits(t).length && salveZiel(t)).length;
+  return state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && salveZiel(t)).length;
 }
 
 function starteSalve(danach) {
-  const schuetzen = state.towers.filter(t => towerUnits(t).length);
+  const schuetzen = state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length);
   salve = {
     liste: schuetzen, i: 0, warten: 0.12,
     gesamt: 0, treffer: 0, gefallen: 0, danach,
@@ -6162,9 +6262,10 @@ function schreiteSalve(dt) {
 
   while (salve.i < salve.liste.length) {
     const t = salve.liste[salve.i++];
-    if (!state.towers.includes(t)) continue;
+    if (!state.towers.includes(t) || towerHasFired(t)) continue;
     const ziel = salveZiel(t);
     if (!ziel) continue;
+    t.attackedKey = state.runde + ':' + state.zug;
 
     const d = distanceTo(t, ziel);
     const schaden = towerDamageAt(t, d);
@@ -6997,6 +7098,7 @@ function endTurn() {
   if (!zugTheater) {
     // Ohne Takt laeuft alles sofort: erst die Salve, dann das Aufgebot.
     for (const t of state.towers.slice()) {
+      if (towerHasFired(t)) continue;
       const ziel = salveZiel(t);
       if (!ziel) continue;
       loeseAus('salve');
@@ -7723,6 +7825,9 @@ function renderAll() {
   knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
   const bereit = state.phase === 'kampf' ? salveBereit() : 0;
   knopf.textContent = state.zugLaeuft ? 'Es feuert' : (bereit ? 'SALVE · ' + bereit : 'Zug beenden');
+  knopf.title = bereit
+    ? bereit + ' Turm' + (bereit === 1 ? '' : 'e') + ' feuern von selbst. Ziele vorher selbst, wenn du es besser weißt.'
+    : 'Alle Türme haben geschossen.';
   knopf.classList.toggle('scharf', bereit > 0 && !state.zugLaeuft);
 
   // Ausserhalb des Kampfes sagen die Zahlen nichts; die Routenkarte und die
