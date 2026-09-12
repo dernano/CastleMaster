@@ -509,10 +509,23 @@ Ein Bild in `zuschnitt.json` bekommt einen Ausschnitt in Anteilen der
 Bildkante — nützlich, wenn die Vorlage schon einen eigenen Rahmen und
 Eckzeichen mitbringt, die das Spiel ohnehin selbst zeichnet.
 
-**Was das Spiel weiter selbst zeichnet**, auch wenn ein Bild da ist: Rahmen,
-Eckzeichen mit den Kosten, die Werte-Pillen und der Regeltext. Die ändern sich
-im Lauf — Kosten sinken beim Schärfen, mitwachsende Karten zeigen ihren
-jetzigen Wert. Ein festes Bild könnte das nicht und würde lügen.
+**Was eine Bildkarte anders macht.** Ein ganzes Bild bringt Rahmen, Schriftband,
+Eichenlaub und sein eigenes Eckzeichen schon mit. Die Karte blendet ihre
+eigenen also aus und gibt dem Bild die Höhe, die sonst der Spruch bekommt
+(166 statt 104 Punkte). Was bleibt, sind die **Werte** — Kosten, Kartenfarbe,
+Schaden, Reichweite. Die stehen bei einer Bildkarte unter dem Bild statt in
+der Ecke, weil sie sich im Lauf ändern: Kosten sinken beim Schärfen,
+mitwachsende Karten zeigen ihren jetzigen Wert. Ein festes Bild könnte das
+nicht und würde lügen.
+
+Die Maße stehen an zwei Stellen und müssen zusammenpassen: `BILDFELD` in
+`index.html` und `BREITE`/`HOCH`/`HOCH_MIT_BILD` im Werkzeug. Sonst wird das
+Bild gestreckt.
+
+Und: auch eine Datenadresse wird erst nebenher entschlüsselt. Ohne ein
+Nachzeichnen, sobald das letzte Bild liegt, zeigte die Karte beim ersten
+Aufbau das gemalte Motiv und behielt es, weil niemand sie noch einmal
+anfasste.
 
 Zur Größe: bei Anzeigemaß wiegt ein Kartenbild als JPEG rund 20 KB. Alle
 fünfundsiebzig wären also etwa 1,5 MB gegen eine Grenze von 16 MB. Der Platz
