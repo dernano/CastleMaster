@@ -268,34 +268,33 @@ Zug endet dann nie. `bezahlbarkeitSichern` erzwingt deshalb für jede Karte
 Nettokosten von mindestens einem Tatendrang, sowohl beim Laden des Stapels als
 auch nach jedem Schärfen.
 
-## Die Wälle
+## Die Ringmauer
 
-Sobald der erste Turm steht, ziehen sich Wälle von der Burg zu den Türmen und
-von Turm zu Turm. Sie kosten nichts, haben keine Lebenspunkte und halten
-niemanden auf: Gegner laufen weiterhin auf den nächsten Turm zu und danach
-weiter. Sie sind reine Zier.
+Sobald der erste Turm steht, schließt sich eine Mauer um Burg und Türme. Sie
+kostet nichts, hat keine Lebenspunkte und hält niemanden auf: Gegner laufen
+weiterhin auf den nächsten Turm zu und danach weiter. Sie ist reine Zier.
 
-Gebaut wird ein **minimaler Spannbaum** über Burg und Türme. Jedes Bauwerk
-hängt am Netz, aber es entsteht nie ein Ring. Das ist der Kern der Sache.
+Der **Hof** ist die konvexe Hülle über alle Grundflächen. Über jede Kante eines
+Hoffeldes, hinter der kein Hof mehr liegt, läuft ein Stück Mauer. Kanten an
+Bauwerken bleiben frei, dort ist das Bauwerk selbst die Mauer. Kommt ein Turm
+dazu, wächst die Mauer von selbst dorthin; die neuen Stücke steigen aus dem
+Boden auf wie die Türme.
 
-### Warum kein Ring
+### Wo ein Belagerer steht, schließt sich kein Ring
 
-Zuerst lag eine konvexe Hülle um alle Bauwerke. Das sah nach Burghof aus, hatte
-aber einen Fehler: Ein neuer Turm weit draußen zog die Hülle mit und schloss
-jeden Gegner ein, der dazwischen stand. Man baute einen Turm und hatte plötzlich
-Belagerer im eigenen Hof.
+Eine Hülle über alle Bauwerke hat einen Haken: Ein neuer Turm weit draußen
+zieht sie mit und schließt jeden Gegner ein, der dazwischen steht. Man baut
+einen Turm und hat Belagerer im eigenen Hof. Bei 600 zufälligen Stellungen
+passierte das in **455** Fällen.
 
-Ein Baum umschließt keine Fläche, kann also niemanden einsperren. Zwei Wallwege
-können sich auf dem Raster aber trotzdem berühren und zusammen mit einem Bauwerk
-eine kleine Tasche bilden. Deshalb flutet `oeffneTaschen` nach dem Bauen vom
-Spielfeldrand aus und öffnet jede abgeschnittene Tasche durch ein Loch im Wall.
-Das Loch sieht aus wie ein Durchlass und ist genau das.
+Die Mauer weicht deshalb jedem Gegner aus: `raeumeGang` sucht vom Feld des
+Belagerers den kürzesten Weg aus dem Hof heraus und nimmt ihn aus dem Hof. Die
+Mauer buchtet dort nach innen ein, solange er steht, und schließt sich wieder,
+sobald er fällt oder weiterzieht. Deshalb enthält der Schlüssel des
+Zwischenspeichers auch die Gegnerpositionen, nicht nur die Türme.
 
-Geprüft wird das an 400 zufälligen Turmstellungen je Durchlauf: keine einzige
-schneidet ein Feld vom Rand ab.
-
-Gerechnet wird nur, wenn sich die Türme geändert haben, nicht bei jedem
-Bildaufbau. Neue Stücke steigen aus dem Boden auf wie die Türme.
+Bei denselben 600 Stellungen steht danach **kein einziger** Gegner im Hof. Ein
+Neuberechnen mit acht Gegnern kostet 0,23 Millisekunden.
 
 ## Die Burg
 
@@ -426,8 +425,8 @@ Station, `oeffneHaendler`, `oeffneRast` und `oeffneEreignis` für die Stationen
 ohne Kampf, `EREIGNISSE` für die Begegnungen, `schaerfeKarte` und
 `entferneKarte` fürs Deck, `zielArt`, `playCard` und `wirke` für das Ausspielen
 einer Karte, `wendeMachtAn` für anhaltende Wirkungen, `treffeGegner` als
-gemeinsamer Weg für allen Schaden, `pruefeMauer`, `oeffneTaschen` und `drawMauerstueck` für die
-Wälle, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
+gemeinsamer Weg für allen Schaden, `pruefeMauer`, `raeumeGang` und `drawMauerstueck` für die
+Ringmauer, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
 `resolveEnemyTurn` für den Gegnerzug sowie `towerReach` und `towerDamageAt` für
 Reichweite und Salve eines Turms.
 
