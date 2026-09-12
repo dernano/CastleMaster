@@ -222,6 +222,44 @@ im Aufgebot.
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
 
+## Nur einmal je Kampf
+
+Die **Wachturmkarte** trägt als einzige diese Grenze: an einer Station lässt sie
+sich einmal ausspielen, dann nicht mehr. Ungespielt wandert sie wie jede andere
+Karte in den Ablagestapel — der Verbrauch hängt am Ausspielen, nicht am Ziehen.
+
+Vorher gab es gar keine Grenze. Das Zehnerdeck läuft alle zwei Züge einmal
+durch, dieselbe Karte kommt also immer wieder — gemessen konnte ich sechsmal
+hintereinander einen Wachturm bauen. Das machte den Wall zu einer Reihe
+gleicher Türme und alle anderen Gebäudekarten überflüssig.
+
+Im Code hängt der Vermerk an `bezahle`, weil dort jede gespielte Karte
+durchläuft:
+
+```js
+function bezahle(card) {
+  state.tatendrang -= card.cost;
+  if (card.einmalJeKampf) state.einmalGenutzt[card.id] = true;
+}
+```
+
+`state.einmalGenutzt` wird beim Betreten jeder Station geleert.
+
+**Erkenntlich gemacht** ist es doppelt. Die Karte trägt die Regel immer im
+Text (`Nur einmal je Kampf.`), damit man sie vor dem Spielen kennt. Und ist sie
+gelaufen, liegt ein rotes Band **Verbraucht** quer darüber und die Karte wird
+dunkel. Grau allein hätte nicht gereicht: grau heißt „geht gerade nicht" und
+könnte auch am Tatendrang liegen.
+
+### Was sie kostet
+
+Über je 48 Bot-Feldzüge: **22/48 ohne die Grenze, 14/48 mit ihr** — rund
+siebzehn Prozentpunkte, bei gleichbleibender Sturmquote (28 %). Der Bot kauft
+allerdings ziemlich blind (er greift mit 60 % Wahrscheinlichkeit zur ersten
+Ware). Wer gezielt Gebäudekarten kauft, für die die Grenze nicht gilt, fährt
+besser — und genau dahin schiebt die Regel das Spiel: der Wachturm ist der
+Notnagel am Anfang, nicht die Maschine für den ganzen Feldzug.
+
 ## Musik
 
 Der Soundtrack liegt als Datei neben dem Spiel, unter `musik/`. Standardname
@@ -297,9 +335,16 @@ Drei Dinge gehören dazu:
 
   Gebaut ist es als **ein Baukörper mit einem Loch darin**, nicht als zwei
   Pfeiler nebeneinander — genau so las sich die erste Fassung nämlich: zwei
-  Türmchen mit einer Lücke. In der Durchfahrt hängt beidseitig eine
-  **Gittertür**, in die dunkle Laibung geclippt, mit Stangen, zwei Bändern und
-  einem Schlussstein über dem Bogen.
+  Türmchen mit einer Lücke. In der Durchfahrt hängt eine **Gittertür**, in die
+  dunkle Laibung geclippt, mit Stangen, zwei Bändern und einem Schlussstein.
+
+  Zwei Fehler ließen es davor verstümmelt aussehen. **Der Bogen der Hofseite
+  wurde mitgemalt**, obwohl er hinter dem Baukörper liegt und gar nicht zu
+  sehen ist — er landete als zweite dunkle Scharte mitten auf der Vorderseite.
+  Und **der Bogen lag flach im Bildschirm**, mit waagerechten Versätzen. Eine
+  Wandfläche läuft hier aber schräg: bei festem `x` trägt jeder Schritt in `y`
+  zugleich nach rechts und nach unten. Jetzt gehen alle Punkte durch `mx/my`,
+  dann sitzt er in der Wand statt darauf.
 - **Türme überall am Wall.** Ein Turm zählt als aufgesetzt, wenn mindestens
   zwei seiner vier Felder auf Mauerwerk stehen — sonst gibt es keine Regel.
   Vorher gab es dafür Basteien: 2×2-Podeste mit einer gelben Marke darüber.

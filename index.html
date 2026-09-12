@@ -548,6 +548,27 @@
   .pill.kosten { display: flex; align-items: center; gap: 3px; background: #efe3c8; }
   .pill.kosten canvas { width: 11px; height: 11px; display: block; }
 
+  /*
+   * Eine Karte, die in diesem Kampf schon gelaufen ist, wird nicht nur grau
+   * wie jede unspielbare. Grau heisst nur "geht gerade nicht" - es koennte
+   * auch der Tatendrang sein. Das Band sagt, woran es liegt.
+   */
+  .card.verbraucht { filter: grayscale(0.5) brightness(0.62) sepia(0.2); }
+  .card-verbraucht {
+    position: absolute; left: -22%; right: -22%; top: 44%;
+    transform: rotate(-19deg);
+    z-index: 4; pointer-events: none;
+    text-align: center;
+    font-family: var(--anzeige); font-weight: 700;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #f3e6cc;
+    padding: 3px 0 2px;
+    background: rgba(120, 32, 24, 0.88);
+    border-top: 1.5px solid rgba(20,14,8,0.75);
+    border-bottom: 1.5px solid rgba(20,14,8,0.75);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+  }
+
   /* Eichenlaub in der oberen rechten und unteren linken Ecke */
   .card-zier {
     position: absolute; width: 34px; height: 25px; z-index: 1;
@@ -1022,6 +1043,7 @@
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
         <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
+        <li><b>Nur einmal je Kampf:</b> Der <b>Wachturm</b> trägt diese Grenze. Ist er an einer Station einmal gebaut, liegt über jeder weiteren Wachturm-Karte das rote Band <b>Verbraucht</b>, bis die nächste Station beginnt. Ungespielt wandert sie wie jede andere Karte in den Ablagestapel. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
@@ -1180,7 +1202,7 @@ const CARD_POOL = [
   // ---------------- Gebaeude ----------------
   { id: 'palisade', name: 'Palisade', type: 'Gebäude', suit: '🌰', cost: 1, hp: 3, rangeBonus: 1, art: 'mauer', sel: 'gewoehnlich',
     text: 'Schnell errichtet, doch nicht weniger trotzig.' },
-  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich',
+  { id: 'wachturm', name: 'Wachturm', type: 'Gebäude', suit: '🌰', cost: 2, hp: 6, rangeBonus: 2, art: 'turm', sel: 'gewoehnlich', einmalJeKampf: true,
     text: 'Hoch genug, dass Pfeile weiter tragen.' },
   { id: 'schanze', name: 'Schanze', type: 'Gebäude', suit: '🌰', cost: 2, hp: 10, art: 'mauer', sel: 'gewoehnlich',
     text: 'Aufgeworfen in einer Nacht, gehalten über Wochen.' },
@@ -1610,6 +1632,7 @@ let state = {
   selectedTower: null,   // Turm, der schiessen soll
   hoverCell: null,
   wall: new Map(), tor: [],
+  einmalGenutzt: {},   // Kennungen der Karten mit `einmalJeKampf`, die schon liefen
   nextTowerId: 1,
   nextEnemyId: 1,
 };
@@ -2954,72 +2977,86 @@ const MODELLE = {
    */
   torhaus: (g, f) => {
     /*
-     * Das Torhaus ist ein Block, kein Tuermchenpaar. Die erste Fassung setzte
-     * zwei Pfeiler nebeneinander, und genau so las es sich auch: zwei Tuerme
-     * mit einer Luecke. Jetzt steht ein geschlossener Baukoerper da, in den
-     * die Durchfahrt hineingeschnitten ist, mit einer Gittertuer darin und
-     * einer Wehrplatte obendrauf.
+     * Das Torhaus. Zwei Fehler der vorigen Fassung haben es verstuemmelt
+     * aussehen lassen:
+     *
+     * Erstens wurde auch der Bogen der Hofseite gemalt. Der liegt hinter dem
+     * Baukoerper und ist gar nicht zu sehen - gezeichnet wurde er trotzdem,
+     * mitten auf die Vorderseite. Das sah aus wie eine zweite Scharte an der
+     * falschen Stelle. Es gibt jetzt nur noch den zum Feld hin.
+     *
+     * Zweitens lag der Bogen flach im Bildschirm, mit waagerechten Versaetzen.
+     * Eine Wandflaeche laeuft hier aber schraeg: bei festem x traegt jeder
+     * Schritt in y zugleich nach rechts und nach unten. Darum wirkte er
+     * aufgeklebt. Jetzt werden alle Punkte durch mx/my gelegt, dann sitzt er
+     * in der Wand.
      */
-    const H = 46 * f;          // bis zur Wehrplatte
-    const BOGEN = 22 * f;      // lichte Hoehe der Durchfahrt
+    const H = 58 * f;          // bis zur Wehrplatte, deutlich ueber dem Wall
+    const BOGEN = 30 * f;      // lichte Hoehe der Durchfahrt
     const W = 2, D = 3;
+    const P = (x, y, z) => [mx(x, y), my(x, y, z)];
 
-    // Der Baukoerper: voll bis zur Durchfahrt, darueber durchgehend.
+    // Baukoerper: voll bis zur Durchfahrt, darueber durchgehend
     teilQuader(g, 0, 0, 0, W, 1.0, H, 'wallstein', 90);
     teilQuader(g, 0, 2.0, 0, W, 1.0, H, 'wallstein', 91);
     if (f < 0.5) return;
     teilQuader(g, 0, 1.0, BOGEN, W, 1.0, H - BOGEN, 'wallstein', 92);
 
-    // Vorlage und Zinnenkranz. Die Platte kragt ringsum vor, wie beim Vorbild.
-    teilQuader(g, -0.14, -0.14, H, W + 0.28, D + 0.28, 7, 'wallstein2', 93);
-    teilZinnen(g, -0.14, -0.14, H + 7, W + 0.28, D + 0.28, 'wallstein');
-
     /*
-     * Der Torbogen mit Gittertuer, auf beiden Seiten. Erst die dunkle
-     * Laibung, dann das Fallgitter darin: senkrechte Stangen und zwei
-     * waagerechte Baender, oben dem Bogen folgend.
+     * Der Torbogen zum Feld, in die Ostwand gelegt. Erst die dunkle Laibung
+     * als Vieleck auf der Flaeche x = W, dann darin die Gittertuer: senkrechte
+     * Stangen sind feste y bei wachsendem z, waagerechte Baender festes z bei
+     * wachsendem y.
      */
-    const bogen = (xk, nachAussen) => {
-      const gx = mx(xk, 1.5), gy = my(xk, 1.5, 0);
-      const r = nachAussen ? 1 : -1;
-      const b = 11, hoch = BOGEN;
-      g.save();
+    const y0 = 1.1, y1 = 1.9, ym = (y0 + y1) / 2;
+    const kaempfer = BOGEN * 0.55;      // wo der Bogen ansetzt
+    g.save();
+    g.beginPath();
+    g.moveTo(...P(W, y0, 0));
+    g.lineTo(...P(W, y1, 0));
+    g.lineTo(...P(W, y1, kaempfer));
+    g.quadraticCurveTo(...P(W, ym, BOGEN * 1.16), ...P(W, y0, kaempfer));
+    g.closePath();
+    g.fillStyle = '#191320';
+    g.fill();
+    g.clip();
+
+    g.strokeStyle = '#6f6454';
+    g.lineWidth = 1.3;
+    for (let i = 1; i <= 4; i++) {
+      const y = y0 + (y1 - y0) * i / 5;
       g.beginPath();
-      g.moveTo(gx, gy + 2);
-      g.lineTo(gx - r * b, gy - 4);
-      g.lineTo(gx - r * b, gy - 4 - hoch * 0.55);
-      g.quadraticCurveTo(gx - r * b * 0.5, gy - 9 - hoch, gx, gy - 3 - hoch);
-      g.closePath();
-      g.fillStyle = '#1b1520';
-      g.fill();
-      g.clip();
+      g.moveTo(...P(W, y, 0));
+      g.lineTo(...P(W, y, BOGEN * 1.2));
+      g.stroke();
+    }
+    for (const z of [BOGEN * 0.3, BOGEN * 0.62]) {
+      g.beginPath();
+      g.moveTo(...P(W, y0, z));
+      g.lineTo(...P(W, y1, z));
+      g.stroke();
+    }
+    g.restore();
 
-      // Gittertuer: Stangen und Baender, warmes Eisen im Schatten
-      g.strokeStyle = '#6d6352';
-      g.lineWidth = 1.4;
-      for (let i = 1; i <= 4; i++) {
-        const t = i / 5;
-        g.beginPath();
-        g.moveTo(gx - r * b * t, gy + 2 - 6 * t);
-        g.lineTo(gx - r * b * t, gy - 4 - hoch * 1.1);
-        g.stroke();
-      }
-      for (const q of [0.34, 0.68]) {
-        g.beginPath();
-        g.moveTo(gx, gy + 2 - hoch * q);
-        g.lineTo(gx - r * b, gy - 4 - hoch * q);
-        g.stroke();
-      }
-      g.restore();
+    // Bogenlaibung als heller Grat, damit die Oeffnung Tiefe bekommt
+    g.strokeStyle = 'rgba(236,222,188,0.6)';
+    g.lineWidth = 1.6;
+    g.beginPath();
+    g.moveTo(...P(W, y0, 0));
+    g.lineTo(...P(W, y0, kaempfer));
+    g.quadraticCurveTo(...P(W, ym, BOGEN * 1.16), ...P(W, y1, kaempfer));
+    g.lineTo(...P(W, y1, 0));
+    g.stroke();
 
-      // Der Schlussstein ueber dem Bogen
-      g.fillStyle = 'rgba(232,216,180,0.55)';
-      g.fillRect(gx - r * 2 - 1, gy - 6 - hoch, 3, 3);
-    };
-    bogen(W, true);    // Feldseite
-    bogen(0, false);   // Hofseite
+    // Der Schlussstein sitzt auf dem Scheitel
+    const [kx, ky] = P(W, ym, BOGEN * 0.92);
+    g.fillStyle = 'rgba(240,228,196,0.75)';
+    g.fillRect(Math.round(kx) - 2, Math.round(ky) - 3, 4, 5);
 
-    teilFahne(g, W - 0.32, 0.22, H + 7, '#2f5fa8');
+    // Wehrplatte mit Zinnenkranz, ringsum vorkragend
+    teilQuader(g, -0.16, -0.16, H, W + 0.32, D + 0.32, 7, 'wallstein2', 93);
+    teilZinnen(g, -0.16, -0.16, H + 7, W + 0.32, D + 0.32, 'wallstein');
+    teilFahne(g, W - 0.34, 0.24, H + 7, '#2f5fa8');
   },
 };
 
@@ -3037,13 +3074,13 @@ const MODELL_MASS = {
   bergfried: { w: 2, d: 2, hoch: 96 }, trutzburg: { w: 2, d: 2, hoch: 76 },
   grenzfeste: { w: 2, d: 2, hoch: 106 },
   burg: { w: 2, d: 5, hoch: 116 },
-  torhaus: { w: 2, d: 3, hoch: 92 },
+  torhaus: { w: 2, d: 3, hoch: 112 },
 };
 
 // Auf welcher Hoehe die Besatzung eines Modells steht. Ohne das stuende der
 // Bogenschuetze beim Lugaus in der Luft und beim Erdwall im Stein.
 const MODELL_HOEHE = {
-  torhaus: 52,
+  torhaus: 65,
   palisade: 26, schanze: 30, wallgraben: 25, erdwall: 26,
   wehrgang: 27, bollwerk: 28,
   wachturm: 37, steinturm: 36, turmwache: 32, alterturm: 33,
@@ -6740,9 +6777,14 @@ function freiesBaufeld() {
   return false;
 }
 
+/** Ist diese Karte in diesem Kampf schon gelaufen und darf nur einmal? */
+function schonVerbraucht(card) {
+  return Boolean(card.einmalJeKampf) && Boolean(state.einmalGenutzt[card.id]);
+}
+
 function spielbar(card) {
   return state.phase === 'kampf' && state.castleHp > 0 && !state.zugLaeuft &&
-    state.tatendrang >= card.cost && hatZiel(card);
+    state.tatendrang >= card.cost && !schonVerbraucht(card) && hatZiel(card);
 }
 
 const ZIEL_TEXT = {
@@ -6755,6 +6797,11 @@ const ZIEL_TEXT = {
 
 function playCard(card) {
   if (state.tatendrang < card.cost) { setMessage('Nicht genug Tatendrang für ' + card.name + '.'); return; }
+  if (schonVerbraucht(card)) {
+    setMessage(card.name + ' ist in diesem Kampf schon gelaufen — nur einmal je Kampf.');
+    renderAll();
+    return;
+  }
   if (!hatZiel(card)) { setMessage(card.name + ' findet gerade kein Ziel.'); return; }
 
   const ziel = zielArt(card);
@@ -6772,7 +6819,16 @@ function playCard(card) {
   renderAll();
 }
 
-function bezahle(card) { state.tatendrang -= card.cost; }
+/*
+ * Jede gespielte Karte laeuft hier durch, darum steht der Vermerk hier und
+ * nicht in jeder einzelnen Spielfunktion. Wird eine Karte nicht gespielt,
+ * wandert sie wie immer in den Ablagestapel - der Verbrauch haengt am
+ * Ausspielen, nicht am Ziehen.
+ */
+function bezahle(card) {
+  state.tatendrang -= card.cost;
+  if (card.einmalJeKampf) state.einmalGenutzt[card.id] = true;
+}
 
 /**
  * Loest alles aus, was eine Karte an Wirkung mitbringt, und gibt einen Satz
@@ -7506,6 +7562,7 @@ function betreteKnoten(id) {
   staubkoerner.length = 0;
   state.wall = new Map();
   state.tor = [];
+  state.einmalGenutzt = {};
   wegCache = new Map();
   gegnerzug = null;
   schuesseImZug = 0;
@@ -8526,9 +8583,12 @@ function karteRegel(card) {
     teile.push(AUSLOESER[card.wenn.ausloeser] + ': ' + wirkungText(card.wenn.dann) + grenzText(card.wenn));
   }
 
-  if (!teile.length) return '';
-  const satz = teile.join('. ');
-  return satz.charAt(0).toUpperCase() + satz.slice(1) + '.';
+  const satz = teile.length
+    ? (() => { const t = teile.join('. '); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; })()
+    : '';
+  // Die Grenze steht vorn: sie entscheidet, ob die Karte ueberhaupt geht.
+  if (card.einmalJeKampf) return ('Nur einmal je Kampf. ' + satz).trim();
+  return satz;
 }
 
 /** Wie hoch eine mitwachsende Karte gerade ausfaellt, oder null. */
@@ -8545,9 +8605,10 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   const slot = document.createElement('div');
   slot.className = 'card-slot' + (disabled ? ' gesperrt' : '');
 
+  const verbraucht = state.phase === 'kampf' && schonVerbraucht(card);
   const el = document.createElement('div');
   el.className = 'card' + (disabled ? ' disabled' : '') + (selected ? ' selected' : '')
-    + (kartenBild(card.id) ? ' mit-bild' : '');
+    + (verbraucht ? ' verbraucht' : '') + (kartenBild(card.id) ? ' mit-bild' : '');
   // Die Seltenheit sitzt auf dem Namensband und der inneren Linie. Die
   // Kartenfarbe steht im Eckzeichen, so wie die Farbe im echten Blatt.
   const stufeSel = card.sel || 'gewoehnlich';
@@ -8664,6 +8725,14 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   el.appendChild(unten);
 
   el.appendChild(ecke('unten'));
+
+  if (verbraucht) {
+    const band = document.createElement('div');
+    band.className = 'card-verbraucht';
+    band.textContent = 'Verbraucht';
+    band.title = 'Diese Karte ist in diesem Kampf schon gelaufen.';
+    el.appendChild(band);
+  }
 
   // Karte neigt sich zum Zeiger, wie ein Stueck Pappe in der Hand
   if (!disabled && !wenigerBewegung) {
