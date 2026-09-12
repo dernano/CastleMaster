@@ -222,6 +222,114 @@ im Aufgebot.
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
 
+## Der Wall
+
+Bis hierher fing jede Station als leeres Feld an. Die Mauer war **abgeleitet**:
+sobald ein Turm stand, legte `pruefeMauer` eine konvexe Hülle um Burg und Türme
+und zeichnete deren Randkanten. Das hatte drei Mängel — sie war Kulisse
+(`blockiert` kannte nur Burg und Türme, jeder Belagerer lief hindurch), ohne
+Turm gab es sie gar nicht, und der erste Zug hatte nichts zu entscheiden.
+
+Jetzt steht an jeder Station ein **fertiger Riegel**: eine geschlossene Linie
+vom oberen zum unteren Kartenrand. Er hängt nicht an der Burg, sondern kommt
+seitlich herein und schließt ab. Vier Grundformen, dazu gewürfelte Grundspalte,
+Torzeile und Basteienverteilung:
+
+| Form | Was sie macht |
+| --- | --- |
+| `gerade` | eine Flucht von oben nach unten |
+| `knick` | die untere Hälfte springt zwei Spalten vor |
+| `bug` | die Mitte wölbt sich nach Osten — eine Barbakane |
+| `bucht` | die Mitte weicht nach Westen — ein Trichter |
+
+Drei Dinge gehören dazu:
+
+- **Das Tor**, zwei Felder in der Mitte. Es ist ein Loch im Stein, kein
+  Hindernis — alles, was nicht über den Wall hinwegschießt, muss hier durch.
+- **Das Torhaus**, ein 2×2-Bauwerk unmittelbar nördlich des Durchlasses, mit
+  **zwei Plätzen von Zug 1 an**. Es läuft absichtlich durch `state.towers`:
+  damit gilt für es alles, was für Türme gilt — zielen, Zinnen, Plakette, und
+  es kann fallen.
+- **Basteien**, 2×2-Podeste, die nach Osten aus dem Wall treten. **Nur dort
+  darf gebaut werden.** Damit steht die Zahl der Türme einer Station mit ihrem
+  Layout fest, und das Layout ist das Rätsel.
+
+### Dicht ist nicht selbstverständlich
+
+Der Riegel muss wirklich schließen, sonst ist er gemalt. Die erste Fassung tat
+das nicht: Wechselte der Wall genau an der Toröffnung die Spalte, lagen die
+beiden Torfelder in **verschiedenen Spalten**, und an dieser Stufe kam ein
+Diagonalschritt am Tor vorbei ins Innere.
+
+Der Test dafür mauert das Tor zu und flutet vom rechten Rand: erreicht dann noch
+irgendetwas die Burg, leckt der Wall. **46 von 200 Layouts leckten.** Vier
+Zeilen in einer Flucht um das Tor herum, und es sind 0 von 200.
+
+### Wer durchs Tor geht und wer nicht
+
+Der Wall sperrt (`blockiert` kennt ihn jetzt) und er fällt (jedes Feld hat 24
+LP). Damit das keine Formel wird, sondern eine Entscheidung, läuft die Bewegung
+über ein **Wegfeld** — Dijkstra vom Ziel nach außen, in dem ein Mauerfeld nicht
+unmöglich, sondern nur teuer ist:
+
+```js
+const MAUER_KOSTEN = 9;
+const MAUER_KOSTEN_RAMME = 1;
+```
+
+Mit **einem** Wert für alle schlug niemand je zu: weil diagonal gegangen wird,
+kostet der Umweg zum Tor fast nichts, und sieben war immer teurer — gemessen
+null eingeschlagene Mauerfelder in neun Zügen. Mit zwei Werten ergibt sich das
+von selbst:
+
+- **Fußvolk** meidet den Stein und strömt zum Tor.
+- **Die Ramme** sieht ihn gar nicht. Sie geht schnurstracks und bricht durch, wo
+  sie steht — und schlägt dabei doppelt so hart zu. Das Loch, das sie reißt,
+  wird danach für alle anderen der günstigste Weg.
+- **Was Reichweite hat**, kümmert der Wall ohnehin nicht. Ein Katapult mit
+  sieben Feldern stellt sich davor und schießt darüber hinweg. Genau diese
+  Asymmetrie soll der Wall erzeugen: Nahkampf muss durchs Tor, Belagerungsgerät
+  nicht.
+
+Die alte Bewegung (`schrittRichtung`) ging stur aufs Ziel zu und probierte bei
+einem Hindernis genau eine Ausweichrichtung. An einem Wall, der die halbe Karte
+sperrt, blieb sie kleben.
+
+### Zwei Fehler, die das Spiel unspielbar machten
+
+**Der Wall stand zu weit vorn.** Grundspalte 6–9 klang nach „Mitte der Karte",
+verschob aber die ganze Verteidigungslinie fünf Spalten nach Osten — denn Türme
+dürfen nur noch auf ihn. Der Anmarsch unter Beschuss wurde um ebenso viele Züge
+kürzer. Über je 48 Feldzüge: **6 Siege bei Spalte 6–9, 14 bei 4–6**, gegen 18
+ohne Wall.
+
+**Die Basteien waren ein stiller Verlust.** Beim Bauen löschte ich die vier
+Mauerfelder der Bastei — `isValidTowerPlacement` verlangt aber Stein unter dem
+Turm. Fiel der Turm, war der Bauplatz für den Rest der Station weg. Wer Türme
+verlor, konnte irgendwann gar nicht mehr bauen. Jetzt werden die Felder nur
+verdeckt und kommen beim Fall des Turms wieder zum Vorschein.
+
+### Was es gekostet hat
+
+Über je 48 Bot-Feldzüge, mit demselben Bot:
+
+| | Siege | Stürme | Züge/Kampf |
+| --- | --- | --- | --- |
+| ohne Wall | 18/48 (38 %) | 30 % | 9,5 |
+| Wall, Frist 8 | 12/48 (25 %) | 32 % | 9,1 |
+| Wall, Frist 9 | 16/48 (33 %) | 31 % | 9,8 |
+
+Der Festungskampf ist strukturell länger — alles muss durchs Tor, und das Feuer
+steht auf einer festen Linie statt verteilt auf dem Feld. Dafür bekommt er
+**einen Zug mehr Frist** (`9 + ⌊Runde/4⌋`). Damit liegt der Rest des
+Unterschieds bei 0,6 Standardabweichungen, also im Rauschen.
+
+Eine Warnung an mich selbst aus dieser Runde: Ich hatte zwischendurch den
+Testbot zweimal geändert und danach gegen die *alte* Messzahl verglichen. Das
+sah nach einem Einbruch von 40 auf 0 Prozent aus. Mit demselben Bot auf beiden
+Ständen waren es 38 gegen 15 — immer noch ein echter Unterschied, aber ein
+ganz anderer. Eine Messzahl gilt nur für das Messgerät, mit dem sie entstand.
+
 ## Das Startdeck: zehn Karten, vier Sorten
 
 Vorher waren es zwölf Karten aus sechs Sorten — Palisade, Wachturm, Waldläufer,
