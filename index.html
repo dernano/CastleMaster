@@ -1017,6 +1017,7 @@
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
+        <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
         <li><b>Gewicht:</b> Wer schwer ist, geht langsam. Ein Späher steht nach fünf Zügen am Tor und kratzt; die Ramme braucht neun und schlägt ein Loch, das Katapult zwölf. Die bronzene Plakette markiert schweres Gerät — es kommt spät, aber es kommt.</li>
@@ -1269,6 +1270,8 @@ const CARD_POOL = [
     text: 'Je mehr er sich wehrt, desto fester sitzt es.' },
   { id: 'kettenzug', name: 'Kettenzug', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { stoss: 3 }, art: 'kette', sel: 'gewoehnlich',
     text: 'Ein Ruck, und der Weg ist wieder lang.' },
+  { id: 'zinnen', name: 'Zinnen', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { zinnen: 5 }, art: 'mauer', sel: 'gewoehnlich',
+    text: 'Stein vor dem Mann. Was hier zerspringt, trifft ihn nicht.' },
   { id: 'ausbessern', name: 'Ausbessern', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { flicke: 6 }, art: 'hammer', sel: 'gewoehnlich',
     text: 'Ein paar Steine zurück an ihren Platz.' },
   { id: 'doppeltewacht', name: 'Doppelte Wacht', type: 'Fähigkeit', suit: '🍃', cost: 1, sofort: { ziehe: 2 }, art: 'horn', sel: 'gewoehnlich',
@@ -1447,7 +1450,11 @@ const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2)
 // Jede Station hat eine Frist. Wer sie verstreichen laesst, dem rennt das
 // ganze Aufgebot ins Tor. Das ist der Druck, der den Zug wertvoll macht.
 const zugFrist = (runde, typ) => {
-  const grund = 7 + Math.floor(runde / 4);
+  // Acht Zuege, nicht sieben. Das Startdeck hat nur noch vier Sorten und
+  // deutlich weniger Schaden als die zwoelf Karten davor; mit der alten Frist
+  // stieg die Sturmquote von 28 auf 35 Prozent, weil die Kaempfe nicht mehr
+  // rechtzeitig fertig wurden. Ein Zug mehr stellt beides wieder her.
+  const grund = 8 + Math.floor(runde / 4);
   if (typ === 'elite') return grund + 1;
   if (typ === 'meister') return grund + 3;
   return grund;
@@ -1466,9 +1473,15 @@ const belagerungsWucht = (runde) => (1 + 0.085 * (runde - 1)) * feldzugHaerte(st
 const LAGER_COL = COLS;
 const LAGER_BREITE = 2;
 
+/*
+ * Zehn Karten aus vier Sorten. Vorher waren es zwoelf aus sechs, und das
+ * Startdeck las sich wie eine Auswahl statt wie eine Handschrift: man zog
+ * jede Sorte selten genug, um nie einen Plan daraus zu machen. Vier Sorten
+ * bedeuten, dass jeder Zug dieselben vier Fragen stellt - bauen, besetzen,
+ * schuetzen, oder die eine grosse Karte halten.
+ */
 const STARTER_DECK = [
-  ['palisade', 3], ['wachturm', 2], ['waldlaeufer', 3],
-  ['bogenschuetze', 2], ['sturmwind', 1], ['krone', 1],
+  ['wachturm', 3], ['waldlaeufer', 3], ['zinnen', 3], ['krone', 1],
 ];
 const HAND_SIZE = 5;
 /** Wie viele Karten ein Zug bringt, samt anhaltender Maechte. */
@@ -4110,6 +4123,36 @@ function drawHpBar(x, y, w, hp, maxHp, farbe) {
   ctx.fillRect(x - w / 2, y, w * q, 3);
 }
 
+/*
+ * Zinnen ueber dem Turm. Ein Balken waere die einfache Loesung gewesen, aber
+ * die Karte heisst Zinnen - also stehen dort auch welche: ein Stein je zwei
+ * Punkte, hoechstens zehn, und daneben die Zahl fuer den genauen Wert. Wird
+ * der Turm getroffen, verschwinden sie von rechts nach links.
+ */
+function drawZinnen(x, y, zinnen) {
+  const steine = Math.min(10, Math.ceil(zinnen / 2));
+  const b = 4, luecke = 1, ganz = steine * (b + luecke) - luecke;
+  let sx = x - ganz / 2;
+  for (let i = 0; i < steine; i++) {
+    ctx.fillStyle = 'rgba(10,8,6,0.7)';
+    ctx.fillRect(sx - 1, y - 1, b + 2, 7);
+    ctx.fillStyle = '#8d8274';
+    ctx.fillRect(sx, y, b, 5);
+    ctx.fillStyle = '#c8bda8';          // die belichtete Oberkante
+    ctx.fillRect(sx, y, b, 1.5);
+    sx += b + luecke;
+  }
+  ctx.font = '700 9px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(10,8,6,0.85)';
+  ctx.strokeText(String(zinnen), x + ganz / 2 + 3, y + 2.5);
+  ctx.fillStyle = '#e0d6c2';
+  ctx.fillText(String(zinnen), x + ganz / 2 + 3, y + 2.5);
+  ctx.textAlign = 'center';
+}
+
 function drawBanner(x, y, farbe) {
   ctx.fillStyle = '#3a2c1c';
   ctx.fillRect(x, y - 18, 1.5, 20);
@@ -4209,6 +4252,7 @@ function drawTower(t) {
   }
 
   if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
+  if (t.zinnen > 0) drawZinnen(cx, cy - 38, t.zinnen);
 
   /*
    * Drei Zustaende, seit kein Turm mehr von selbst feuert: geschossen (grau,
@@ -6283,7 +6327,7 @@ function zielArt(card) {
   if (card.type === 'Einheit') return 'turmFrei';
   const w = card.sofort || {};
   if (w.schaden || w.stoss || w.fessel) return 'gegner';
-  if (w.flicke) return 'turm';
+  if (w.flicke || w.zinnen) return 'turm';
   if (card.plus) return 'einheit';
   return null;
 }
@@ -6378,6 +6422,18 @@ function wirke(card, ziel) {
     t.hp = Math.min(t.maxHp, t.hp + w.flicke);
     staub(t.col + 1, t.row + 1, 8, '#d8c4a0');
     teile.push(t.name + ' +' + (t.hp - vorher) + ' LP');
+  }
+  /*
+   * Zinnen sind kein Heilen. Sie liegen als eigener Vorrat oben auf den
+   * Lebenspunkten, fangen den naechsten Schaden ab und verfallen nicht am
+   * Zugende - wer sie frueh setzt, hat sie spaeter noch. Aufgebraucht sind
+   * sie aufgebraucht.
+   */
+  if (w.zinnen && ziel && ziel.turm) {
+    ziel.turm.zinnen = (ziel.turm.zinnen || 0) + w.zinnen;
+    staub(ziel.turm.col + 1, ziel.turm.row + 1, 8, '#cbbc98');
+    klang('bau');
+    teile.push(ziel.turm.name + ': Zinnen auf ' + ziel.turm.zinnen);
   }
   if (w.turmSchild && ziel && ziel.turm) {
     ziel.turm.maxHp += w.turmSchild;
@@ -6566,6 +6622,7 @@ function wirkungText(w) {
   if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
   if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
   if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
+  if (w.zinnen) teile.push('gibt einem Turm ' + w.zinnen + ' Zinnen');
   if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
   if (w.flickeAlle) teile.push('flickt alle Türme um ' + w.flickeAlle);
   if (w.turmSchild) teile.push('Turm +' + w.turmSchild + ' Leben dauerhaft');
@@ -6631,6 +6688,7 @@ function placeTower(col, row) {
     hp: card.hp + (state.maechte.turmLeben || 0),
     maxHp: card.hp + (state.maechte.turmLeben || 0),
     rangeBonus: card.rangeBonus || 0,
+    zinnen: 0,   // Steinvorrat oben auf den LP, siehe die Karte 'Zinnen'
     modell: KARTE_MODELL[card.id] || 'wachturm',
     slots: new Array(plaetze).fill(null),
     bauZeit: wenigerBewegung ? BAU_DAUER : 0, rueckstoss: 0,
@@ -6768,8 +6826,14 @@ function handleGegner(e) {
   }
   if (plan.turm) {
     const turm = plan.turm;
-    turm.hp -= e.dmg;
-    zeigeZahl(turm.col + turm.w / 2, turm.row + turm.h / 2, '-' + e.dmg, '#ff8b6b');
+    // Zinnen zuerst: was am Stein zerspringt, erreicht den Turm nicht.
+    const aufZinnen = Math.min(turm.zinnen || 0, e.dmg);
+    turm.zinnen = (turm.zinnen || 0) - aufZinnen;
+    const durch = e.dmg - aufZinnen;
+    turm.hp -= durch;
+    const mx = turm.col + turm.w / 2, my = turm.row + turm.h / 2;
+    if (aufZinnen) zeigeZahl(mx, my - 0.6, '-' + aufZinnen, '#cbbc98');
+    if (durch) zeigeZahl(mx, my, '-' + durch, '#ff8b6b');
     // Dornen: Wer sich am Mauerwerk vergreift, zahlt dafuer.
     let dornenMeldung = '';
     if (state.maechte.dornen) {
@@ -6789,7 +6853,11 @@ function handleGegner(e) {
       loeseAus('turmFaellt');
       return { text: turm.name + ' fällt' + (besatzung ? ' samt Besatzung' : '') + '!' + dornenMeldung, art: 'fall' };
     }
-    return { text: e.name + ' trifft ' + turm.name + ' (' + turm.hp + '/' + turm.maxHp + ')' + dornenMeldung, art: 'schlag' };
+    const zinnenWort = aufZinnen
+      ? ', die Zinnen fangen ' + aufZinnen + (turm.zinnen ? ' (noch ' + turm.zinnen + ')' : ' und sind hin')
+      : '';
+    return { text: e.name + ' trifft ' + turm.name + zinnenWort +
+      ' (' + turm.hp + '/' + turm.maxHp + ')' + dornenMeldung, art: 'schlag' };
   }
 
   state.castleHp -= e.dmg;
@@ -7198,6 +7266,7 @@ function schaerfeKarte(c) {
     hebe(c.plus, 'range', 1);
     hebe(c.sofort, 'schaden', 2);
     hebe(c.sofort, 'flaeche', 1);
+    hebe(c.sofort, 'zinnen', 2);
     hebe(c.sofort, 'flicke', 3);
     hebe(c.sofort, 'turmSchild', 2);
     hebe(c.sofort, 'heileBurg', 2);

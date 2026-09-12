@@ -222,6 +222,67 @@ im Aufgebot.
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
 
+## Das Startdeck: zehn Karten, vier Sorten
+
+Vorher waren es zwölf Karten aus sechs Sorten — Palisade, Wachturm, Waldläufer,
+Bogenschütze, Sturmwind, Krone. Das las sich wie eine Auswahl, nicht wie eine
+Handschrift: man zog jede Sorte selten genug, um nie einen Plan daraus zu
+machen. Jetzt sind es **zehn Karten aus vier Sorten**, und jeder Zug stellt
+dieselben vier Fragen:
+
+| Karte | Art | Kosten | Anzahl | Frage |
+| --- | --- | --- | --- | --- |
+| Wachturm | Gebäude | 2 | 3 | Wo baue ich? |
+| Waldläufer | Einheit | 1 | 3 | Wen stelle ich drauf? |
+| Zinnen | Fähigkeit | 1 | 3 | Was schütze ich? |
+| Krone der Belagerung | Macht | 3 | 1 | Halte ich die große Karte? |
+
+Eine Karte je Kategorie, und ein Deck, das sich alle zwei Züge einmal durchhat.
+
+### Zinnen
+
+Die einzige neue Karte. Sie sind **kein Heilen und kein Block, der am Zugende
+verfällt** — sie liegen als eigener Vorrat oben auf den Lebenspunkten des Turms:
+
+```js
+const aufZinnen = Math.min(turm.zinnen || 0, e.dmg);
+turm.zinnen -= aufZinnen;
+turm.hp -= e.dmg - aufZinnen;
+```
+
+Was am Stein zerspringt, erreicht den Turm nicht. Früh gesetzt sind sie später
+noch da; aufgebraucht sind sie aufgebraucht. Über dem Turm stehen sie auch als
+Zinnen da — ein Stein je zwei Punkte, höchstens zehn, daneben die genaue Zahl
+(`drawZinnen`). Ein Balken wäre einfacher gewesen, aber die Karte heißt Zinnen.
+
+### Was das Deck gekostet hat, und was es zurückbekam
+
+Das kleinere Deck richtet weniger aus: kein Bogenschütze mehr, keine Palisade,
+kein Sturmwind, und der Waldläufer ist die schwächste Einheit im Spiel. Über je
+48 Bot-Feldzüge gemessen:
+
+| | Siege | Stürme | Züge/Kampf |
+| --- | --- | --- | --- |
+| altes Deck, Frist 7 | 20/48 (42 %) | 28 % | 8,4 |
+| neues Deck, Frist 7 | 17/48 (35 %) | **35 %** | 8,6 |
+| neues Deck, Frist 8 | 19/48 (40 %) | 30 % | 9,4 |
+
+Bei den Siegen liegt der Unterschied unter einer Standardabweichung. Die
+Sturmquote ist das echte Signal — sie stammt aus über fünfhundert Kämpfen je
+Zeile, und 35 gegen 28 Prozent ist kein Rauschen: die Kämpfe wurden schlicht
+nicht mehr rechtzeitig fertig. Darum bekommt die Frist **einen Zug mehr**
+(`8 + ⌊Runde/4⌋` statt `7 + ⌊Runde/4⌋`). Das stellt beides wieder her.
+
+Zwei Dinge, die dabei nicht funktioniert haben und wieder draußen sind:
+
+- **Die Verteilung zu verschieben** (3/4/2/1, 4/4/1/1, 4/3/2/1). Dieselbe
+  Konfiguration lieferte in drei Durchläufen 4, 5 und 7 Siege von 16 — bei
+  sechzehn Läufen sind ±2 Siege eine Standardabweichung, die ganze Messreihe
+  war Rauschen. Erst 48 Läufe trennen die Fälle.
+- **Zinnen +1 Reichweite**, solange sie stehen. Thematisch schön, gemessen
+  wirkungslos (13/48, Sturmquote unverändert). Eine Mechanik, die nichts
+  bewirkt, ist nur Komplexität.
+
 ## Kein Schuss von allein
 
 Es gab einmal die **Salve**: am Zugende feuerte jeder Turm, der noch geladen
