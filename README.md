@@ -246,6 +246,42 @@ Auf schmalen Schirmen wird aus dem Fächer eine Reihe zum Wischen, und die
 Auslage des Marketenders ebenso. Ein Fächer aus fünf Karten, der auf ein
 Handy passen soll, verdeckt sich sonst fast vollständig selbst.
 
+## Figuren und die Werkstatt
+
+Lange gab es genau **zwei** Figuren im ganzen Spiel: eine für deine Leute, eine
+für alle Angreifer. Späher, Armbrustschütze, Ritter und Belagerungsmeister
+waren dieselbe Figur in anderer Farbe — deshalb sahen sie alle gleich aus.
+
+Jetzt hat jeder seine eigene Silhouette: der Späher schmal mit Kapuze, der
+Armbrustschütze mit der Waffe quer vor der Brust, der Ritter mit Helm,
+Federbusch und eisernen Schultern, der Belagerungsmeister mit Krone und
+Umhang. Auf den Türmen zeigt die Besatzung ihre Waffe: Bogen, Speer, Armbrust,
+Schleuder oder Fackel, je nachdem, welche Karte dort steht. Ramme und Katapult
+sind gar keine Figuren mehr, sondern gezeichnete Maschinen.
+
+### Selbst zeichnen
+
+Der Knopf `✎` oben rechts öffnet die **Werkstatt**. Dort liegen alle neun
+Figuren als Raster aus neun mal neun Feldern. Man wählt eine Farbe und malt;
+jede Änderung wirkt sofort im Spiel, auch mitten im Kampf. Eine geänderte
+Figur trägt in der Auswahl ein `✎`.
+
+| Knopf | Was er tut |
+| --- | --- |
+| Zurücksetzen | Nimmt die mitgelieferte Figur zurück. |
+| Ausgeben | Schreibt die Figur ins Textfeld, zum Kopieren und Weitergeben. |
+| Einlesen | Nimmt eine Figur aus dem Textfeld an. |
+
+Gespeichert wird im Browser (`localStorage`), das überlebt einen Neustart.
+Wer eine Figur fest ins Spiel bauen will, gibt sie aus und ersetzt damit das
+Raster im Quelltext — die Buchstaben in der Werkstatt sind genau dieselben wie
+dort.
+
+Die Farbbuchstaben: `.` leer, `k` Kontur, `s` Haut, `b`/`B` Tuch dunkel und
+hell, `r`/`R` Wappenfarbe dunkel und hell, `m` Metall, `y` Holz, `g` Gold. Bei
+den Angreifern tauscht der Gegnertyp `r` und `R` gegen seine eigene Farbe, alles
+andere bleibt.
+
 ## Ton
 
 Alle Geräusche werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
@@ -499,9 +535,8 @@ Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
   und Klänge fehlen noch; dafür bräuchte es einen Lader, und im veröffentlichten
   Artifact müssten die Bilder eingebettet sein, weil die Seite nichts von außen
   holen darf.
-- **Die Figuren auf dem Feld sind noch einfach.** Es gibt genau zwei Sprites,
-  `FIG_WACHE` und `FIG_GEGNER`; alle fünf Gegnertypen sind dieselbe Figur in
-  anderer Farbe. Das Kartenbild ist inzwischen deutlich weiter als das Feld.
+- **Die Figuren sind noch grob.** Neun mal neun Felder lassen wenig Raum; das
+  Kartenbild ist deutlich weiter als das Feld.
 - **Gegner weichen Mauern nur einfach aus.** Sie prüfen das nächste Feld, sie
   suchen keinen Weg um eine lange Mauer herum.
 

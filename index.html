@@ -87,7 +87,7 @@
   }
 
   #hud-row {
-    position: absolute; left: 8px; right: 8px; top: 8px;
+    position: absolute; left: 8px; right: 8px; top: 8px; z-index: 8;
     display: flex; justify-content: space-between; align-items: flex-start;
     gap: 8px; flex-wrap: wrap; pointer-events: none;
   }
@@ -425,6 +425,69 @@
   kbd { font-family: inherit; font-size: 11px; background: var(--panel-2); border: 1px solid var(--frame);
     border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--muted); }
 
+  /* ---------- Werkstatt: Figuren selbst zeichnen ---------- */
+  #werkstatt {
+    position: absolute; inset: 0; z-index: 6;
+    display: flex; align-items: center; justify-content: center;
+    padding: 7px;
+    background: rgba(8, 6, 5, 0.94);
+  }
+  .werk-box {
+    padding: 12px 16px 14px; width: 600px; max-width: 100%; max-height: 100%;
+    display: flex; flex-direction: column; text-align: center;
+  }
+  .werk-box h2 { margin: 0 0 3px; font-family: var(--pixel); font-size: 21px; color: var(--gold);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.6); flex: none; }
+  .werk-box > p { margin: 0 0 8px; font-size: 11.5px; color: var(--muted); line-height: 1.45; flex: none; }
+
+  #werk-wahl { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; flex: none; }
+  #werk-wahl button {
+    font-family: var(--fliess); font-size: 10.5px; padding: 3px 7px;
+    background: var(--panel-2); color: var(--muted);
+    border: 1px solid var(--frame); border-radius: 4px; cursor: pointer;
+  }
+  #werk-wahl button.an { color: #14110c; background: var(--gold); border-color: var(--gold); font-weight: 700; }
+
+  #werk-mitte { display: flex; gap: 12px; justify-content: center; align-items: flex-start;
+    flex: 0 1 auto; min-height: 0; overflow: auto; }
+  #werk-raster {
+    display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
+    width: 234px; height: 234px; flex: none;
+    background: #2a2118; padding: 2px; border: 2px solid var(--frame); border-radius: 3px;
+    touch-action: none;
+  }
+  #werk-raster div {
+    background-image: linear-gradient(45deg, #3a3128 25%, transparent 25%, transparent 75%, #3a3128 75%),
+      linear-gradient(45deg, #3a3128 25%, #2e271f 25%, #2e271f 75%, #3a3128 75%);
+    background-size: 8px 8px; background-position: 0 0, 4px 4px;
+    cursor: crosshair;
+  }
+  #werk-seite { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  #werk-farben { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
+  #werk-farben button {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--fliess); font-size: 9.5px; color: var(--muted);
+    background: var(--panel-2); border: 1px solid var(--frame); border-radius: 3px;
+    padding: 2px 5px 2px 3px; cursor: pointer; white-space: nowrap;
+  }
+  #werk-farben button.an { border-color: var(--gold); color: var(--text); }
+  #werk-farben i {
+    width: 13px; height: 13px; flex: none; border: 1px solid rgba(0,0,0,0.6); border-radius: 2px;
+    background-image: linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%);
+    background-size: 6px 6px;
+  }
+  #werk-schau { background: rgba(16,12,9,0.7); border: 1px solid var(--frame); border-radius: 3px; padding: 3px; }
+  canvas#werk-vorschau { display: block; image-rendering: pixelated; width: 120px; height: 120px; }
+
+  #werk-text {
+    margin-top: 8px; flex: none;
+    width: 100%; height: 54px; resize: none;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; line-height: 1.35;
+    background: #17120d; color: #cbbba0; border: 1px solid var(--frame); border-radius: 3px;
+    padding: 5px 6px;
+  }
+  #werk-knoepfe { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px; flex: none; }
+
   /* Hilfetafel, statt einer Fusszeile ausserhalb des Bildes */
   #hilfe {
     position: absolute; inset: 0; z-index: 6;
@@ -688,6 +751,19 @@
     #route-fuss { font-size: 8.5px; gap: 6px; padding: 4px 6px 6px; }
     #route-fuss i { font-size: 11px; }
 
+    .werk-box { padding: 9px 10px 11px; }
+    .werk-box h2 { font-size: 16px; }
+    .werk-box > p { font-size: 9.5px; margin-bottom: 6px; }
+    #werk-mitte { gap: 7px; }
+    #werk-raster { width: 162px; height: 162px; }
+    #werk-farben { grid-template-columns: 1fr; gap: 2px; }
+    #werk-farben button { font-size: 8px; padding: 1px 4px 1px 2px; }
+    #werk-farben i { width: 10px; height: 10px; }
+    canvas#werk-vorschau { width: 76px; height: 76px; }
+    #werk-wahl button { font-size: 8.5px; padding: 2px 5px; }
+    #werk-text { height: 40px; font-size: 8px; }
+    #werk-knoepfe button { padding: 5px 9px; font-size: 11px; }
+
     .hilfe-box { padding: 12px 14px; }
     .hilfe-box h2 { font-size: 17px; }
     .hilfe-box ul { font-size: 10.5px; line-height: 1.5; }
@@ -750,6 +826,29 @@
     <div id="route-fuss"></div>
   </div>
 
+  <div id="werkstatt" class="hidden">
+    <div class="werk-box panel">
+      <h2>Werkstatt</h2>
+      <p>Zeichne die Figuren des Spiels selbst. Jedes Feld eine Farbe, jede
+        Änderung sofort im Spiel. Gespeichert wird in deinem Browser.</p>
+      <div id="werk-wahl"></div>
+      <div id="werk-mitte">
+        <div id="werk-raster"></div>
+        <div id="werk-seite">
+          <div id="werk-farben"></div>
+          <div id="werk-schau"><canvas id="werk-vorschau" width="120" height="120"></canvas></div>
+        </div>
+      </div>
+      <textarea id="werk-text" spellcheck="false" placeholder="Hier erscheint deine Figur zum Kopieren. Du kannst hier auch eine einfügen und auf Einlesen drücken."></textarea>
+      <div id="werk-knoepfe">
+        <button type="button" class="ghost-btn" id="werk-zurueck">Zurücksetzen</button>
+        <button type="button" class="ghost-btn" id="werk-ausgeben">Ausgeben</button>
+        <button type="button" class="ghost-btn" id="werk-einlesen">Einlesen</button>
+        <button type="button" class="endround" id="werk-zu">Fertig</button>
+      </div>
+    </div>
+  </div>
+
   <div id="station" class="hidden">
     <div class="station-box panel">
       <div id="station-wappen"></div>
@@ -790,6 +889,7 @@
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus">♪</button>
+    <button class="icon-btn" id="werk-btn" type="button" title="Figuren zeichnen">✎</button>
     <button class="icon-btn" id="help-btn" type="button" title="Steuerung">?</button>
   </div>
   </div>
@@ -1970,29 +2070,160 @@ const PAL = {
   g: '#e3b552',
 };
 
-const FIG_WACHE = [
+// ---------- Eigene Figuren aus der Werkstatt ----------
+// Was der Spieler selbst gezeichnet hat, liegt hier und ueberschreibt die
+// mitgelieferte Figur. Gespeichert wird im Browser, damit es einen Neustart
+// ueberlebt.
+const FIGUREN_SPEICHER = 'cm-figuren';
+let eigeneFiguren = (() => {
+  try { return JSON.parse(localStorage.getItem(FIGUREN_SPEICHER)) || {}; }
+  catch (e) { return {}; }
+})();
+
+function merkeFiguren() {
+  try { localStorage.setItem(FIGUREN_SPEICHER, JSON.stringify(eigeneFiguren)); }
+  catch (e) { /* ohne Speicher eben nur fuer diese Sitzung */ }
+}
+
+// ---------- Figuren ----------
+// Jede Figur ist ein Raster aus Buchstaben, jeder Buchstabe eine Farbe aus
+// PAL. Die Gegnertypen tauschen r und R gegen ihre eigene Farbe, alles andere
+// bleibt. Wer eine Figur umzeichnen will, findet sie in der Werkstatt: die
+// Buchstaben hier sind genau das, was dort im Raster steht.
+
+// Deine Leute auf den Tuermen, nach Waffe
+const FIG_BOGEN = [
+  '..kkk....',
+  '.kbbbk...',
+  '.ksssk...',
+  '..kkk..y.',
+  'ybBBBby.y',
+  'ykbBBBbky',
+  'y.bbbbb.y',
+  '..b...b.y',
+  '..k...k..',
+];
+const FIG_SPEER = [
+  '..kkk..m.',
+  '.kbbbk.m.',
+  '.ksssk.y.',
+  '..kkk..y.',
+  '.bBBBb.y.',
+  'kbBBBBbky',
+  '.bbbbbb.y',
+  '.b....b..',
+  '.k....k..',
+];
+const FIG_ARMBRUST = [
   '..kkk....',
   '.kbbbk...',
   '.ksssk...',
   '..kkk....',
-  'ybBBBb...',
-  'ykbBBBbk.',
-  'y.bbbbb..',
-  'y.b...b..',
+  'mmmmmmmm.',
+  '.bBBBBb..',
+  '.bbbbbb..',
+  '.b....b..',
+  '.k....k..',
+];
+const FIG_SCHLEUDER = [
+  '..kkk.m..',
+  '.kbbbkm..',
+  '.kssskm..',
+  '..kkk.m..',
+  '.bBBBb...',
+  'kbBBBBbk.',
+  '.bbbbbb..',
+  '.b....b..',
+  '.k....k..',
+];
+const FIG_FACKEL = [
+  '..kkk..R.',
+  '.kbbbk.g.',
+  '.ksssk.y.',
+  '..kkk..y.',
+  '.bBBBb.y.',
+  'kbBBBBbky',
+  '.bbbbbb..',
+  '.b....b..',
+  '.k....k..',
+];
+const FIG_WACHE = FIG_SPEER;   // Altname, falls eine Einheit keine Waffe nennt
+
+// Die Belagerer, jeder mit eigener Silhouette
+const FIG_SPAEHER = [
+  '...kkk...',
+  '..krrrk..',
+  '..ksssk..',
+  '...kkk...',
+  '..rrrr...',
+  '.krrrrk..',
+  '..rrrr...',
+  '..r..r...',
+  '..k..k...',
+];
+const FIG_ARMBRUSTER = [
+  '...kkk...',
+  '..krrrk..',
+  '..ksssk..',
+  '...kkk...',
+  'mmmmmmmmm',
+  '.krrrrrk.',
+  '..rrrrr..',
+  '..r...r..',
   '..k...k..',
 ];
-
-const FIG_GEGNER = [
-  '..kkk..k.',
-  '.krrrk.k.',
-  '.ksssk.k.',
-  '..kkk..k.',
-  '.rRRRr.k.',
-  'kmrRRRrk.',
-  '.rrrrr.k.',
-  '.r...r.k.',
-  '.k...k...',
+const FIG_RITTER = [
+  '....R....',
+  '..kkkkk..',
+  '..kmmmk..',
+  '..kkmkk..',
+  '.mrRRRrm.',
+  '.mkrrrkm.',
+  '..rrrrr..',
+  '..r...r..',
+  '..k...k..',
 ];
+const FIG_MEISTER = [
+  '..g.g.g..',
+  '..kgggk..',
+  '..kmmmk..',
+  '..kkmkk..',
+  'RrRRRRRrR',
+  'RkrRRRrkR',
+  'Rrrrrrrrr',
+  '.rr...rr.',
+  '.kk...kk.',
+];
+
+// Welche Figur zu welchem Gegner gehoert
+const GEGNER_FIGUR = {
+  spaeher: FIG_SPAEHER,
+  armbrust: FIG_ARMBRUSTER,
+  ritter: FIG_RITTER,
+  meister: FIG_MEISTER,
+};
+// Welche Figur zu welcher Waffe auf dem Turm gehoert
+const EINHEIT_FIGUR = {
+  bogen: FIG_BOGEN, waldlaeufer: FIG_BOGEN,
+  speer: FIG_SPEER, armbrust: FIG_ARMBRUST,
+  schleuder: FIG_SCHLEUDER, fackel: FIG_FACKEL,
+  balliste: FIG_ARMBRUST, hammer: FIG_SPEER,
+};
+
+/**
+ * Die Figur, die gezeichnet werden soll. Hat der Spieler eine eigene in der
+ * Werkstatt gezeichnet, gilt seine.
+ */
+function figurFuer(schluessel, standard) {
+  const eigen = eigeneFiguren[schluessel];
+  return eigen && eigen.length ? eigen : standard;
+}
+function gegnerFigur(typ) {
+  return figurFuer('gegner:' + typ, GEGNER_FIGUR[typ] || FIG_SPAEHER);
+}
+function einheitFigur(art) {
+  return figurFuer('einheit:' + (art || 'speer'), EINHEIT_FIGUR[art] || FIG_WACHE);
+}
 
 function drawSprite(rows, x, y, scale, context = ctx, palette = PAL) {
   const w = rows[0].length, h = rows.length;
@@ -2552,7 +2783,7 @@ function drawTower(t) {
   const einheiten = t.slots.filter(s => s);
   einheiten.forEach((u, i) => {
     const versatz = (i - (einheiten.length - 1) / 2) * 11;
-    drawSprite(FIG_WACHE, cx + versatz, cy + 4, 2);
+    drawSprite(einheitFigur(u.art), cx + versatz, cy + 4, 2);
   });
   if (einheiten.length) drawBanner(cx + 14, cy + 2, '#2f5fa8');
 
@@ -2690,7 +2921,7 @@ function drawEnemy(e, geist = false) {
     ? { ...PAL, ...t.pal, r: '#ffd9c8', R: '#ffffff', k: '#7a2a20' }
     : { ...PAL, ...t.pal };
   if (t.geraet) drawGeraet(cx, cy + 2, t.geraet, t.scale * 0.85, pal);
-  else drawSprite(FIG_GEGNER, cx, cy + 2, t.scale, ctx, pal);
+  else drawSprite(gegnerFigur(e.typ), cx, cy + 2, t.scale, ctx, pal);
   const h = 9 * t.scale;
   drawHpBar(cx, cy - h - 6, 10 + t.scale * 6, e.hp, e.maxHp, '#c0392b');
 
@@ -2866,7 +3097,7 @@ function drawLeichen() {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(f * 0.9);
-    drawSprite(FIG_GEGNER, 0, 2, t.scale, ctx, { ...PAL, ...t.pal });
+    drawSprite(gegnerFigur(l.typ), 0, 2, t.scale, ctx, { ...PAL, ...t.pal });
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -2963,7 +3194,7 @@ function drawLager() {
     const y = isoY(col, row) + TH / 2 + wippen;
     ctx.globalAlpha = 0.85;
     drawShadow(x, y - wippen, 3 + t.scale * 2);
-    drawSprite(FIG_GEGNER, x, y + 2, Math.max(2, t.scale - 1), ctx, { ...PAL, ...t.pal });
+    drawSprite(gegnerFigur(e.typ), x, y + 2, Math.max(2, t.scale - 1), ctx, { ...PAL, ...t.pal });
     ctx.globalAlpha = 1;
   });
 
@@ -4354,6 +4585,7 @@ function placeUnit(tower, slotIdx) {
   const einheit = {
     name: card.name, dmg: card.dmg, range: card.range,
     durchschlag: card.durchschlag || 0, boosted: false,
+    art: card.art,            // damit der Turm die richtige Figur zeigt
   };
   tower.slots[slotIdx] = einheit;
   if (card.zaeh) { tower.maxHp += card.zaeh; tower.hp += card.zaeh; }
@@ -5258,9 +5490,9 @@ function zugAbschluss(lauf) {
 
 window.addEventListener('keydown', (evt) => {
   if (evt.key !== 'Escape') return;
-  if (!document.getElementById('hilfe').classList.contains('hidden')) {
-    document.getElementById('hilfe').classList.add('hidden');
-    return;
+  for (const id of ['hilfe', 'werkstatt']) {
+    const tafel = document.getElementById(id);
+    if (!tafel.classList.contains('hidden')) { tafel.classList.add('hidden'); return; }
   }
   if (!state.pendingCard && !state.selectedTower) return;
   state.pendingCard = null;
@@ -5280,6 +5512,177 @@ document.getElementById('sound-btn').addEventListener('click', () => {
 document.getElementById('sound-btn').classList.toggle('aus', !tonAn);
 
 document.getElementById('reward-skip').addEventListener('click', () => nimmBelohnung(null));
+
+// ============================================================
+//  Die Werkstatt
+// ============================================================
+// Hier zeichnet der Spieler die Figuren selbst. Was er malt, liegt in
+// eigeneFiguren und ueberschreibt die mitgelieferte Figur; gespeichert wird
+// im Browser. Ausgeben und Einlesen gehen ueber das Textfeld, damit man eine
+// Figur auch weitergeben kann.
+
+const WERK_FARBEN = [
+  ['.', 'leer'], ['k', 'Kontur'], ['s', 'Haut'],
+  ['b', 'Tuch dunkel'], ['B', 'Tuch hell'],
+  ['r', 'Wappen dunkel'], ['R', 'Wappen hell'],
+  ['m', 'Metall'], ['y', 'Holz'], ['g', 'Gold'],
+];
+
+const WERK_LISTE = [
+  { schluessel: 'gegner:spaeher', name: 'Späher', standard: FIG_SPAEHER, pal: ENEMY_TYPES.spaeher.pal },
+  { schluessel: 'gegner:armbrust', name: 'Armbrustschütze', standard: FIG_ARMBRUSTER, pal: ENEMY_TYPES.armbrust.pal },
+  { schluessel: 'gegner:ritter', name: 'Ritter', standard: FIG_RITTER, pal: ENEMY_TYPES.ritter.pal },
+  { schluessel: 'gegner:meister', name: 'Belagerungsmeister', standard: FIG_MEISTER, pal: ENEMY_TYPES.meister.pal },
+  { schluessel: 'einheit:bogen', name: 'Bogen', standard: FIG_BOGEN, pal: null },
+  { schluessel: 'einheit:speer', name: 'Speer', standard: FIG_SPEER, pal: null },
+  { schluessel: 'einheit:armbrust', name: 'Armbrust', standard: FIG_ARMBRUST, pal: null },
+  { schluessel: 'einheit:schleuder', name: 'Schleuder', standard: FIG_SCHLEUDER, pal: null },
+  { schluessel: 'einheit:fackel', name: 'Fackel', standard: FIG_FACKEL, pal: null },
+];
+
+let werkWahl = 0;
+let werkFarbe = 'k';
+let werkMalt = false;
+
+const werkTafel = document.getElementById('werkstatt');
+const werkRaster = document.getElementById('werk-raster');
+
+/** Die Figur, an der gerade gearbeitet wird, als veraenderbares Raster. */
+function werkFigur() {
+  const eintrag = WERK_LISTE[werkWahl];
+  const vorhanden = eigeneFiguren[eintrag.schluessel];
+  return (vorhanden && vorhanden.length ? vorhanden : eintrag.standard).slice();
+}
+
+function werkSchreibe(zeilen) {
+  eigeneFiguren[WERK_LISTE[werkWahl].schluessel] = zeilen;
+  merkeFiguren();
+}
+
+function werkPalette() {
+  const eintrag = WERK_LISTE[werkWahl];
+  return eintrag.pal ? { ...PAL, ...eintrag.pal } : PAL;
+}
+
+function renderWerkstatt() {
+  if (werkTafel.classList.contains('hidden')) return;
+  const zeilen = werkFigur();
+  const pal = werkPalette();
+
+  // Auswahl der Figur
+  const wahl = document.getElementById('werk-wahl');
+  wahl.innerHTML = '';
+  WERK_LISTE.forEach((e, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = i === werkWahl ? 'an' : '';
+    b.textContent = e.name + (eigeneFiguren[e.schluessel] ? ' ✎' : '');
+    b.addEventListener('click', () => { werkWahl = i; renderWerkstatt(); });
+    wahl.appendChild(b);
+  });
+
+  // Das Raster
+  werkRaster.innerHTML = '';
+  for (let r = 0; r < zeilen.length; r++) {
+    for (let c = 0; c < zeilen[r].length; c++) {
+      const feld = document.createElement('div');
+      const farbe = pal[zeilen[r][c]];
+      if (farbe) feld.style.background = farbe;
+      feld.dataset.r = r;
+      feld.dataset.c = c;
+      werkRaster.appendChild(feld);
+    }
+  }
+
+  // Farbwahl
+  const farben = document.getElementById('werk-farben');
+  farben.innerHTML = '';
+  for (const [zeichen, name] of WERK_FARBEN) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = zeichen === werkFarbe ? 'an' : '';
+    const i = document.createElement('i');
+    if (pal[zeichen]) i.style.background = pal[zeichen];
+    b.appendChild(i);
+    b.appendChild(document.createTextNode(name));
+    b.addEventListener('click', () => { werkFarbe = zeichen; renderWerkstatt(); });
+    farben.appendChild(b);
+  }
+
+  // Vorschau in Spielgroesse
+  const schau = document.getElementById('werk-vorschau');
+  const g = schau.getContext('2d');
+  g.clearRect(0, 0, schau.width, schau.height);
+  g.fillStyle = '#cda772';
+  g.fillRect(0, 0, schau.width, schau.height);
+  drawShadowAuf(g, schau.width / 2, schau.height - 14, 12);
+  drawSprite(zeilen, schau.width / 2, schau.height - 12, 6, g, pal);
+}
+
+/** Schatten auch ausserhalb des Spielfelds, fuer die Vorschau. */
+function drawShadowAuf(g, x, y, rx) {
+  g.fillStyle = 'rgba(0,0,0,0.28)';
+  g.beginPath();
+  g.ellipse(x, y, rx, rx * 0.42, 0, 0, Math.PI * 2);
+  g.fill();
+}
+
+/** Ein Feld einfaerben. */
+function werkMale(ziel) {
+  if (!ziel || ziel.dataset.r === undefined) return;
+  const r = Number(ziel.dataset.r), c = Number(ziel.dataset.c);
+  const zeilen = werkFigur();
+  if (zeilen[r][c] === werkFarbe) return;
+  zeilen[r] = zeilen[r].slice(0, c) + werkFarbe + zeilen[r].slice(c + 1);
+  werkSchreibe(zeilen);
+  renderWerkstatt();
+}
+
+werkRaster.addEventListener('pointerdown', (evt) => {
+  werkMalt = true;
+  werkRaster.setPointerCapture(evt.pointerId);
+  werkMale(evt.target);
+});
+werkRaster.addEventListener('pointermove', (evt) => {
+  if (!werkMalt) return;
+  // Bei gehaltenem Zeiger liegt das Ziel unter dem Punkt, nicht im Ereignis
+  werkMale(document.elementFromPoint(evt.clientX, evt.clientY));
+});
+const werkEnde = () => { werkMalt = false; };
+werkRaster.addEventListener('pointerup', werkEnde);
+werkRaster.addEventListener('pointercancel', werkEnde);
+
+document.getElementById('werk-btn').addEventListener('click', () => {
+  werkTafel.classList.toggle('hidden');
+  klang('karte');
+  renderWerkstatt();
+});
+document.getElementById('werk-zu').addEventListener('click', () => {
+  werkTafel.classList.add('hidden');
+  klang('karte');
+});
+document.getElementById('werk-zurueck').addEventListener('click', () => {
+  delete eigeneFiguren[WERK_LISTE[werkWahl].schluessel];
+  merkeFiguren();
+  renderWerkstatt();
+});
+document.getElementById('werk-ausgeben').addEventListener('click', () => {
+  document.getElementById('werk-text').value = JSON.stringify(werkFigur());
+});
+document.getElementById('werk-einlesen').addEventListener('click', () => {
+  const feld = document.getElementById('werk-text');
+  try {
+    const zeilen = JSON.parse(feld.value);
+    if (!Array.isArray(zeilen) || zeilen.length !== 9 || zeilen.some(z => typeof z !== 'string' || z.length !== 9)) {
+      throw new Error('Eine Figur sind neun Zeilen zu neun Zeichen.');
+    }
+    werkSchreibe(zeilen);
+    renderWerkstatt();
+    feld.value = 'Eingelesen.';
+  } catch (e) {
+    feld.value = 'Das ging nicht: ' + e.message;
+  }
+});
 
 const hilfeTafel = document.getElementById('hilfe');
 document.getElementById('help-btn').addEventListener('click', () => {
@@ -5701,6 +6104,12 @@ function renderAll() {
   const knopf = document.getElementById('endround-btn');
   knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
   knopf.textContent = state.zugLaeuft ? 'Aufgebot zieht' : 'Zug beenden';
+
+  // Ausserhalb des Kampfes sagen die Zahlen nichts; die Routenkarte und die
+  // Stationsfenster zeigen dasselbe an der richtigen Stelle.
+  const imKampf = state.phase === 'kampf' || state.phase === 'belohnung';
+  document.querySelector('.hud-left').classList.toggle('hidden', !imKampf);
+  document.querySelector('.wave').classList.toggle('hidden', !imKampf);
 
   const bar = document.getElementById('enemy-bar');
   const restHp = state.enemies.reduce((sum, e) => sum + e.hp, 0) +
