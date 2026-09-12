@@ -439,19 +439,37 @@
   .card-art { width: 100%; height: 104px; display: block; }
 
   /* Namensband auf der Trennlinie der beiden Haelften */
+  /*
+   * Das Namensband war dunkel und schnitt das Bild in der Mitte durch. Im
+   * Blatt ist es ein helles Schriftband auf dem Bild: heller Grund, dunkle
+   * Schrift, aussen die schwarze Linie, innen die Farbe der Seltenheit.
+   */
   .card-band {
     position: absolute; left: 0; right: 0; top: 50%;
     transform: translateY(-50%);
     font-family: var(--pixel); font-size: 10px; line-height: 1.1;
     text-align: center;
     padding: 2px 2px 1px;
-    color: #fffdf4;
-    background: var(--sel-band, #4f4c46);
+    color: #14110c;
+    background:
+      linear-gradient(180deg, rgba(20,17,12,0) 0 1.5px, var(--sel-band, #4f4c46) 1.5px 2.5px,
+        rgba(20,17,12,0) 2.5px) top/100% 100% no-repeat,
+      linear-gradient(0deg, rgba(20,17,12,0) 0 1.5px, var(--sel-band, #4f4c46) 1.5px 2.5px,
+        rgba(20,17,12,0) 2.5px) bottom/100% 100% no-repeat,
+      linear-gradient(180deg, #f7efd9, #e4d7b6);
     border-top: 1.5px solid #14110c;
     border-bottom: 1.5px solid #14110c;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 0 rgba(255, 250, 230, 0.6);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+
+  /* Eichenlaub in der oberen rechten und unteren linken Ecke */
+  .card-zier {
+    position: absolute; width: 34px; height: 25px; z-index: 1;
+    background: center/contain no-repeat; pointer-events: none; opacity: 0.9;
+  }
+  .card-zier.zier-or { top: 5px; right: 5px; transform: scaleX(-1); }
+  .card-zier.zier-ul { bottom: 5px; left: 5px; transform: scaleY(-1); }
   .card-band.lang { font-size: 8px; }
 
   .card-typ {
@@ -784,6 +802,8 @@
     .card-art-frame { margin: 13px 2px 0; border-width: 1px; }
     .card-art { height: 64px; }
     .card-band { font-size: 6.5px; padding: 1px; border-width: 1px; }
+    .card-zier { width: 19px; height: 14px; top: 3px; right: 3px; }
+    .card-zier.zier-ul { bottom: 3px; left: 3px; }
     .card-band.lang { font-size: 5.5px; }
     .card-typ { font-size: 5.5px; padding: 2px 0 1px; letter-spacing: 0.08em; }
     .card-stats { gap: 2px; padding: 0 2px 1px; }
@@ -3124,6 +3144,9 @@ const PAL = {
   m: '#6f7a88', M: '#b7c1cc',
   g: '#b4841f', G: '#f5d572',
   w: '#8d8a9c', W: '#e8e6f0',
+  // Waldgruen fuer die Grenzgaenger. Frueher trugen sie das Blau der Burg
+  // und sahen aus wie alle anderen.
+  n: '#2f5228', N: '#5b8c48',
 };
 
 // ---------- Eigene Figuren aus der Werkstatt ----------
@@ -3225,6 +3248,27 @@ const FIG_FACKEL = [
   '...kb.bk...',
   '...K...K...',
 ];
+/*
+ * Der Waldlaeufer trug bisher die Figur des Bogenschuetzen und war auf dem
+ * Turm nicht von ihm zu unterscheiden. Er hat jetzt seine eigene: breite
+ * Hutkrempe mit Feder, gruener Umhang, der Koecher im Ruecken.
+ */
+const FIG_WALDLAEUFER = [
+  '......W....',
+  '...kkkkW...',
+  '..kNNNNNk..',
+  '...ksssk.y.',
+  '...kSSsk.Y.',
+  '....kkk..Y.',
+  '.WkNNNNNkY.',
+  '.WkNnNNNkY.',
+  '..kNnnNnkY.',
+  '..kNNNNNkY.',
+  '..kNNNNNky.',
+  '...kn.nk...',
+  '...K...K...',
+];
+
 const FIG_WACHE = FIG_SPEER;   // Altname, falls eine Einheit keine Waffe nennt
 
 // Die Belagerer, jeder mit eigener Silhouette
@@ -3298,7 +3342,7 @@ const GEGNER_FIGUR = {
 };
 // Welche Figur zu welcher Waffe auf dem Turm gehoert
 const EINHEIT_FIGUR = {
-  bogen: FIG_BOGEN, waldlaeufer: FIG_BOGEN,
+  bogen: FIG_BOGEN, waldlaeufer: FIG_WALDLAEUFER,
   speer: FIG_SPEER, armbrust: FIG_ARMBRUST,
   schleuder: FIG_SCHLEUDER, fackel: FIG_FACKEL,
   balliste: FIG_ARMBRUST, hammer: FIG_SPEER,
@@ -4880,13 +4924,24 @@ function drawMinimap() {
 // wird nur die obere Haelfte; die untere ist dieselbe Zeichnung, um 180 Grad
 // gedreht. Das ist nicht Sparsamkeit, sondern genau das, was das Blatt tut.
 
+// Das Kartenbild wird in doppelter Aufloesung gemalt und halb so gross
+// eingesetzt. Die Motive rechnen weiter in ihren alten Massen, bekommen aber
+// die doppelte Zahl an Bildpunkten: erst damit traegt eine Zeichnung Falten,
+// Riemen und Federn statt nur Kloetze.
+const BILD_SCHAERFE = 2;
+
 const BLATT = {
   rot: '#d42a24', rotTief: '#9a1a16',
   gelb: '#f5c400', gelbTief: '#c08f00',
   gruen: '#1f9c4a', gruenTief: '#126b33',
   blau: '#1f4fa0', blauTief: '#123566',
   lila: '#c40d78',
-  haut: '#f4cda6',
+  haut: '#f4cda6', hautTief: '#d4a478',
+  // Waldtoene fuer die Grenzgaenger: gedecktes Gruen statt Leuchtgruen,
+  // dazu Leder und die cremefarbenen Fiedern der Pfeile.
+  wald: '#5b8c48', waldTief: '#3a6130', waldDunkel: '#24421c',
+  leder: '#8a5a2b', lederTief: '#5a3616',
+  fieder: '#efe3c8',
   stein: '#e6e2d6', steinTief: '#b3ae9e',
   holz: '#a9702f',
   weiss: '#fffdf4',
@@ -4960,6 +5015,121 @@ function hofFigur(c, mx, boden, groesse, wams, hut, feder) {
   }
 }
 
+/**
+ * Der Waldlaeufer. Die erste Fassung war ein gruener Klotz: ein Rechteck mit
+ * einem Kreuz darauf. Was eine Figur lesbar macht, ist nicht die Zahl der
+ * Riemen, sondern die Silhouette - schmaler Hals, breite Schultern, ein Arm
+ * am Bogen, und ein Umhang, der unten in Zipfeln auslaeuft.
+ *
+ * `s` ist das Mass, `seite` +1 nach rechts gewandt, -1 gespiegelt.
+ */
+function waldlaeuferFigur(c, mx, boden, s, seite) {
+  const S = (x) => mx + x * s * seite;      // quer, gespiegelt
+  const H = (y) => boden - y * s;           // hoch
+  const strich = 1.15 * s;
+  c.lineJoin = 'round'; c.lineCap = 'round';
+
+  // ---- Der Langbogen, hinter allem ----
+  c.beginPath();
+  c.moveTo(S(10.5), H(0));
+  c.quadraticCurveTo(S(17), H(16), S(10.5), H(32));
+  c.strokeStyle = BLATT.schwarz; c.lineWidth = 3.1 * s; c.stroke();
+  c.strokeStyle = BLATT.leder;   c.lineWidth = 1.9 * s; c.stroke();
+  strichzug(c, [[S(10.5), H(0)], [S(10.5), H(32)]], 'rgba(20,17,12,0.6)', 0.6 * s);
+
+  // ---- Koecher schraeg im Ruecken, Fiedern ueber der Schulter ----
+  for (let i = 0; i < 3; i++) {
+    const fx = -6.2 - i * 1.7, fy = 24 + i * 0.7;
+    strichzug(c, [[S(fx + 1.6), H(fy - 5)], [S(fx), H(fy + 2)]], BLATT.lederTief, 0.85 * s);
+    zug(c, [[S(fx - 1.2), H(fy + 1.4)], [S(fx + 0.2), H(fy + 5.2)], [S(fx + 1.5), H(fy + 1)]],
+        BLATT.fieder, 0.6 * s);
+  }
+  zug(c, [[S(-4.5), H(13)], [S(-10), H(19)], [S(-7.5), H(24.5)], [S(-2.5), H(18)]], BLATT.leder, strich);
+
+  // ---- Der Umhang: schmal am Hals, breit an den Schultern, unten Zipfel ----
+  c.beginPath();
+  c.moveTo(S(-3.2), H(23.8));
+  c.quadraticCurveTo(S(-8.6), H(21.5), S(-9.6), H(12));
+  c.lineTo(S(-10.2), H(2));
+  c.lineTo(S(-6.6), H(4.4)); c.lineTo(S(-3.4), H(1.4));
+  c.lineTo(S(0.4), H(4.4));  c.lineTo(S(4), H(1.4));
+  c.lineTo(S(7.4), H(4.2));
+  c.lineTo(S(8.4), H(12));
+  c.quadraticCurveTo(S(7.8), H(21.5), S(3.2), H(23.8));
+  c.closePath();
+  c.fillStyle = BLATT.wald; c.fill();
+  c.lineWidth = strich; c.strokeStyle = BLATT.schwarz; c.stroke();
+  // Falten: die dem Licht abgewandte Seite dunkler
+  c.strokeStyle = BLATT.waldTief; c.lineWidth = 0.85 * s;
+  for (const [x0, x1] of [[-7.4, -8.2], [-4.2, -4.6], [1.2, 1.4], [5.2, 6.2]]) {
+    c.beginPath(); c.moveTo(S(x0), H(20)); c.lineTo(S(x1), H(3.6)); c.stroke();
+  }
+
+  // ---- Wams im Umhangspalt, mit Kragenkeil ----
+  zug(c, [[S(-3.4), H(22.6)], [S(-4.4), H(4)], [S(4.4), H(4)], [S(3.4), H(22.6)]], BLATT.waldTief, strich);
+  // Die Mantelspange am Hals, wie sie das Blatt zeigt: eine kleine Scheibe
+  scheibe(c, S(0), H(21.8), 1.5 * s, BLATT.gelb, 0.75 * s);
+
+  // ---- Der Wehrgehenk quer ueber die Brust, dazu der Guertel ----
+  c.lineWidth = 2.3 * s; c.strokeStyle = BLATT.leder;
+  c.beginPath(); c.moveTo(S(-4.6), H(7.5)); c.lineTo(S(3.8), H(20.5)); c.stroke();
+  c.lineWidth = 0.7 * s; c.strokeStyle = BLATT.lederTief;
+  c.beginPath(); c.moveTo(S(-4.6), H(7.5)); c.lineTo(S(3.8), H(20.5)); c.stroke();
+  c.lineWidth = 2.6 * s; c.strokeStyle = BLATT.leder;
+  c.beginPath(); c.moveTo(S(-5), H(7)); c.lineTo(S(5), H(7)); c.stroke();
+  c.fillStyle = BLATT.gelb;
+  c.fillRect(S(seite > 0 ? -1.2 : -1.2) - (seite < 0 ? 1.2 * s : 0), H(8.2), 2.4 * s, 2.4 * s);
+  c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.6 * s;
+  c.strokeRect(S(-1.2) - (seite < 0 ? 2.4 * s : 0), H(8.2), 2.4 * s, 2.4 * s);
+
+  // ---- Der Arm zum Bogen: Aermel, dann die Hand am Griff ----
+  zug(c, [[S(4.2), H(20.5)], [S(9.4), H(17.6)], [S(9.8), H(13.8)], [S(4.6), H(15)]],
+      BLATT.wald, strich);
+  scheibe(c, S(10.2), H(15.2), 2.2 * s, BLATT.haut, 0.95 * s);
+
+  // ---- Kopf im Halbprofil ----
+  c.beginPath();
+  c.moveTo(S(-3.2), H(24));
+  c.quadraticCurveTo(S(-3.9), H(29.6), S(0.2), H(30.2));
+  c.quadraticCurveTo(S(3.7), H(29.6), S(3.5), H(26));
+  c.quadraticCurveTo(S(3.2), H(23.6), S(0), H(23.4));
+  c.closePath();
+  c.fillStyle = BLATT.haut; c.fill();
+  c.lineWidth = 1.05 * s; c.strokeStyle = BLATT.schwarz; c.stroke();
+  // Haarstraehnen unter der Krempe
+  zug(c, [[S(-3.4), H(28.4)], [S(-4.8), H(23.6)], [S(-2.2), H(22.6)], [S(-2.4), H(27.6)]],
+      BLATT.leder, 0.75 * s);
+  c.fillStyle = BLATT.schwarz;
+  c.beginPath(); c.ellipse(S(1.5), H(27.4), 0.7 * s, 0.5 * s, 0, 0, 6.2832); c.fill();
+  strichzug(c, [[S(0.6), H(25.2)], [S(2.6), H(24.9)]], 'rgba(20,17,12,0.5)', 0.55 * s);
+
+  // ---- Schlapphut: breite Krempe, runde Krone ----
+  c.beginPath();
+  c.moveTo(S(-8.2), H(29.6));
+  c.quadraticCurveTo(S(0), H(27.8), S(8.2), H(30));
+  c.quadraticCurveTo(S(0), H(32.1), S(-8.2), H(29.6));
+  c.closePath();
+  c.fillStyle = BLATT.wald; c.fill();
+  c.lineWidth = 1.15 * s; c.strokeStyle = BLATT.schwarz; c.stroke();
+  c.beginPath();
+  c.moveTo(S(-4.8), H(30.3));
+  c.quadraticCurveTo(S(-4.2), H(35.4), S(0), H(35.6));
+  c.quadraticCurveTo(S(4.3), H(35.2), S(4.8), H(30.3));
+  c.closePath();
+  c.fillStyle = BLATT.wald; c.fill(); c.stroke();
+  strichzug(c, [[S(-4.4), H(31.4)], [S(4.4), H(31.4)]], BLATT.waldTief, 1.05 * s);
+
+  // ---- Die Feder, quer ueber die Krone nach hinten ----
+  c.beginPath();
+  c.moveTo(S(3.2), H(34.2));
+  c.quadraticCurveTo(S(-2.4), H(40.4), S(-8.6), H(40.6));
+  c.quadraticCurveTo(S(-2.8), H(37.2), S(2.8), H(32.8));
+  c.closePath();
+  c.fillStyle = BLATT.fieder; c.fill();
+  c.lineWidth = 0.85 * s; c.strokeStyle = BLATT.schwarz; c.stroke();
+  strichzug(c, [[S(3), H(33.5)], [S(-8.2), H(40.3)]], 'rgba(20,17,12,0.45)', 0.55 * s);
+}
+
 /** Turm mit Zinnen, wahlweise mit Spitzdach. */
 function turmForm(c, mx, boden, breite, hoehe, dach) {
   const halb = breite / 2;
@@ -4999,9 +5169,11 @@ function zeichneMotiv(c, art, w, h) {
   switch (art) {
     // ---------- Einheiten: Halbfiguren mit ihrer Waffe ----------
     case 'waldlaeufer':
-      hofFigur(c, mx - 4, boden, 1.35, BLATT.gruen, BLATT.gruenTief, BLATT.gelb);
-      strichzug(c, [[mx + 12, boden - 2], [mx + 12, boden - 34]], BLATT.holz, 2.6);
-      zug(c, [[mx + 12, boden - 38], [mx + 16, boden - 30], [mx + 8, boden - 30]], BLATT.stein);
+      // Zwei Gefaehrten im Hintergrund, einer vorn: so steht eine Rotte da
+      // und nicht ein einzelner Mann in der Leere.
+      waldlaeuferFigur(c, mx - 40, boden - 3, 0.66, -1);
+      waldlaeuferFigur(c, mx + 40, boden - 3, 0.66, 1);
+      waldlaeuferFigur(c, mx + 1, boden + 1, 1.02, 1);
       break;
     case 'bogen':
       hofFigur(c, mx - 5, boden, 1.35, BLATT.rot, BLATT.rotTief, BLATT.gelb);
@@ -5423,14 +5595,76 @@ function zeichneFarbe(cv, suit) {
 }
 
 /**
+ * Ein Zweig Eichenlaub mit Eicheln, wie er im Blatt die Ecken fuellt. Er wird
+ * einmal gemalt und danach als Hintergrundbild in beide Ecken gesetzt.
+ */
+let eichenBild = null;
+function eichenlaub() {
+  if (eichenBild) return eichenBild;
+  const Z = 3, B = 46, HH = 34;
+  const cv = document.createElement('canvas');
+  cv.width = B * Z; cv.height = HH * Z;
+  const c = cv.getContext('2d');
+  c.scale(Z, Z);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+
+  // Der Zweig, aus der Ecke heraus
+  c.beginPath();
+  c.moveTo(2, 4);
+  c.quadraticCurveTo(16, 9, 27, 24);
+  c.strokeStyle = BLATT.schwarz; c.lineWidth = 2.8; c.stroke();
+  c.strokeStyle = BLATT.holz; c.lineWidth = 1.5; c.stroke();
+
+  /*
+   * Ein Eichenblatt als klare Silhouette: drei Lappen je Seite, als
+   * Streckenzug statt als Bezierkurve. Bei dreissig Bildpunkten Kantenlaenge
+   * traegt eine harte Kontur weiter als eine weiche.
+   */
+  const LAPPEN = [
+    [0.00, 0.00], [0.10, 0.34], [0.21, 0.20], [0.34, 0.62],
+    [0.47, 0.30], [0.63, 0.72], [0.78, 0.34], [0.90, 0.52], [1.00, 0.06],
+  ];
+  const blatt = (x, y, L, winkel, farbe) => {
+    c.save();
+    c.translate(x, y); c.rotate(winkel);
+    c.beginPath();
+    c.moveTo(0, 0);
+    for (const [u, v] of LAPPEN) c.lineTo(u * L, v * L * 0.62);
+    for (let i = LAPPEN.length - 1; i >= 0; i--) {
+      const [u, v] = LAPPEN[i];
+      c.lineTo(u * L, -v * L * 0.62);
+    }
+    c.closePath();
+    c.fillStyle = farbe; c.fill();
+    c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.9; c.stroke();
+    c.beginPath(); c.moveTo(0.05 * L, 0); c.lineTo(0.92 * L, 0);
+    c.strokeStyle = 'rgba(20,17,12,0.5)'; c.lineWidth = 0.65; c.stroke();
+    c.restore();
+  };
+  blatt(7, 6, 17, 0.52, BLATT.wald);
+  blatt(19, 15, 16, 1.12, BLATT.waldTief);
+
+  // Zwei Eicheln, wie das Blatt sie in die Ecken setzt
+  for (const [x, y, r] of [[20, 5.5, 2.4], [30.5, 19.5, 2.2]]) {
+    c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+    c.fillStyle = BLATT.rot; c.fill();
+    c.strokeStyle = BLATT.schwarz; c.lineWidth = 0.85; c.stroke();
+  }
+  eichenBild = cv.toDataURL();
+  return eichenBild;
+}
+
+/**
  * Das fertige Kartenbild: obere Haelfte gemalt, untere gespiegelt, dazwischen
  * die Trennlinie des doppeldeutschen Blattes.
  */
 function paintCardArt(cv, art) {
   const c = cv.getContext('2d');
-  const w = cv.width, h = cv.height;
+  c.setTransform(1, 0, 0, 1, 0, 0);
   c.imageSmoothingEnabled = true;
-  c.clearRect(0, 0, w, h);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.scale(BILD_SCHAERFE, BILD_SCHAERFE);
+  const w = cv.width / BILD_SCHAERFE, h = cv.height / BILD_SCHAERFE;
   c.fillStyle = BLATT.weiss;
   c.fillRect(0, 0, w, h);
 
@@ -5450,6 +5684,7 @@ function paintCardArt(cv, art) {
 
   c.fillStyle = BLATT.schwarz;
   c.fillRect(0, halb - 1, w, 2);
+  c.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 // ============================================================
@@ -7235,6 +7470,7 @@ const WERK_FARBEN = [
   ['r', 'Wappen'], ['R', 'Wappen hell'],
   ['m', 'Metall'], ['M', 'Metall hell'],
   ['y', 'Holz'], ['Y', 'Holz hell'],
+  ['n', 'Wald'], ['N', 'Wald hell'],
   ['g', 'Gold'], ['G', 'Gold hell'],
   ['w', 'Tuch weiss'], ['W', 'Weiss'],
 ];
@@ -7245,6 +7481,7 @@ const WERK_LISTE = [
   { schluessel: 'gegner:ritter', name: 'Ritter', standard: FIG_RITTER, pal: ENEMY_TYPES.ritter.pal },
   { schluessel: 'gegner:meister', name: 'Belagerungsmeister', standard: FIG_MEISTER, pal: ENEMY_TYPES.meister.pal },
   { schluessel: 'einheit:bogen', name: 'Bogen', standard: FIG_BOGEN, pal: null },
+  { schluessel: 'einheit:waldlaeufer', name: 'Waldläufer', standard: FIG_WALDLAEUFER, pal: null },
   { schluessel: 'einheit:speer', name: 'Speer', standard: FIG_SPEER, pal: null },
   { schluessel: 'einheit:armbrust', name: 'Armbrust', standard: FIG_ARMBRUST, pal: null },
   { schluessel: 'einheit:schleuder', name: 'Schleuder', standard: FIG_SCHLEUDER, pal: null },
@@ -7522,11 +7759,20 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   };
   el.appendChild(ecke('oben'));
 
+  // Eichenlaub in zwei Ecken, wie es das Blatt kennt. Die anderen beiden
+  // gehoeren den Eckzeichen.
+  for (const wo of ['zier-or', 'zier-ul']) {
+    const z = document.createElement('i');
+    z.className = 'card-zier ' + wo;
+    z.style.backgroundImage = 'url(' + eichenlaub() + ')';
+    el.appendChild(z);
+  }
+
   const fassung = document.createElement('div');
   fassung.className = 'card-art-frame';
   const art = document.createElement('canvas');
   art.className = 'card-art';
-  art.width = 116; art.height = 104;
+  art.width = 116 * BILD_SCHAERFE; art.height = 104 * BILD_SCHAERFE;
   paintCardArt(art, card.art);
   fassung.appendChild(art);
 

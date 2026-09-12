@@ -448,6 +448,43 @@ Auf schmalen Schirmen wird aus dem Fächer eine Reihe zum Wischen, und die
 Auslage des Marketenders ebenso. Ein Fächer aus fünf Karten, der auf ein
 Handy passen soll, verdeckt sich sonst fast vollständig selbst.
 
+## Der Waldläufer
+
+Eine Vorlage im doppeldeutschen Blatt gab die Richtung vor: ein Grenzgänger
+in Grün, Schlapphut mit Feder, Umhang über den Schultern, Köcher im Rücken,
+der Langbogen in der Hand, und zwei Gefährten im Hintergrund. Daraus kamen
+drei Änderungen, zwei davon an allen Karten.
+
+**Doppelte Zeichenschärfe.** Das Kartenbild wird jetzt in `BILD_SCHAERFE = 2`
+gemalt und halb so groß eingesetzt. Die Motive rechnen weiter in ihren alten
+Maßen — es war eine Zeile in `paintCardArt` —, bekommen aber die doppelte Zahl
+an Bildpunkten. Erst damit trägt eine Zeichnung Falten, Riemen und Federn
+statt nur Klötze. Das gilt für alle 75 Karten.
+
+**Das Kartengewand.** Das Namensband war dunkel und schnitt das Bild in der
+Mitte durch; im Blatt ist es ein helles Schriftband *auf* dem Bild. Es hat
+jetzt hellen Grund und dunkle Schrift, außen die schwarze Linie, innen die
+Farbe der Seltenheit — die Seltenheit bleibt also lesbar. Dazu Eichenlaub mit
+roten Eicheln in zwei Ecken; die anderen beiden gehören den Eckzeichen. Der
+Zweig wird einmal gemalt und als Hintergrundbild gesetzt.
+
+**Die Figur selbst.** Der erste Versuch war ein grüner Klotz mit einem Kreuz
+darauf. Was eine Figur bei sechsundvierzig Bildpunkten Höhe lesbar macht, ist
+nicht die Zahl der Riemen, sondern die Silhouette: schmaler Hals, breite
+Schultern, ein Arm am Bogen, ein Umhang, der unten in Zipfeln ausläuft. Das
+Motiv setzt drei davon nebeneinander — einer vorn, zwei kleinere dahinter.
+
+Dazu ein eigenes Sprite. Der Waldläufer trug bisher die Figur des
+Bogenschützen und war auf dem Turm nicht von ihm zu unterscheiden; jetzt hat
+er breite Hutkrempe mit Feder, grünen Umhang und den Köcher im Rücken. Dafür
+kam ein Farbpaar in die Figurenpalette:
+
+    n  Wald        #2f5228
+    N  Wald hell   #5b8c48
+
+Beide stehen in der Werkstatt zur Wahl, und der Waldläufer ist dort
+bearbeitbar wie jede andere Figur.
+
 ## Figuren und die Werkstatt
 
 Lange gab es genau **zwei** Figuren im ganzen Spiel, jede neun mal neun Felder:
