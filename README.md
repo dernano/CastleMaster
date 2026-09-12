@@ -509,6 +509,12 @@ Ein Bild in `zuschnitt.json` bekommt einen Ausschnitt in Anteilen der
 Bildkante — nützlich, wenn die Vorlage schon einen eigenen Rahmen und
 Eckzeichen mitbringt, die das Spiel ohnehin selbst zeichnet.
 
+Zwei Dinge, die erst im Gebrauch auffielen: Die Stationsansichten setzen eine
+eigene Bildhöhe und gewinnen über die Kennung — eine Bildkarte hing dort oben
+und darunter blieb Papier. Und eine geschärfte Karte trägt sonst ein `+` im
+Namen; bei einer Bildkarte steht der Name im Blatt und lässt sich nicht
+ändern, sie bekommt deshalb ein goldenes Zeichen in der Ecke.
+
 **Was eine Bildkarte anders macht.** Ein ganzes Bild bringt Rahmen, Schriftband,
 Eichenlaub und sein eigenes Eckzeichen schon mit. Die Karte blendet ihre
 eigenen also aus und gibt dem Bild die Höhe, die sonst der Spruch bekommt
@@ -543,6 +549,35 @@ Breite und fett. Das gilt in der Anzeige, auf den Karten, in den Plaketten auf
 dem Feld und bei den Schadenszahlen. Die Pixelschrift bleibt für Namen,
 Überschriften und Meldungen — dort macht sie den Ton, und dort steht nichts,
 was man auf den Punkt lesen muss.
+
+## Die Feldzugskarte
+
+Die Route lag lange als Reihe glänzender Knöpfe in einem dunklen Nichts. Sie
+zeigte zwar, wohin es geht, aber nicht, **wo man ist**. Darunter liegt jetzt
+eine gezeichnete Karte:
+
+- Pergament mit Flecken und Fasern, zum Rand hin angeschnitten, mit einer
+  Tintenlinie eingefasst
+- Wiese im eigenen Land unten, ein Waldgürtel in der Mitte, Gebirge im Land
+  des Belagerers oben
+- ein Fluss quer durchs Blatt, die eigene Burg auf einem Sockel unten, die
+  Feste des Belagerers oben, dazu Windrose und eine Kartusche
+
+Entscheidend ist dabei nicht, *was* gemalt wird, sondern **wo nicht**.
+Gleichmäßig verteilte Bäume sind Tapete; ein Land hat Dickichte und
+Lichtungen. Über die Fläche läuft deshalb ein weiches Rauschfeld: wo es hoch
+steht, drängen sich die Zeichen, wo es einbricht, bleibt offenes Land. Um die
+Stationen bleibt ohnehin Platz, sonst wächst der Wald über den Marsch.
+
+Gemalt wird einmal je Feldzug in ein eigenes Bild. Der Würfel hängt an der
+Feldzugsnummer — jeder Feldzug sieht anders aus, aber immer gleich.
+
+Die Wege sind Tinte: ungegangene gestrichelt eingezeichnet, gegangene
+nachgezogen, wählbare rot. Die Stationen sind Siegel auf dem Pergament —
+heller Grund, Tintenring, ein Tropfen Farbe in der Art der Station, darauf
+das gezeichnete Zeichen. Die Zeichen waren vorher Schriftzeichen (`⚔ ☠ ⚖`),
+die jedes System anders malt; auf einer gezeichneten Karte sitzt so etwas wie
+ein Fremdkörper.
 
 ## Batallione
 
