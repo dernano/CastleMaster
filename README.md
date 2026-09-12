@@ -531,6 +531,50 @@ Zur Größe: bei Anzeigemaß wiegt ein Kartenbild als JPEG rund 20 KB. Alle
 fünfundsiebzig wären also etwa 1,5 MB gegen eine Grenze von 16 MB. Der Platz
 ist nicht das Problem, die fünfundsiebzig Zeichnungen sind es.
 
+## Zahlen muss man lesen können
+
+An Zahlen hängt hier jede Entscheidung — wie viel Schaden dieser Schuss macht,
+wie viele Züge bis zum Sturm bleiben, wie viel die Burg noch hält. In der
+Pixelschrift sind bei zwölf Punkten **2 und 8, 1 und 7, 6 und 9** kaum
+auseinanderzuhalten. Aus `35/35` wurde `38/35`.
+
+Zahlen tragen deshalb eine eigene Schrift (`--zahl`), mit Ziffern gleicher
+Breite und fett. Das gilt in der Anzeige, auf den Karten, in den Plaketten auf
+dem Feld und bei den Schadenszahlen. Die Pixelschrift bleibt für Namen,
+Überschriften und Meldungen — dort macht sie den Ton, und dort steht nichts,
+was man auf den Punkt lesen muss.
+
+## Batallione
+
+Eine Einheit ist im Bild nicht ein Mann, sondern **drei**: der mittlere einen
+Schritt vor und größer, zwei Flanken etwas höher dahinter. Das gilt für die
+Besatzung der Türme wie für die Belagerer.
+
+Ein Turm zeigt dabei immer genau **ein** Batallion. Zwei mal drei Figuren wären
+auf einer Turmkrone nur noch Gedränge; stehen zwei Einheiten darauf, stellt die
+erste die Mitte und die zweite die Flanken, so sieht man beide Waffen.
+
+Einzeln bleiben **Ramme und Katapult** — drei Rammen wären drei Rammen, nicht
+eine — und der **Belagerungsmeister**: dass er allein kommt, ist sein ganzer
+Punkt.
+
+Für die Regeln ändert das nichts. Ein Batallion ist, wie eine Einheit
+*aussieht*, nicht wie sie rechnet.
+
+## Die Belagerer schießen
+
+Belagerer feuerten bisher gar nicht. Sie lehnten sich ins Ziel, und der Schaden
+erschien — das sah aus, als rannten sie dagegen. Jetzt feuert auch ihr
+Batallion, aus allen drei Stellungen, und der Anlauf ist zu einem Ruck
+geschrumpft.
+
+Eine Ausnahme: die **Ramme** behält ihren Anlauf. Sie ist ein Rammbock, sie
+soll dagegenknallen; das ist ihr Zweck.
+
+Auch die Türme feuern jetzt dreifach — aus jeder Stellung des Batallions ein
+Geschoss, kurz nacheinander. Geschosse dürfen dafür seitlich versetzt starten
+und laufen zum Ziel hin zusammen.
+
 ## Figuren und die Werkstatt
 
 Lange gab es genau **zwei** Figuren im ganzen Spiel, jede neun mal neun Felder:

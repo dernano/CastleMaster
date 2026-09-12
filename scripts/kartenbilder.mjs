@@ -30,7 +30,9 @@ const SEITE = join(WURZEL, 'index.html');
 // Das Kartenfeld in doppelter Schaerfe, gleiche Masse wie BILDFELD in
 // index.html. Eine Karte mit eigenem Bild ist hoeher, weil dort der Spruch
 // entfaellt; ein 'motiv' fuellt nur die obere Haelfte des flachen Feldes.
-const BREITE = 232, HOCH = 208, HOCH_MIT_BILD = 332;
+const BREITE = 232, HOCH = 208;
+// Ein ganzes Bild fuellt die Karte selbst, nicht das Bildfeld darin.
+const KARTE_BREITE = 264, KARTE_HOCH = 456;
 const GUETE = 0.82;
 
 const TYPEN = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
@@ -56,7 +58,7 @@ async function browserFabrik() {
 }
 
 /** Verkleinert ein Bild im Browser auf Kartenmass und gibt eine Datenadresse. */
-async function verkleinern(seite, quelle, zielHoehe, zuschnitt) {
+async function verkleinern(seite, quelle, zielBreite, zielHoehe, zuschnitt) {
   return seite.evaluate(([quelle, breite, hoehe, guete, zuschnitt]) => new Promise((fertig, schief) => {
     const bild = new Image();
     bild.onerror = () => schief(new Error('Bild nicht lesbar'));
@@ -76,7 +78,7 @@ async function verkleinern(seite, quelle, zielHoehe, zuschnitt) {
       fertig(cv.toDataURL('image/jpeg', guete));
     };
     bild.src = quelle;
-  }), [quelle, BREITE, zielHoehe, GUETE, zuschnitt]);
+  }), [quelle, zielBreite, zielHoehe, GUETE, zuschnitt]);
 }
 
 const werkzeug = await browserFabrik();
@@ -97,8 +99,9 @@ for (const datei of (await readdir(BILDER)).sort()) {
   let daten = quelle;
   if (werkzeug) {
     // 'motiv' fuellt nur die obere Haelfte, 'ganz' das ganze Feld
-    const hoehe = art === 'ganz' ? HOCH_MIT_BILD : Math.round(HOCH / 2);
-    daten = await verkleinern(werkzeug.seite, quelle, hoehe, zuschnitte[id]);
+    const breite = art === 'ganz' ? KARTE_BREITE : BREITE;
+    const hoehe = art === 'ganz' ? KARTE_HOCH : Math.round(HOCH / 2);
+    daten = await verkleinern(werkzeug.seite, quelle, breite, hoehe, zuschnitte[id]);
   }
   eintraege.push({ id, art, daten, datei, kb: Math.round(daten.length * 0.75 / 1024) });
 }
