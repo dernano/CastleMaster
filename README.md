@@ -198,6 +198,56 @@ Beim Betreten einer Station und nach gehaltener Station fährt ein Banner über
 das Bild.
 Karten fächern sich beim Nachziehen auf.
 
+## Die Bauwerks-Engine
+
+Zwei Dinge liessen das Spielfeld flach und billig aussehen, und mehr Textur hat
+gegen keines von beiden geholfen.
+
+**Erstens war alles im selben Braunton.** Sand, Stein, Holz, Schatten — die
+ganze Palette lag im warmen Ocker. Ohne Farbkontrast gibt es keinen Blickfang
+und kein Volumen.
+
+**Zweitens war jedes der sechzehn Gebäude derselbe 2×2-Kasten.** Die Karte
+sagte „Bergfried" oder „Palisade", auf dem Feld stand beide Male dasselbe.
+
+### Das Licht
+
+Es gibt eine Sonne von rechts oben. Aus der Grundfarbe eines Stoffs leitet
+`flaechen()` drei Flächenfarben ab:
+
+| Fläche | Verschiebung |
+| --- | --- |
+| Deckfläche | 30 % zum warmen Sonnenlicht |
+| beschienene Wand | 6 % zum warmen Sonnenlicht |
+| abgewandte Wand | **36 % ins kühle Blauviolett** |
+
+Die letzte Zeile ist der wichtigste Teil. Schatten in Braun sehen tot aus,
+Schatten in Blauviolett lassen dieselbe Farbe leben. Zehn Stoffe sind
+definiert — Quaderstein, Bruchstein, Putz, Holz, Stamm, Erde, Ziegel,
+Schiefer, Stroh — jeder mit eigener Textur. Ziegelrot und Schieferblau sind
+dabei bewusst kräftig: Sie sind die einzigen Farbakzente auf dem Feld.
+
+### Die Modelle
+
+Ein Bauwerk ist eine Funktion, die Teile in einen Modellraum malt: `teilQuader`,
+`teilDach`, `teilKegel`, `teilZinnen`, `teilPfahl`, `teilFahne`, `teilFenster`.
+Das Argument `f` läuft beim Bauen von null auf eins, damit es aus dem Boden
+wächst.
+
+Achtzehn Modelle, jedes mit eigener Silhouette: die Palisade ein Ring
+angespitzter Stämme, der Lugaus eine Plattform auf vier Pfosten mit Strohdach,
+der Hohe Horst ein schlanker Turm unter einem blauen Kegeldach, der alte Turm
+halb eingestürzt und mit Efeu bewachsen, die Pechnase mit auskragendem Erker
+auf Konsolen, der Doppelturm zwei Türme mit einem Steg dazwischen, die
+Grenzfeste ein Bergfried zwischen zwei Flügeln mit Wimpeln.
+
+`MODELL_HOEHE` sagt, auf welcher Höhe die Besatzung steht — sonst stünde der
+Bogenschütze beim Lugaus in der Luft und beim Erdwall im Stein.
+
+Gemalt wird jedes Modell einmal in ein eigenes Bild, in Zehntelschritten der
+Bauhöhe, und danach nur noch aufgesetzt. Fünf Turmarten auf dem Feld brauchen
+fünf Bilder. Ein Bildaufbau kostet damit rund 16 Millisekunden.
+
 ## Mauerwerk und Boden
 
 Lange war jede Wand **eine einzige Farbfüllung** mit ein paar blassen Strichen

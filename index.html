@@ -1849,6 +1849,583 @@ function drawDach(col, row, w, h, base, hoehe, farbe, farbeDunkel) {
   ctx.fillRect(S[0] - 1, S[1] - 6, 2, 7);
 }
 
+// ============================================================
+//  Bauwerks-Engine
+// ============================================================
+// Bis hierher war jedes Bauwerk derselbe Kasten in derselben Farbe, und alles
+// im Bild lag im selben Braunton. Beides zusammen ist der Grund, warum es
+// flach und billig aussah: keine Silhouette, kein Farbkontrast, kein Blick-
+// fang.
+//
+// Diese Engine tut zwei Dinge.
+//
+// Erstens das Licht. Es gibt eine Sonne von rechts oben. Aus der Grundfarbe
+// eines Stoffs leitet sie drei Flaechenfarben ab: die Deckflaeche warm, die
+// beschienene Wand leicht warm, die abgewandte Wand **kuehl ins Violette**.
+// Schatten in Braun sehen tot aus, Schatten in Blauviolett lassen dieselbe
+// Farbe leben. Das allein macht den groessten Teil des Unterschieds.
+//
+// Zweitens die Modelle. Ein Bauwerk ist eine Liste von Teilen im Modellraum:
+// Quader, Daecher, Pfaehle, Zinnen, Fahnen. Jede Gebaeudekarte hat ihr
+// eigenes Modell und damit ihre eigene Silhouette.
+
+const LICHT = { warm: '#fff4d4', kalt: '#3b3566' };
+
+function mischen(hex, ziel, anteil) {
+  const z = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const a = [z(hex, 0), z(hex, 1), z(hex, 2)];
+  const b = [z(ziel, 0), z(ziel, 1), z(ziel, 2)];
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * anteil).toString(16).padStart(2, '0')).join('');
+}
+const farbeMisch = mischen;   // Altname
+
+/** Die drei Flaechenfarben eines Stoffs unter unserer Sonne. */
+function flaechen(grund) {
+  return {
+    oben: mischen(grund, LICHT.warm, 0.3),
+    rechts: mischen(grund, LICHT.warm, 0.06),
+    links: mischen(grund, LICHT.kalt, 0.36),
+  };
+}
+
+const STOFF = {
+  stein:     { grund: '#b6ab90', textur: 'quader' },
+  steinHell: { grund: '#d8cfb2', textur: 'quader' },
+  bruch:     { grund: '#a3977d', textur: 'bruch' },
+  putz:      { grund: '#e0d6ba', textur: 'putz' },
+  holz:      { grund: '#9c6d3e', textur: 'brett' },
+  stamm:     { grund: '#8a5f33', textur: 'stamm' },
+  erde:      { grund: '#7d6140', textur: 'erde' },
+  ziegel:    { grund: '#b4462e', textur: 'ziegel' },
+  schiefer:  { grund: '#4e5f72', textur: 'ziegel' },
+  stroh:     { grund: '#c6a052', textur: 'stroh' },
+};
+for (const k in STOFF) STOFF[k].f = flaechen(STOFF[k].grund);
+
+// ---------- Modellraum ----------
+// x und y in Feldern, z in Bildpunkten nach oben. Der Ursprung liegt in der
+// hinteren Ecke der Grundflaeche.
+const mx = (x, y) => (x - y) * (TW / 2);
+const my = (x, y, z) => (x + y) * (TH / 2) - z;
+
+function pfad(g, punkte, farbe) {
+  g.beginPath();
+  g.moveTo(punkte[0][0], punkte[0][1]);
+  for (let i = 1; i < punkte.length; i++) g.lineTo(punkte[i][0], punkte[i][1]);
+  g.closePath();
+  g.fillStyle = farbe;
+  g.fill();
+}
+
+/**
+ * Textur auf einer Wandflaeche. Der Stoff bestimmt, was gezeichnet wird:
+ * Quadersteine im Verband, Bruchstein, senkrechte Bretter, liegende Staemme.
+ */
+function wandTextur(g, oA, oB, uA, uB, hoehe, art, grundfarbe, kennung) {
+  const hell = mischen(grundfarbe, LICHT.warm, 0.34);
+  const dunkel = mischen(grundfarbe, '#1a1208', 0.36);
+  const P = (u, v) => flaechenPunkt(oA, oB, uA, uB, u, v);
+  const breite = Math.hypot(oB[0] - oA[0], oB[1] - oA[1]);
+
+  if (art === 'brett' || art === 'stroh') {
+    const bretter = Math.max(2, Math.round(breite / 6));
+    for (let i = 1; i < bretter; i++) {
+      const u = i / bretter;
+      const a = P(u, 0), b = P(u, 1);
+      g.strokeStyle = i % 2 ? dunkel : hell;
+      g.globalAlpha = art === 'stroh' ? 0.35 : 0.5;
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      g.globalAlpha = 1;
+    }
+    if (art === 'stroh') return;
+    // Querriegel auf den Brettern
+    for (const v of [0.28, 0.78]) {
+      const a = P(0, v), b = P(1, v);
+      g.strokeStyle = mischen(grundfarbe, '#3a2411', 0.3);
+      g.lineWidth = 2;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+    }
+    return;
+  }
+
+  if (art === 'stamm') {
+    const lagen = Math.max(1, Math.round(hoehe / 6));
+    for (let l = 0; l <= lagen; l++) {
+      const v = l / lagen;
+      const a = P(0, v), b = P(1, v);
+      g.strokeStyle = l % 2 ? dunkel : hell;
+      g.globalAlpha = 0.45;
+      g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      g.globalAlpha = 1;
+    }
+    return;
+  }
+
+  if (art === 'erde') {
+    for (let i = 0; i < 14; i++) {
+      const n = noise(kennung + i * 3.3, 17), n2 = noise(i * 7.1, kennung + 5);
+      const a = P(n, 0.1 + n2 * 0.8);
+      g.fillStyle = n > 0.5 ? 'rgba(255,240,200,0.1)' : 'rgba(30,20,10,0.14)';
+      g.fillRect(a[0] - 2, a[1], 4 + n2 * 3, 2);
+    }
+    return;
+  }
+
+  if (art === 'putz') {
+    for (let i = 0; i < 8; i++) {
+      const n = noise(kennung + i * 5.7, 23);
+      if (n < 0.6) continue;
+      const a = P(n, 0.2 + noise(i, kennung) * 0.7);
+      g.fillStyle = 'rgba(140,120,90,0.16)';
+      g.fillRect(a[0] - 3, a[1], 6, 3);
+    }
+    return;
+  }
+
+  // Quader und Bruchstein
+  const bruch = art === 'bruch';
+  const lagen = Math.max(1, Math.round(hoehe / (bruch ? 4.5 : 5.5)));
+  if (lagen < 2 && hoehe < 9) return;
+  const steine = Math.max(2, Math.round(breite / (bruch ? 8 : 11)));
+
+  for (let l = 0; l < lagen; l++) {
+    const v0 = l / lagen, v1 = (l + 1) / lagen;
+    const versatz = bruch ? (noise(kennung + l, 3) * 0.7) / steine : ((l % 2) ? 0.5 / steine : 0);
+    for (let i = -1; i <= steine; i++) {
+      const u0 = Math.max(0, i / steine + versatz);
+      const u1 = Math.min(1, (i + 1) / steine + versatz);
+      if (u1 - u0 < 0.015) continue;
+      const n = noise(kennung + l * 7.3, i * 3.7 + l);
+      const ton = mischen(grundfarbe, n > 0.6 ? LICHT.warm : LICHT.kalt, Math.abs(n - 0.6) * 0.4);
+      const p0 = P(u0, v0), p1 = P(u1, v0), p2 = P(u1, v1), p3 = P(u0, v1);
+      pfad(g, [p0, p1, p2, p3], ton);
+      g.lineWidth = 1;
+      g.strokeStyle = hell;
+      g.beginPath(); g.moveTo(p0[0], p0[1] + 0.5); g.lineTo(p1[0], p1[1] + 0.5); g.stroke();
+      g.strokeStyle = dunkel;
+      g.beginPath(); g.moveTo(p3[0], p3[1] - 0.5); g.lineTo(p2[0], p2[1] - 0.5); g.stroke();
+      if (u0 > 0.015) { g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p3[0], p3[1]); g.stroke(); }
+    }
+  }
+
+  // Moos am Fuss
+  for (let i = 0; i < steine * 2; i++) {
+    const n = noise(kennung * 1.7 + i * 5.1, 91);
+    if (n < 0.62) continue;
+    const a = P((i + 0.5) / (steine * 2), 1 - (n - 0.62) * 0.4);
+    g.fillStyle = 'rgba(84,104,52,' + (0.12 + n * 0.2).toFixed(2) + ')';
+    g.fillRect(a[0] - 2, a[1] - 1, 4 + n * 3, 3);
+  }
+}
+
+/** Ein Quader im Modellraum, mit Licht und Textur. */
+function teilQuader(g, x, y, z, w, d, h, stoffName, kennung) {
+  const st = STOFF[stoffName] || STOFF.stein;
+  const f = st.f;
+  const A = [mx(x, y), my(x, y, z + h)];
+  const B = [mx(x + w, y), my(x + w, y, z + h)];
+  const C = [mx(x + w, y + d), my(x + w, y + d, z + h)];
+  const D = [mx(x, y + d), my(x, y + d, z + h)];
+  const B0 = [mx(x + w, y), my(x + w, y, z)];
+  const C0 = [mx(x + w, y + d), my(x + w, y + d, z)];
+  const D0 = [mx(x, y + d), my(x, y + d, z)];
+
+  pfad(g, [B, C, C0, B0], f.rechts);
+  g.save(); g.beginPath();
+  g.moveTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.lineTo(B0[0], B0[1]);
+  g.closePath(); g.clip();
+  wandTextur(g, B, C, B0, C0, h, st.textur, f.rechts, kennung);
+  g.restore();
+
+  pfad(g, [D, C, C0, D0], f.links);
+  g.save(); g.beginPath();
+  g.moveTo(D[0], D[1]); g.lineTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.lineTo(D0[0], D0[1]);
+  g.closePath(); g.clip();
+  wandTextur(g, D, C, D0, C0, h, st.textur, f.links, kennung + 11);
+  g.restore();
+
+  pfad(g, [A, B, C, D], f.oben);
+
+  // Kantenlicht und Kehlnaht
+  g.lineWidth = 1;
+  g.strokeStyle = mischen(f.oben, LICHT.warm, 0.5);
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke();
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(D[0], D[1]); g.stroke();
+  g.strokeStyle = 'rgba(22,16,30,0.4)';
+  g.beginPath(); g.moveTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.stroke();
+  g.beginPath(); g.moveTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.stroke();
+  g.beginPath(); g.moveTo(D[0], D[1]); g.lineTo(C[0], C[1]); g.stroke();
+}
+
+/** Ein Walmdach mit Schindelreihen. */
+function teilDach(g, x, y, z, w, d, h, stoffName) {
+  const st = STOFF[stoffName] || STOFF.ziegel;
+  const f = st.f;
+  const A = [mx(x, y), my(x, y, z)];
+  const B = [mx(x + w, y), my(x + w, y, z)];
+  const C = [mx(x + w, y + d), my(x + w, y + d, z)];
+  const D = [mx(x, y + d), my(x, y + d, z)];
+  const S = [mx(x + w / 2, y + d / 2), my(x + w / 2, y + d / 2, z + h)];
+
+  pfad(g, [B, C, S], mischen(f.rechts, LICHT.kalt, 0.18));
+  pfad(g, [D, C, S], f.links);
+  pfad(g, [A, B, S], f.oben);
+  pfad(g, [A, D, S], mischen(f.oben, LICHT.kalt, 0.16));
+
+  // Schindelreihen auf den beiden vorderen Flaechen
+  const reihen = Math.max(2, Math.round(h / 5));
+  g.lineWidth = 1;
+  for (const [P0, P1, ton] of [[B, C, 0.22], [D, C, 0.3]]) {
+    for (let i = 1; i < reihen; i++) {
+      const t = i / reihen;
+      const a = [P0[0] + (S[0] - P0[0]) * t, P0[1] + (S[1] - P0[1]) * t];
+      const b = [P1[0] + (S[0] - P1[0]) * t, P1[1] + (S[1] - P1[1]) * t];
+      g.strokeStyle = 'rgba(20,12,20,' + ton.toFixed(2) + ')';
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+    }
+  }
+  g.strokeStyle = mischen(f.oben, LICHT.warm, 0.55);
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(S[0], S[1]); g.stroke();
+  g.beginPath(); g.moveTo(B[0], B[1]); g.lineTo(S[0], S[1]); g.stroke();
+}
+
+/** Ein Kegeldach, wie es auf runden Tuermen sitzt. */
+function teilKegel(g, x, y, z, r, h, stoffName) {
+  const st = STOFF[stoffName] || STOFF.ziegel;
+  const f = st.f;
+  const cx = mx(x, y), cy = my(x, y, z);
+  const S = [cx, cy - h];
+  const punkte = [];
+  for (let i = 0; i <= 12; i++) {
+    const w = (i / 12) * Math.PI * 2;
+    punkte.push([cx + Math.cos(w) * r * (TW / 2), cy + Math.sin(w) * r * (TH / 2)]);
+  }
+  for (let i = 0; i < 12; i++) {
+    const a = punkte[i], b = punkte[i + 1];
+    const licht = (Math.cos((i / 12) * Math.PI * 2 - 0.8) + 1) / 2;
+    pfad(g, [a, b, S], mischen(f.links, f.oben, licht));
+  }
+  g.strokeStyle = 'rgba(20,12,20,0.3)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.ellipse(cx, cy, r * (TW / 2), r * (TH / 2), 0, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = '#e3b552';
+  g.fillRect(S[0] - 1, S[1] - 5, 2, 6);
+}
+
+/** Zinnenkranz auf der Oberkante einer Grundflaeche. */
+function teilZinnen(g, x, y, z, w, d, stoffName) {
+  const s = 0.3, h = 6;
+  const punkte = [];
+  for (let i = x; i < x + w - 0.01; i += 0.46) {
+    punkte.push([i, y - 0.02]);
+    punkte.push([i, y + d - s + 0.02]);
+  }
+  for (let j = y + 0.46; j < y + d - 0.46 + 0.01; j += 0.46) {
+    punkte.push([x - 0.02, j]);
+    punkte.push([x + w - s + 0.02, j]);
+  }
+  punkte.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+  for (const [px, py] of punkte) teilQuader(g, px, py, z, s, s, h, stoffName, 3);
+}
+
+/** Ein Pfahl oder Pfosten, oben angespitzt. */
+function teilPfahl(g, x, y, z, h, stoffName, spitz) {
+  const st = STOFF[stoffName] || STOFF.stamm;
+  const b = 0.17;
+  teilQuader(g, x, y, z, b, b, h, stoffName, 7);
+  if (spitz === false) return;
+  const A = [mx(x, y), my(x, y, z + h)];
+  const B = [mx(x + b, y), my(x + b, y, z + h)];
+  const C = [mx(x + b, y + b), my(x + b, y + b, z + h)];
+  const D = [mx(x, y + b), my(x, y + b, z + h)];
+  const S = [mx(x + b / 2, y + b / 2), my(x + b / 2, y + b / 2, z + h + 5)];
+  pfad(g, [B, C, S], st.f.rechts);
+  pfad(g, [D, C, S], st.f.links);
+  pfad(g, [A, B, S], st.f.oben);
+}
+
+/** Fahne auf einer Stange. */
+function teilFahne(g, x, y, z, farbe) {
+  const px = mx(x, y), py = my(x, y, z);
+  g.fillStyle = '#3a2c1c';
+  g.fillRect(px, py - 22, 1.6, 24);
+  g.fillStyle = farbe;
+  g.beginPath();
+  g.moveTo(px + 1.6, py - 22);
+  g.lineTo(px + 14, py - 18.5);
+  g.lineTo(px + 1.6, py - 12);
+  g.closePath();
+  g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.22)';
+  g.fillRect(px + 1.6, py - 22, 6, 1.5);
+}
+
+/** Ein Fenster oder eine Schiessscharte in der rechten Wand. */
+function teilFenster(g, x, y, z, hoehe, warm) {
+  const px = mx(x, y), py = my(x, y, z);
+  g.fillStyle = '#241a2e';
+  g.beginPath();
+  g.moveTo(px, py);
+  g.lineTo(px + 4, py + 2);
+  g.lineTo(px + 4, py - hoehe + 2);
+  g.quadraticCurveTo(px + 2, py - hoehe - 2, px, py - hoehe);
+  g.closePath();
+  g.fill();
+  if (!warm) return;
+  const schein = wenigerBewegung ? 0.75 : 0.55 + Math.sin(animZeit * 2.3 + x * 3) * 0.2;
+  g.fillStyle = 'rgba(255,206,110,' + schein.toFixed(2) + ')';
+  g.fillRect(px + 1, py - hoehe + 3, 2, hoehe - 4);
+}
+
+// ============================================================
+//  Die Modelle
+// ============================================================
+// Jede Gebaeudekarte hat ihr eigenes Modell. Ein Modell ist eine Funktion,
+// die ihre Teile malt; `f` laeuft beim Bauen von null auf eins, damit das
+// Bauwerk aus dem Boden waechst. Die Grundflaeche ist zwei mal zwei Felder.
+
+const MODELLE = {
+  // ---- Holz und Erde, niedrig ----
+  palisade: (g, f) => {
+    const h = 15 * f;
+    for (let i = 0; i < 5; i++) {
+      teilPfahl(g, 0.08 + i * 0.44, 0.05, 0, h * (0.85 + noise(i, 1) * 0.3), 'stamm');
+      teilPfahl(g, 0.08 + i * 0.44, 1.78, 0, h * (0.85 + noise(i, 5) * 0.3), 'stamm');
+    }
+    for (let j = 1; j < 4; j++) {
+      teilPfahl(g, 0.05, 0.05 + j * 0.44, 0, h * (0.85 + noise(j, 9) * 0.3), 'stamm');
+      teilPfahl(g, 1.78, 0.05 + j * 0.44, 0, h * (0.85 + noise(j, 3) * 0.3), 'stamm');
+    }
+    if (f > 0.8) teilQuader(g, 0.05, 0.05, h * 0.55, 1.9, 1.9, 2, 'holz', 2);
+  },
+  schanze: (g, f) => {
+    teilQuader(g, 0, 0, 0, 2, 2, 13 * f, 'erde', 4);
+    if (f < 0.6) return;
+    for (let i = 0; i < 4; i++) {
+      teilPfahl(g, 0.15 + i * 0.5, 0.12, 13 * f, 9, 'stamm');
+      teilPfahl(g, 0.15 + i * 0.5, 1.72, 13 * f, 9, 'stamm');
+    }
+  },
+  wallgraben: (g, f) => {
+    teilQuader(g, 0, 0, 0, 2, 2, 11 * f, 'erde', 6);
+    if (f < 0.6) return;
+    for (let i = 0; i < 6; i++) {
+      const n = noise(i * 3.1, 2);
+      teilPfahl(g, 0.1 + (i % 3) * 0.7, 0.1 + Math.floor(i / 3) * 1.5, 11 * f, 7 + n * 4, 'stamm');
+    }
+  },
+  erdwall: (g, f) => {
+    teilQuader(g, 0, 0, 0, 2, 2, 14 * f, 'erde', 8);
+    if (f > 0.7) teilQuader(g, 0.2, 0.2, 14 * f, 1.6, 1.6, 3, 'erde', 9);
+  },
+
+  // ---- Mauern und Gaenge ----
+  wehrgang: (g, f) => {
+    const h = 17 * f;
+    teilQuader(g, 0, 0.35, 0, 2, 1.3, h, 'stein', 11);
+    if (f < 0.7) return;
+    for (const x of [0.12, 1.72]) teilPfahl(g, x, 0.42, h, 12, 'holz', false);
+    for (const x of [0.12, 1.72]) teilPfahl(g, x, 1.5, h, 12, 'holz', false);
+    teilDach(g, -0.05, 0.3, h + 12, 2.1, 1.4, 9, 'schiefer');
+  },
+  bollwerk: (g, f) => {
+    teilQuader(g, 0, 0, 0, 2, 2, 12 * f, 'bruch', 13);
+    teilQuader(g, 0.22, 0.22, 12 * f, 1.56, 1.56, 9 * f, 'stein', 14);
+    if (f > 0.8) teilZinnen(g, 0.22, 0.22, 12 * f + 9 * f, 1.56, 1.56, 'stein');
+  },
+
+  // ---- Tuerme ----
+  wachturm: (g, f) => {
+    const h = 30 * f;
+    teilQuader(g, 0.25, 0.25, 0, 1.5, 1.5, h, 'stein', 17);
+    teilFenster(g, 1.75, 0.9, h * 0.6, 9, false);
+    if (f < 0.75) return;
+    teilQuader(g, 0.12, 0.12, h, 1.76, 1.76, 7, 'holz', 18);   // Hurde
+    teilDach(g, 0.08, 0.08, h + 7, 1.84, 1.84, 15, 'ziegel');
+    teilFahne(g, 1.4, 0.3, h + 22, '#2f5fa8');
+  },
+  steinturm: (g, f) => {
+    const h = 36 * f;
+    teilQuader(g, 0.18, 0.18, 0, 1.64, 1.64, h, 'stein', 21);
+    teilFenster(g, 1.82, 0.85, h * 0.55, 10, false);
+    teilFenster(g, 1.82, 0.85, h * 0.8, 8, false);
+    if (f > 0.8) teilZinnen(g, 0.18, 0.18, h, 1.64, 1.64, 'steinHell');
+  },
+  turmwache: (g, f) => {
+    const h = 32 * f;
+    teilQuader(g, 0.25, 0.25, 0, 1.5, 1.5, h, 'putz', 23);
+    teilFenster(g, 1.75, 0.8, h * 0.62, 13, true);
+    if (f < 0.75) return;
+    teilZinnen(g, 0.25, 0.25, h, 1.5, 1.5, 'stein');
+    teilFahne(g, 0.4, 1.6, h + 6, '#e3b552');
+  },
+  alterturm: (g, f) => {
+    const h = 28 * f;
+    teilQuader(g, 0.22, 0.22, 0, 1.56, 1.56, h, 'bruch', 27);
+    if (f < 0.7) return;
+    // Eine Seite ist eingestuerzt, darum nur ein halber Zinnenkranz
+    for (let i = 0; i < 3; i++) teilQuader(g, 0.3 + i * 0.5, 0.24, h, 0.3, 0.3, 5 + i, 'bruch', 28);
+    teilQuader(g, 0.26, 0.9, h, 0.3, 0.3, 7, 'bruch', 29);
+    // Efeu
+    for (let i = 0; i < 7; i++) {
+      const n = noise(i * 4.1, 31);
+      const px = mx(1.78, 0.3 + n * 1.2), py = my(1.78, 0.3 + n * 1.2, h * (0.15 + n * 0.7));
+      g.fillStyle = 'rgba(74,104,46,0.75)';
+      g.fillRect(px, py, 3, 4);
+    }
+  },
+  lugaus: (g, f) => {
+    const h = 40 * f;
+    for (const [x, y] of [[0.3, 0.3], [1.5, 0.3], [0.3, 1.5], [1.5, 1.5]])
+      teilPfahl(g, x, y, 0, h, 'holz', false);
+    if (f < 0.7) return;
+    teilQuader(g, 0.14, 0.14, h, 1.72, 1.72, 9, 'holz', 33);
+    teilDach(g, 0.08, 0.08, h + 9, 1.84, 1.84, 13, 'stroh');
+  },
+  pechnase: (g, f) => {
+    const h = 27 * f;
+    teilQuader(g, 0.3, 0.3, 0, 1.4, 1.4, h, 'stein', 37);
+    if (f < 0.75) return;
+    // Auskragender Erker auf Konsolen
+    for (const y of [0.45, 1.15]) teilPfahl(g, 1.7, y, h - 8, 6, 'holz', false);
+    teilQuader(g, 1.62, 0.36, h - 3, 0.5, 1.28, 10, 'holz', 38);
+    teilZinnen(g, 0.3, 0.3, h, 1.4, 1.4, 'stein');
+  },
+  hoherhorst: (g, f) => {
+    const h = 48 * f;
+    teilQuader(g, 0.42, 0.42, 0, 1.16, 1.16, h, 'steinHell', 41);
+    teilFenster(g, 1.58, 0.85, h * 0.45, 9, false);
+    teilFenster(g, 1.58, 0.85, h * 0.72, 9, true);
+    if (f < 0.8) return;
+    teilQuader(g, 0.3, 0.3, h, 1.4, 1.4, 5, 'stein', 42);
+    teilKegel(g, 1, 1, h + 5, 0.72, 22, 'schiefer');
+  },
+
+  // ---- Doppelbauten ----
+  doppelturm: (g, f) => {
+    const h1 = 26 * f, h2 = 32 * f;
+    teilQuader(g, 0.08, 0.08, 0, 0.8, 0.8, h1, 'stein', 45);
+    teilQuader(g, 1.12, 1.12, 0, 0.8, 0.8, h2, 'stein', 46);
+    if (f < 0.7) return;
+    teilQuader(g, 0.5, 0.5, h1 - 6, 1.0, 0.34, 5, 'holz', 47);   // Steg
+    teilDach(g, 0.04, 0.04, h1, 0.88, 0.88, 11, 'ziegel');
+    teilDach(g, 1.08, 1.08, h2, 0.88, 0.88, 11, 'ziegel');
+    teilFahne(g, 1.5, 1.2, h2 + 11, '#8c2230');
+  },
+  zwinger: (g, f) => {
+    const h = 18 * f;
+    teilQuader(g, 0, 0, 0, 2, 0.42, h, 'stein', 51);
+    teilQuader(g, 0, 1.58, 0, 2, 0.42, h, 'stein', 52);
+    teilQuader(g, 0, 0.42, 0, 0.42, 1.16, h, 'stein', 53);
+    teilQuader(g, 1.58, 0.42, 0, 0.42, 1.16, h, 'stein', 54);
+    if (f < 0.75) return;
+    for (const [x, y] of [[0, 0], [1.6, 0], [0, 1.6], [1.6, 1.6]])
+      teilQuader(g, x, y, h, 0.4, 0.4, 8, 'steinHell', 55);
+  },
+
+  // ---- Die grossen Bauten ----
+  bergfried: (g, f) => {
+    const h = 42 * f;
+    teilQuader(g, 0.1, 0.1, 0, 1.8, 1.8, h * 0.35, 'bruch', 61);
+    teilQuader(g, 0.24, 0.24, h * 0.35, 1.52, 1.52, h * 0.65, 'stein', 62);
+    teilFenster(g, 1.76, 0.85, h * 0.62, 11, true);
+    if (f < 0.8) return;
+    for (const [x, y] of [[0.1, 0.1], [1.4, 0.1], [0.1, 1.4], [1.4, 1.4]]) {
+      teilQuader(g, x, y, h, 0.5, 0.5, 10, 'steinHell', 63);
+      teilKegel(g, x + 0.25, y + 0.25, h + 10, 0.3, 11, 'ziegel');
+    }
+    teilDach(g, 0.36, 0.36, h, 1.28, 1.28, 20, 'ziegel');
+    teilFahne(g, 1.0, 0.2, h + 20, '#2f5fa8');
+  },
+  trutzburg: (g, f) => {
+    const h = 34 * f;
+    teilQuader(g, 0, 0, 0, 2, 2, h * 0.3, 'bruch', 65);
+    teilQuader(g, 0.16, 0.16, h * 0.3, 1.68, 1.68, h * 0.7, 'steinHell', 66);
+    teilFenster(g, 1.84, 0.7, h * 0.6, 10, true);
+    teilFenster(g, 1.84, 1.2, h * 0.6, 10, false);
+    if (f < 0.8) return;
+    teilQuader(g, 0.05, 0.05, h, 1.9, 1.9, 6, 'holz', 67);       // umlaufende Galerie
+    teilZinnen(g, 0.16, 0.16, h + 6, 1.68, 1.68, 'stein');
+    teilFahne(g, 0.3, 0.3, h + 6, '#8c2230');
+    teilFahne(g, 1.6, 1.6, h + 6, '#8c2230');
+  },
+  grenzfeste: (g, f) => {
+    const h = 46 * f;
+    teilQuader(g, 0, 0, 0, 2, 2, h * 0.26, 'bruch', 71);
+    teilQuader(g, 0.05, 0.05, h * 0.26, 0.75, 1.9, h * 0.34, 'stein', 72);
+    teilQuader(g, 1.2, 0.05, h * 0.26, 0.75, 1.9, h * 0.34, 'stein', 73);
+    teilQuader(g, 0.42, 0.42, h * 0.26, 1.16, 1.16, h * 0.74, 'steinHell', 74);
+    teilFenster(g, 1.58, 0.75, h * 0.7, 12, true);
+    if (f < 0.85) return;
+    teilZinnen(g, 0.05, 0.05, h * 0.6, 0.75, 1.9, 'stein');
+    teilZinnen(g, 1.2, 0.05, h * 0.6, 0.75, 1.9, 'stein');
+    teilKegel(g, 1, 1, h, 0.62, 26, 'schiefer');
+    teilFahne(g, 0.2, 1.8, h * 0.6, '#e3b552');
+    teilFahne(g, 1.8, 0.2, h * 0.6, '#e3b552');
+  },
+};
+
+// Auf welcher Hoehe die Besatzung eines Modells steht. Ohne das stuende der
+// Bogenschuetze beim Lugaus in der Luft und beim Erdwall im Stein.
+const MODELL_HOEHE = {
+  palisade: 17, schanze: 22, wallgraben: 18, erdwall: 17,
+  wehrgang: 29, bollwerk: 21,
+  wachturm: 37, steinturm: 36, turmwache: 32, alterturm: 33,
+  lugaus: 49, pechnase: 27, hoherhorst: 53,
+  doppelturm: 32, zwinger: 26,
+  bergfried: 42, trutzburg: 40, grenzfeste: 46,
+};
+
+// Welche Karte welches Modell baut. Alles ohne Eintrag bekommt den Wachturm.
+const KARTE_MODELL = {
+  palisade: 'palisade', schanze: 'schanze', wallgraben: 'wallgraben', erdwall: 'erdwall',
+  wehrgang: 'wehrgang', bollwerk: 'bollwerk',
+  wachturm: 'wachturm', steinturm: 'steinturm', turmwache: 'turmwache', alterturm: 'alterturm',
+  lugaus: 'lugaus', pechnase: 'pechnase', hoherhorst: 'hoherhorst',
+  doppelturm: 'doppelturm', zwinger: 'zwinger',
+  bergfried: 'bergfried', trutzburg: 'trutzburg', grenzfeste: 'grenzfeste',
+};
+
+// Jedes Modell einmal malen und danach nur noch aufsetzen. Der Schluessel ist
+// Modell und Bauhoehe in Zehntelschritten.
+const modellBilder = new Map();
+const MODELL_VORRAT = 400;
+
+function modellBild(name, stufe) {
+  const schluessel = name + ':' + stufe;
+  let bild = modellBilder.get(schluessel);
+  if (bild) return bild;
+
+  const bauer = MODELLE[name] || MODELLE.wachturm;
+  const rand = 26;
+  const cv = document.createElement('canvas');
+  cv.width = 2 * TW + rand * 2;
+  cv.height = 150 + rand;   // hoch genug fuer Kegeldach und Fahne der Grenzfeste
+  const g = cv.getContext('2d');
+  const ankerX = TW + rand;          // Ursprung des Modellraums im Bild
+  const ankerY = cv.height - rand - TH;
+  g.translate(ankerX, ankerY);
+  bauer(g, stufe / 10);
+
+  bild = { cv, ankerX, ankerY };
+  while (modellBilder.size >= MODELL_VORRAT) modellBilder.delete(modellBilder.keys().next().value);
+  modellBilder.set(schluessel, bild);
+  return bild;
+}
+
+/** Setzt ein Bauwerk aufs Feld. */
+function zeichneModell(name, col, row, wachstum) {
+  const stufe = Math.max(1, Math.min(10, Math.round(wachstum * 10)));
+  const bild = modellBild(name, stufe);
+  ctx.drawImage(bild.cv,
+    Math.round(isoX(col, row) - bild.ankerX),
+    Math.round(isoY(col, row) - bild.ankerY));
+}
+
 // ---------- Mauerwerk ----------
 // Vorher war jede Wand eine einzige Farbfuellung mit ein paar blassen Strichen
 // darueber. Neben den harten Pixeln der Figuren sah das flach und fremd aus:
@@ -1862,13 +2439,6 @@ function drawDach(col, row, w, h, base, hoehe, farbe, farbeDunkel) {
 
 const blockBilder = new Map();
 const BLOCK_VORRAT = 500;
-
-function farbeMisch(hex, ziel, anteil) {
-  const z = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
-  const a = [z(hex, 0), z(hex, 1), z(hex, 2)];
-  const b = [z(ziel, 0), z(ziel, 1), z(ziel, 2)];
-  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * anteil).toString(16).padStart(2, '0')).join('');
-}
 
 /** Ein Punkt in der Flaeche, u laeuft quer, v von oben nach unten. */
 function flaechenPunkt(oA, oB, uA, uB, u, v) {
@@ -2979,7 +3549,7 @@ function drawTower(t) {
   const bauF = t.bauZeit === undefined ? 1 : Math.min(1, t.bauZeit / BAU_DAUER);
   const gewachsen = wenigerBewegung ? 1 : ueberschwingen(bauF);
   const fertig = bauF >= 1;
-  const H = Math.max(2, 34 * gewachsen - (t.rueckstoss || 0) * 4);
+  const H = Math.max(2, MODELL_HOEHE[t.modell || 'wachturm'] * gewachsen - (t.rueckstoss || 0) * 4);
   const sel = getSelectedTower();
   const ausgewaehlt = sel && sel.id === t.id;
   const zielArtJetzt = state.pendingCard ? zielArt(state.pendingCard) : null;
@@ -2989,17 +3559,19 @@ function drawTower(t) {
     (zielArtJetzt === 'turm')
   );
 
-  drawBauSchatten(t.col, t.row, t.w, t.h, H);
-  drawBlock(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
+  drawBauSchatten(t.col, t.row, t.w, t.h, H * 0.8);
+  // Jede Gebaeudekarte hat ihr eigenes Modell, also auch ihre eigene
+  // Silhouette. Der Wachturm sieht nicht mehr aus wie die Grenzfeste.
+  zeichneModell(t.modell || 'wachturm', t.col, t.row, gewachsen);
 
-  if (bauF > 0.55) {
-    ctx.globalAlpha = Math.min(1, (bauF - 0.55) / 0.35);
-    drawMerlons(t.col, t.row, t.w, t.h, H, ausgewaehlt || zielbar ? STEIN_HELL : STEIN);
-    if (t.name === 'Wachturm') {
-      const dachF = Math.min(1, (bauF - 0.55) / 0.45);
-      drawDach(t.col + 0.12, t.row + 0.12, t.w - 0.24, t.h - 0.24, H + 7, 20 * dachF, '#8e3f34', '#6a2c26');
-    }
-    ctx.globalAlpha = 1;
+  // Der angewaehlte oder anzielbare Turm bekommt einen warmen Schein,
+  // statt dass die Steine die Farbe wechseln.
+  if (ausgewaehlt || zielbar) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = ausgewaehlt ? 0.16 : 0.1;
+    zeichneModell(t.modell || 'wachturm', t.col, t.row, gewachsen);
+    ctx.restore();
   }
 
   const cx = isoX(t.col + t.w / 2, t.row + t.h / 2);
@@ -4801,6 +5373,7 @@ function placeTower(col, row) {
     hp: card.hp + (state.maechte.turmLeben || 0),
     maxHp: card.hp + (state.maechte.turmLeben || 0),
     rangeBonus: card.rangeBonus || 0,
+    modell: KARTE_MODELL[card.id] || 'wachturm',
     slots: new Array(plaetze).fill(null),
     bauZeit: wenigerBewegung ? BAU_DAUER : 0, rueckstoss: 0,
   };
