@@ -2407,11 +2407,21 @@ const STOFF = {
   ziegel:    { grund: '#b4462e', textur: 'ziegel' },
   schiefer:  { grund: '#4e5f72', textur: 'ziegel' },
   stroh:     { grund: '#c6a052', textur: 'stroh' },
-  // Der Sandstein des Walls. Das Torhaus trug zuerst den grauen 'stein' der
-  // Burg und verschmolz mit ihr zu einem Klumpen; im Ton des Walls liest es
-  // sich als das, was es ist - ein Stueck Wall, nur groesser.
-  wallstein: { grund: '#c3b492', textur: 'quader' },
-  wallstein2:{ grund: '#d5c7a4', textur: 'quader' },
+  /*
+   * Der Sandstein des Walls - und zwar die einzige Quelle dafuer. Der Wall
+   * hatte seine drei Flaechenfarben von Hand gesetzt (#bfb08c/#5f5442/#8b7d5f),
+   * die Modelle bekamen ihre aus `flaechen()` gerechnet. Die Seitenflaechen
+   * lagen damit weit auseinander - rechts #8b7d5f gegen #c6b795 - und das
+   * Torhaus sah neben dem Wall aus wie aus einem anderen Spiel. Jetzt zieht
+   * `WALL` seine Farben aus genau diesem Stoff, damit beide gar nicht
+   * auseinanderlaufen koennen.
+   *
+   * Der Grundton ist so gewaehlt, dass die Deckflaeche wieder auf dem alten
+   * Wallton #bfb08c landet: flaechen() hellt sie um 0.3 zum Licht auf.
+   */
+  wallstein:  { grund: '#a4936d', textur: 'quader' },
+  wallstein2: { grund: '#bcaa83', textur: 'quader' },   // Wehrplatte, eine Spur heller
+  wallriss:   { grund: '#8a7c5e', textur: 'bruch' },    // angeschlagenes Mauerwerk
 };
 for (const k in STOFF) STOFF[k].f = flaechen(STOFF[k].grund);
 
@@ -2560,6 +2570,20 @@ function teilQuader(g, x, y, z, w, d, h, stoffName, kennung) {
   g.restore();
 
   pfad(g, [A, B, C, D], f.oben);
+  /*
+   * Plattenfugen auf der Deckflaeche, dieselben wie beim Wall. Ohne sie war
+   * jede waagerechte Steinflaeche eines Modells ein glatter Farbfleck -
+   * neben den gefugten Wallkronen fiel das sofort auf, am staerksten auf der
+   * grossen Wehrplatte des Torhauses.
+   */
+  if ((st.textur === 'quader' || st.textur === 'bruch') && w > 0.6 && d > 0.6) {
+    g.save();
+    g.beginPath();
+    g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.lineTo(D[0], D[1]);
+    g.closePath(); g.clip();
+    deckPlatten(g, A, B, C, D, f.oben, kennung);
+    g.restore();
+  }
 
   // Kantenlicht und Kehlnaht
   g.lineWidth = 1;
@@ -3389,8 +3413,9 @@ const WALL_WACHSEN = 0.4;         // Sekunden, in denen ein neues Stueck aufstei
 const MAUER_KOSTEN = 9;
 const MAUER_KOSTEN_RAMME = 1;
 const RAMM_FAKTOR = 2;            // und gegen Stein schlaegt sie doppelt so hart
-const WALL = { oben: '#bfb08c', links: '#5f5442', rechts: '#8b7d5f' };
-const WALL_RISS = { oben: '#9d8f70', links: '#4b4134', rechts: '#6f6349' };
+// Aus demselben Stoff wie das Torhaus, siehe STOFF.wallstein.
+const WALL = STOFF.wallstein.f;
+const WALL_RISS = STOFF.wallriss.f;
 
 const wkey = (c, r) => c + ',' + r;
 

@@ -350,6 +350,40 @@ Drei Dinge gehören dazu:
   2×2-Podeste mit einer gelben Marke darüber. Das machte aus dem Wall ein Brett
   mit sechs Steckplätzen; jetzt geht es überall an ihm entlang.
 
+### Ein Stein für alles
+
+Nach der Verdickung passte es immer noch nicht, und der Grund war kein
+Zeichenfehler, sondern **zwei Farbquellen für dasselbe Material**. Der Wall
+hatte seine drei Flächenfarben von Hand gesetzt, die Modelle bekamen ihre aus
+`flaechen()` gerechnet:
+
+| Fläche | Wall (von Hand) | Torhaus (`flaechen`) |
+| --- | --- | --- |
+| oben | `#bfb08c` | `#d0c2a4` |
+| rechts | `#8b7d5f` | `#c6b795` |
+| links | `#5f5442` | `#928682` |
+
+Rechts liegen fast siebzig Helligkeitsstufen dazwischen. Das Torhaus stand
+deshalb blass neben dem Wall, als käme es aus einem anderen Spiel — obwohl
+beide Steinlagen im selben Raster zeichnen.
+
+Jetzt gibt es genau **einen** Stoff, und `WALL` zieht seine Farben daraus:
+
+```js
+wallstein: { grund: '#a4936d', textur: 'quader' },
+const WALL = STOFF.wallstein.f;
+```
+
+Der Grundton ist so gewählt, dass die Deckfläche wieder auf dem alten Wallton
+`#bfb08c` landet — `flaechen()` hellt sie um 0.3 zum Licht auf. Auseinanderlaufen
+können die beiden jetzt gar nicht mehr.
+
+Dazu bekommen die waagerechten Steinflächen der Modelle dieselben
+**Plattenfugen** wie die Wallkronen (`deckPlatten` aus `teilQuader`). Ohne sie
+war jede Deckfläche ein glatter Farbfleck; am stärksten fiel das auf der großen
+Wehrplatte des Torhauses auf. Kostet nichts: 23,2 ms je Bild davor, 22,9 ms
+danach — die Modelle liegen ohnehin im Zwischenspeicher.
+
 ### Zwei Felder dick, und warum das nötig war
 
 Der Wall war ein Feld dick, Türme und Torhaus sind zwei Felder breit. Sie hingen
