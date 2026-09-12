@@ -1015,6 +1015,7 @@
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
+        <li><b>Gewicht:</b> Wer schwer ist, geht langsam. Ein Späher steht nach fünf Zügen am Tor und kratzt; die Ramme braucht neun und schlägt ein Loch, das Katapult zwölf. Die bronzene Plakette markiert schweres Gerät — es kommt spät, aber es kommt.</li>
         <li><b>Route:</b> 17 Stationen bis zum Belagerungsmeister. Du wählst nach jeder Station, wohin es weitergeht.</li>
         <li><b>Türme:</b> Bleiben nie stehen. An jeder Station baust du von vorn.</li>
         <li><b>Burg:</b> Ihre Lebenspunkte reitest du mit. Geheilt wird nur im Lager oder durch Begegnungen.</li>
@@ -1363,27 +1364,38 @@ for (const karte of CARD_POOL) {
   }
 }
 
-const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 35 };
+// Die Burg haelt 50 Treffer aus. Der Wert haengt an der Wucht der schweren
+// Belagerer: eine Ramme schlaegt spaet fast 30 auf einmal heraus, und ein
+// Tor, das zwei Schlaege nicht ueberlebt, macht jeden Durchbruch endgueltig.
+const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 50 };
 
 /**
  * Gegnertypen. `move` ist die Strecke pro Runde, `reach` die eigene
  * Angriffsreichweite. Ein Spaeher muss also heran, ein Armbrustschuetze
  * beschiesst den Turm aus vier Feldern Entfernung.
  * `punkte` ist der Preis im Wellenbudget, `abRunde` die Freischaltung.
+ *
+ * Tempo und Wucht laufen gegeneinander: der Spaeher steht nach vier Zuegen
+ * am Tor und kratzt, das Katapult kriecht ein Feld je Zug und schlaegt dafuer
+ * ein Loch. Wer schwer ist, braucht mehr Zuege - und ist jeden davon wert.
+ * Gemessen an der nackten Burg (Feld 20 breit, Burg in Spalte 0/1), Zuege
+ * bis zum ersten Schlag und der Schaden dieses Schlags in Runde 1 / 17:
+ *   Spaeher 5 Zuege, 1/2 | Armbruster 6, 2/5 | Ritter 7, 5/12
+ *   Ramme 9 Zuege, 11/26 | Katapult 12, 9/21 | Meister 9, 14/33
  */
 const ENEMY_TYPES = {
   spaeher: { id: 'spaeher', name: 'Späher', hp: 4, dmg: 1, move: 5, reach: 1,
     punkte: 2, abRunde: 1, scale: 2, pal: { r: '#a8442b', R: '#d4663a' } },
-  armbrust: { id: 'armbrust', name: 'Armbrustschütze', hp: 6, dmg: 2, move: 2, reach: 4,
+  armbrust: { id: 'armbrust', name: 'Armbrustschütze', hp: 7, dmg: 2, move: 3, reach: 4,
     punkte: 3, abRunde: 2, scale: 2, pal: { r: '#4e5c2a', R: '#75873e' } },
-  ritter: { id: 'ritter', name: 'Ritter', hp: 14, dmg: 3, move: 3, reach: 1,
-    punkte: 5, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
-  ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
-    punkte: 7, abRunde: 5, scale: 3, geraet: 'ramme', pal: { r: '#5d4023', R: '#8a6238' } },
-  katapult: { id: 'katapult', name: 'Katapult', hp: 12, dmg: 6, move: 1, reach: 5,
-    punkte: 6, abRunde: 6, scale: 3, geraet: 'katapult', pal: { r: '#6b4a2a', R: '#9a7448' } },
+  ritter: { id: 'ritter', name: 'Ritter', hp: 20, dmg: 5, move: 3, reach: 1,
+    punkte: 6, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
+  ramme: { id: 'ramme', name: 'Ramme', hp: 36, dmg: 11, move: 2, reach: 2,
+    punkte: 12, abRunde: 5, scale: 3, geraet: 'ramme', pal: { r: '#5d4023', R: '#8a6238' } },
+  katapult: { id: 'katapult', name: 'Katapult', hp: 18, dmg: 9, move: 1, reach: 7,
+    punkte: 9, abRunde: 6, scale: 3, geraet: 'katapult', pal: { r: '#6b4a2a', R: '#9a7448' } },
   // Nur in der letzten Runde eines Feldzugs, nie im normalen Aufgebot.
-  meister: { id: 'meister', name: 'Belagerungsmeister', hp: 65, dmg: 8, move: 2, reach: 2,
+  meister: { id: 'meister', name: 'Belagerungsmeister', hp: 80, dmg: 14, move: 2, reach: 2,
     punkte: 99, abRunde: 999, scale: 3, pal: { r: '#4a2b52', R: '#7d4a86' } },
 };
 
@@ -1441,7 +1453,10 @@ const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der
 
 // Spaetere Runden schicken zaehere Gegner.
 const belagerungsHp = (runde) => (1.15 + 0.07 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
-const belagerungsSchaden = (runde) => Math.floor(runde / 1.7);
+// Die Wucht waechst mal, nicht plus. Ein Aufschlag von +10 auf alles haette
+// aus dem Spaeher (1) und der Ramme (11) spaete Zwillinge gemacht und genau
+// den Unterschied eingeebnet, der die Typen unterscheidbar macht.
+const belagerungsWucht = (runde) => (1 + 0.085 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
 
 // Das geschuetzte Lager liegt rechts neben dem Spielfeld.
 const LAGER_COL = COLS;
@@ -1614,7 +1629,7 @@ function makeEnemy(typ, runde) {
   return {
     id: state.nextEnemyId++, typ,
     name: t.name, hp, maxHp: hp,
-    dmg: t.dmg + belagerungsSchaden(runde),
+    dmg: Math.max(1, Math.round(t.dmg * belagerungsWucht(runde))),
     move: t.move, reach: t.reach,
     col: COLS - 1, row: 0,
     vx: LAGER_COL + 0.5, vy: 0,   // sichtbare Position, laeuft nach
@@ -4335,7 +4350,11 @@ function drawEnemy(e, geist = false) {
   // Was der Gegner im naechsten Zug vorhat
   if (plan.aktion === 'gefesselt') drawBadge(cx, cy + 5, '✖ ' + e.gefesselt, '#a8c4e0', '#2f5fa8');
   else if (plan.aktion === 'angriff') drawBadge(cx, cy + 5, '⚔ ' + e.dmg, '#ffb3a7', '#8c2230');
-  else drawBadge(cx, cy + 5, '➤ ' + e.move, '#cfc0a0', '#6b5535');
+  // Ein Katapult zeigt beim Anmarsch nur '➤ 1' und liest sich damit harmlos,
+  // obwohl es das Gefaehrlichste auf dem Feld ist. Schweres Geraet traegt die
+  // Plakette deshalb in Bronze - langsam, aber nichts, das man stehen laesst.
+  else drawBadge(cx, cy + 5, '➤ ' + e.move,
+    t.punkte >= 9 ? '#f0c08c' : '#cfc0a0', t.punkte >= 9 ? '#7a3a1c' : '#6b5535');
 
   if (geist) { ctx.globalAlpha = 1; return; }
   addPick('enemy', e, cx - 7 * t.scale / 2 - 5, cy - h - 8, 7 * t.scale + 10, h + 26);

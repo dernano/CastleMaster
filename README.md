@@ -50,7 +50,7 @@ bestandene Feldzüge und die beste Station bleiben gespeichert.
 **Türme bleiben nie stehen.** An jeder Station baust du von vorn. Die
 eigentliche Fortschrittsachse ist damit das Deck, nicht das Feld.
 
-**Die Burg reitet mit.** Ihre 35 Lebenspunkte müssen den ganzen Feldzug tragen
+**Die Burg reitet mit.** Ihre 50 Lebenspunkte müssen den ganzen Feldzug tragen
 und heilen nicht von selbst. Geheilt wird nur im Lager oder durch eine
 Begegnung.
 
@@ -221,6 +221,59 @@ im Aufgebot.
 
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
+
+## Gewicht gegen Tempo
+
+Lange liefen alle Belagerer ungefähr gleich schnell und trafen ungefähr gleich
+hart. Der Grund war nicht die Tabelle, sondern eine einzige Zeile darunter:
+
+```js
+dmg: t.dmg + belagerungsSchaden(runde)   // + Math.floor(runde / 1.7)
+```
+
+Der Zuschlag war **additiv** und galt für alle. In Station 17 bekam jeder +10.
+Aus einem Späher mit 1 Schaden wurde 11, aus einer Ramme mit 5 wurde 15 — zwei
+Einheiten, die sich als Bedrohung kaum noch unterschieden. Die Skala hat den
+Unterschied gefressen, den die Tabelle aufgebaut hatte.
+
+Jetzt wächst die Wucht **mal statt plus**:
+
+```js
+const belagerungsWucht = (runde) => (1 + 0.085 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+```
+
+Wer schwer anfängt, wird schwer — wer kratzt, kratzt weiter. Dazu geht schweres
+Gerät langsamer und braucht mehr Züge bis ans Tor. Gemessen an der nackten Burg,
+vom rechten Feldrand aus:
+
+| Typ | Züge bis zum ersten Schlag | Bewegung | Reichweite | LP | Schaden Station 1 / 17 |
+| --- | --- | --- | --- | --- | --- |
+| Späher | 5 | 5 | 1 | 5 | 1 / 2 |
+| Armbrustschütze | 6 | 3 | 4 | 8 | 2 / 5 |
+| Ritter | 7 | 3 | 1 | 23 | 5 / 12 |
+| Ramme | 9 | 2 | 2 | 41 | 11 / 26 |
+| Katapult | 12 | 1 | 7 | 21 | 9 / 21 |
+| Belagerungsmeister | 9 | 2 | 2 | 92 | 14 / 33 |
+
+Damit ist jeder Typ eine eigene Frage. Der Späher ist in fünf Zügen da und
+kostet fast nichts — man lässt ihn laufen. Die Ramme braucht neun Züge, aber
+ihre neun Züge sind eine Uhr: wenn sie ankommt, ist ein Viertel der Burg weg.
+Das Katapult kriecht ein Feld je Zug und schlägt trotzdem aus sieben Feldern
+Entfernung zu; es fällt in die späten Fristen, in denen zwölf Züge reichen.
+
+Schweres Gerät ist auch teurer im Wellenbudget (Ramme 12 Punkte statt 7,
+Katapult 9 statt 6). Späte Aufgebote sind deshalb **kleiner, langsamer und
+tödlicher** statt einfach größer.
+
+Weil eine Ramme spät fast 30 Schaden auf einmal setzt, steigen die Burg-LP von
+35 auf **50**. Ein Tor, das zwei Schläge nicht überlebt, macht jeden Durchbruch
+endgültig — und genau diese Zahlen brauchen Raum. Gemessen über je 24
+Bot-Feldzüge bleibt die Schwierigkeit dabei, wo sie war: 11 von 24 Siegen gegen
+12 von 24 vorher, Stürme bei 28 statt 25 Prozent. Verändert hat sich nicht, wie
+schwer es ist, sondern woran man stirbt.
+
+Beim Anmarsch zeigte ein Katapult bisher nur `➤ 1` und las sich damit harmlos.
+Schweres Gerät trägt seine Plakette deshalb in Bronze statt in Sandfarbe.
 
 ## Bewegung und Darstellung
 
