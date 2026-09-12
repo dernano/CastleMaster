@@ -1849,36 +1849,205 @@ function drawDach(col, row, w, h, base, hoehe, farbe, farbeDunkel) {
   ctx.fillRect(S[0] - 1, S[1] - 6, 2, 7);
 }
 
-function drawBlock(col, row, w, h, height, col3, base = 0) {
-  const lift = (c, r, up) => [isoX(c, r), isoY(c, r) - up];
-  const A = lift(col, row, base + height);
-  const B = lift(col + w, row, base + height);
-  const C = lift(col + w, row + h, base + height);
-  const D = lift(col, row + h, base + height);
-  const B0 = lift(col + w, row, base);
-  const C0 = lift(col + w, row + h, base);
-  const D0 = lift(col, row + h, base);
-  poly([B, C, C0, B0], col3.rechts);
-  poly([D, C, C0, D0], col3.links);
-  if (height > 12) {
-    steinFugen(B, B0, C, C0, height);
-    steinFugen(D, D0, C, C0, height);
-  }
-  poly([A, B, C, D], col3.oben);
+// ---------- Mauerwerk ----------
+// Vorher war jede Wand eine einzige Farbfuellung mit ein paar blassen Strichen
+// darueber. Neben den harten Pixeln der Figuren sah das flach und fremd aus:
+// zwei Bildsprachen in einem Bild. Jetzt bekommt jede Flaeche Steinlagen im
+// Verband, Fugen, einen hellen Grat auf jeder Lage und Moos am Fuss.
+//
+// Weil das viel zu teuer waere, jeden Bildaufbau neu zu malen, wird jeder
+// Quader einmal in ein eigenes kleines Bild gemalt und danach nur noch
+// aufgesetzt. Der Schluessel ist seine Form, seine Hoehe und seine Farbe;
+// zwei gleiche Tuerme teilen sich also dasselbe Bild.
+
+const blockBilder = new Map();
+const BLOCK_VORRAT = 500;
+
+function farbeMisch(hex, ziel, anteil) {
+  const z = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const a = [z(hex, 0), z(hex, 1), z(hex, 2)];
+  const b = [z(ziel, 0), z(ziel, 1), z(ziel, 2)];
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * anteil).toString(16).padStart(2, '0')).join('');
 }
 
-/** Waagerechte Fugen auf einer Wandflaeche, damit Stein nach Stein aussieht. */
-function steinFugen(obenA, untenA, obenB, untenB, hoehe) {
-  const stufen = Math.max(2, Math.round(hoehe / 9));
-  ctx.strokeStyle = 'rgba(30,22,12,0.16)';
-  ctx.lineWidth = 1;
-  for (let i = 1; i < stufen; i++) {
-    const f = i / stufen;
-    ctx.beginPath();
-    ctx.moveTo(obenA[0] + (untenA[0] - obenA[0]) * f, obenA[1] + (untenA[1] - obenA[1]) * f);
-    ctx.lineTo(obenB[0] + (untenB[0] - obenB[0]) * f, obenB[1] + (untenB[1] - obenB[1]) * f);
-    ctx.stroke();
+/** Ein Punkt in der Flaeche, u laeuft quer, v von oben nach unten. */
+function flaechenPunkt(oA, oB, uA, uB, u, v) {
+  const ox = oA[0] + (oB[0] - oA[0]) * u, oy = oA[1] + (oB[1] - oA[1]) * u;
+  const ux = uA[0] + (uB[0] - uA[0]) * u, uy = uA[1] + (uB[1] - uA[1]) * u;
+  return [ox + (ux - ox) * v, oy + (uy - oy) * v];
+}
+
+/**
+ * Steinlagen auf einer Wandflaeche. Jede Lage ist gegen die darueber
+ * versetzt, wie echtes Mauerwerk, und jeder Stein hat seinen eigenen Ton.
+ */
+function mauerwerk(g, oA, oB, uA, uB, hoehe, farbe, kennung) {
+  const lagen = Math.max(1, Math.round(hoehe / 5.5));
+  if (lagen < 2) return;
+  const steine = Math.max(2, Math.round(Math.hypot(oB[0] - oA[0], oB[1] - oA[1]) / 11));
+  const hell = farbeMisch(farbe, '#fff6dd', 0.3);
+  const dunkel = farbeMisch(farbe, '#1b1207', 0.34);
+
+  for (let l = 0; l < lagen; l++) {
+    const v0 = l / lagen, v1 = (l + 1) / lagen;
+    const versatz = (l % 2) ? 0.5 / steine : 0;
+    for (let i = -1; i <= steine; i++) {
+      const u0 = Math.max(0, i / steine + versatz);
+      const u1 = Math.min(1, (i + 1) / steine + versatz);
+      if (u1 - u0 < 0.01) continue;
+      const n = noise(kennung + l * 7.3, i * 3.7 + l);
+      const ton = farbeMisch(farbe, n > 0.62 ? '#fff6dd' : '#241809', (n > 0.62 ? n - 0.62 : 0.62 - n) * 0.34);
+      const P = (u, v) => flaechenPunkt(oA, oB, uA, uB, u, v);
+      const p0 = P(u0, v0), p1 = P(u1, v0), p2 = P(u1, v1), p3 = P(u0, v1);
+      g.fillStyle = ton;
+      g.beginPath();
+      g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]);
+      g.lineTo(p2[0], p2[1]); g.lineTo(p3[0], p3[1]);
+      g.closePath(); g.fill();
+      // Grat oben auf dem Stein, Fuge unten
+      g.strokeStyle = hell; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(p0[0], p0[1] + 0.5); g.lineTo(p1[0], p1[1] + 0.5); g.stroke();
+      g.strokeStyle = dunkel;
+      g.beginPath(); g.moveTo(p3[0], p3[1] - 0.5); g.lineTo(p2[0], p2[1] - 0.5); g.stroke();
+      // Senkrechte Fuge zwischen zwei Steinen
+      if (u0 > 0.01) {
+        g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p3[0], p3[1]); g.stroke();
+      }
+    }
   }
+
+  // Moos und Erde am Fuss, dort wo die Mauer im Boden steht
+  for (let i = 0; i < steine * 2; i++) {
+    const n = noise(kennung * 1.7 + i * 5.1, 91);
+    if (n < 0.55) continue;
+    const u = (i + 0.5) / (steine * 2);
+    const P = flaechenPunkt(oA, oB, uA, uB, u, 1 - (n - 0.55) * 0.5);
+    g.fillStyle = 'rgba(74,92,43,' + (0.1 + n * 0.18).toFixed(2) + ')';
+    g.fillRect(P[0] - 2, P[1] - 1, 4 + n * 3, 3);
+  }
+}
+
+/** Plattenfugen auf der Deckflaeche, dem Raster folgend. */
+function deckPlatten(g, A, B, C, D, farbe, kennung) {
+  const hell = farbeMisch(farbe, '#fff6dd', 0.26);
+  const dunkel = farbeMisch(farbe, '#241809', 0.24);
+  const n = 3;
+  for (let i = 1; i < n; i++) {
+    const f = i / n;
+    g.strokeStyle = dunkel; g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f);
+    g.lineTo(D[0] + (C[0] - D[0]) * f, D[1] + (C[1] - D[1]) * f);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(A[0] + (D[0] - A[0]) * f, A[1] + (D[1] - A[1]) * f);
+    g.lineTo(B[0] + (C[0] - B[0]) * f, B[1] + (C[1] - B[1]) * f);
+    g.stroke();
+  }
+  // Ein paar hellere Platten, damit es nicht wie Millimeterpapier wirkt
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (noise(kennung + i * 3.1, j * 5.7) < 0.68) continue;
+      const u0 = i / n, u1 = (i + 1) / n, v0 = j / n, v1 = (j + 1) / n;
+      const P = (u, v) => flaechenPunkt(A, B, D, C, u, v);
+      const p0 = P(u0, v0), p1 = P(u1, v0), p2 = P(u1, v1), p3 = P(u0, v1);
+      g.fillStyle = hell;
+      g.globalAlpha = 0.4;
+      g.beginPath();
+      g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]);
+      g.lineTo(p2[0], p2[1]); g.lineTo(p3[0], p3[1]);
+      g.closePath(); g.fill();
+      g.globalAlpha = 1;
+    }
+  }
+}
+
+/** Malt einen Quader einmal in ein eigenes Bild, samt Mauerwerk. */
+function baueBlockBild(w, h, H, col3, kennung) {
+  const rand = 2;
+  const ankerX = h * TW / 2 + rand;
+  const ankerY = H + rand;
+  const cv = document.createElement('canvas');
+  cv.width = Math.ceil((w + h) * TW / 2) + rand * 2;
+  cv.height = Math.ceil(H + (w + h) * TH / 2) + rand * 2;
+  const g = cv.getContext('2d');
+  g.translate(ankerX, ankerY);
+
+  const A = [0, -H];
+  const B = [w * TW / 2, w * TH / 2 - H];
+  const C = [(w - h) * TW / 2, (w + h) * TH / 2 - H];
+  const D = [-h * TW / 2, h * TH / 2 - H];
+  const B0 = [w * TW / 2, w * TH / 2];
+  const C0 = [(w - h) * TW / 2, (w + h) * TH / 2];
+  const D0 = [-h * TW / 2, h * TH / 2];
+
+  const flaeche = (pts, farbe) => {
+    g.beginPath();
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath();
+    g.fillStyle = farbe;
+    g.fill();
+  };
+
+  // Rechte Wand
+  flaeche([B, C, C0, B0], col3.rechts);
+  g.save();
+  g.beginPath();
+  g.moveTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.lineTo(B0[0], B0[1]);
+  g.closePath(); g.clip();
+  mauerwerk(g, B, C, B0, C0, H, col3.rechts, kennung);
+  g.restore();
+
+  // Linke Wand, im Schatten
+  flaeche([D, C, C0, D0], col3.links);
+  g.save();
+  g.beginPath();
+  g.moveTo(D[0], D[1]); g.lineTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.lineTo(D0[0], D0[1]);
+  g.closePath(); g.clip();
+  mauerwerk(g, D, C, D0, C0, H, col3.links, kennung + 13);
+  g.restore();
+
+  // Deckflaeche
+  flaeche([A, B, C, D], col3.oben);
+  g.save();
+  g.beginPath();
+  g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.lineTo(D[0], D[1]);
+  g.closePath(); g.clip();
+  deckPlatten(g, A, B, C, D, col3.oben, kennung);
+  g.restore();
+
+  // Kanten: heller Grat zum Licht hin, dunkle Naht in der Kehle
+  g.strokeStyle = farbeMisch(col3.oben, '#fff6dd', 0.55);
+  g.lineWidth = 1;
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke();
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(D[0], D[1]); g.stroke();
+  g.strokeStyle = 'rgba(24,16,8,0.45)';
+  g.beginPath(); g.moveTo(C[0], C[1]); g.lineTo(C0[0], C0[1]); g.stroke();
+  g.strokeStyle = 'rgba(24,16,8,0.3)';
+  g.beginPath(); g.moveTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.stroke();
+  g.beginPath(); g.moveTo(D[0], D[1]); g.lineTo(C[0], C[1]); g.stroke();
+
+  return { cv, ankerX, ankerY };
+}
+
+function drawBlock(col, row, w, h, height, col3, base = 0) {
+  // Hoehe auf gerade Werte gerundet und nur sechs Steinmuster: Sonst legt
+  // allein die Aufbauanimation eines Turms hundert Bilder an, und der
+  // Vorrat muesste staendig geleert werden.
+  const H = Math.max(2, Math.round(height / 2) * 2);
+  const kennung = Math.round((col * 13.7 + row * 7.1) % 6);
+  const schluessel = w.toFixed(2) + ':' + h.toFixed(2) + ':' + H + ':' + col3.oben + ':' + kennung;
+  let bild = blockBilder.get(schluessel);
+  if (!bild) {
+    // Das aelteste Bild weicht, statt alles auf einmal wegzuwerfen
+    while (blockBilder.size >= BLOCK_VORRAT) blockBilder.delete(blockBilder.keys().next().value);
+    bild = baueBlockBild(w, h, H, col3, kennung);
+    blockBilder.set(schluessel, bild);
+  }
+  ctx.drawImage(bild.cv,
+    Math.round(isoX(col, row) - bild.ankerX),
+    Math.round(isoY(col, row) - base - bild.ankerY));
 }
 
 /** Zinnenkranz entlang der Oberkante eines Quaders. */
@@ -2408,19 +2577,90 @@ function baueBoden() {
       g.globalAlpha = 1;
       if (deckung < 1) continue;   // draussen keine Kiesel und kein Gras
 
-      if (!wasser && n > 0.9) {
-        g.fillStyle = drin ? 'rgba(120,95,55,0.32)' : 'rgba(110,88,50,0.38)';
-        g.fillRect(x - 5, y - 1, 3, 2);
-        g.fillRect(x + 3, y + 2, 2, 2);
+      // Der Boden bekommt Kies, Risse, Grasbueschel und Wagenspuren. Ohne
+      // das steht die gemauerte Burg auf einer leeren Farbflaeche, und genau
+      // dieser Bruch liess das Bild billig aussehen.
+      const n2 = noise(c * 1.7 + 31, r * 2.9 + 13);
+      const n3 = noise(c * 5.3 + 7, r * 3.1 + 41);
+
+      // Sandriffel. Lage und Laenge je Kachel anders, sonst bilden sie
+      // ueber das ganze Feld regelmaessige Streifen.
+      if (n2 > 0.42) {
+        g.strokeStyle = 'rgba(150,118,68,' + (0.12 + n2 * 0.16).toFixed(3) + ')';
+        g.lineWidth = 1;
+        const anzahl = n3 > 0.6 ? 2 : 1;
+        for (let i = 0; i < anzahl; i++) {
+          const mitte = (noise(c * 2.3 + i * 9.1, r * 4.7 + i * 3.3) - 0.5) * (TH - 4);
+          const breite = (TW / 2 - 6) * (0.45 + noise(c + i * 17, r * 1.3) * 0.5);
+          const seite = noise(c * 0.7 + i, r * 1.9) > 0.5 ? 1 : -1;
+          const mx = x + seite * (TW / 4) * noise(c * 3.1, r + i) * 0.8;
+          g.beginPath();
+          g.moveTo(mx - breite, y + mitte);
+          g.quadraticCurveTo(mx, y + mitte - 2.2, mx + breite, y + mitte);
+          g.stroke();
+        }
       }
-      if (drin && n > 0.55 && n < 0.6) {
-        g.fillStyle = 'rgba(96,116,58,0.4)';
-        g.fillRect(x - 2, y - 2, 2, 3);
-        g.fillRect(x + 2, y - 1, 2, 3);
+
+      // Trockenrisse im gestampften Boden
+      if (n3 > 0.86) {
+        g.strokeStyle = 'rgba(92,70,40,0.42)';
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(x - 7, y - 2);
+        g.lineTo(x - 1, y + 1);
+        g.lineTo(x + 6, y - 2);
+        g.stroke();
       }
+
+      // Kiesel, jeder mit seinem eigenen kleinen Schatten
+      if (n > 0.82) {
+        const kx = x - 6 + n2 * 12, ky = y - 3 + n3 * 6;
+        const gr = 1 + Math.round(n3 * 2);
+        g.fillStyle = 'rgba(60,46,26,0.3)';
+        g.fillRect(kx - gr + 1, ky + 1, gr * 2, gr);
+        g.fillStyle = n2 > 0.5 ? '#a89070' : '#8d7754';
+        g.fillRect(kx - gr, ky, gr * 2, gr);
+        g.fillStyle = 'rgba(255,240,205,0.45)';
+        g.fillRect(kx - gr, ky, gr, 1);
+      }
+
+      // Trockene Grasbueschel, aussen haeufiger als im Hof
+      if (n > 0.52 && n < 0.6) {
+        const bx = x - 4 + n2 * 8, by = y + 3;
+        g.strokeStyle = drin ? 'rgba(108,124,64,0.5)' : 'rgba(122,132,70,0.6)';
+        g.lineWidth = 1;
+        for (let i = -1; i <= 1; i++) {
+          g.beginPath();
+          g.moveTo(bx, by);
+          g.lineTo(bx + i * 2.5, by - 4 - (i === 0 ? 2 : 0));
+          g.stroke();
+        }
+      }
+
+      // Wagenspuren: der Weg, auf dem das Geraet herangerollt wird
+      const spur = Math.abs(r - Math.round(ROWS / 2));
+      if (drin && spur === 0 && c > 3) {
+        g.strokeStyle = 'rgba(88,66,38,0.22)';
+        g.lineWidth = 1.5;
+        for (const d of [-3, 3]) {
+          g.beginPath();
+          g.moveTo(x - TW / 2, y + d);
+          g.lineTo(x + TW / 2, y + d);
+          g.stroke();
+        }
+      }
+
+      // Kachelkante, ganz leicht, damit das Raster ohne Gitter lesbar bleibt
+      g.strokeStyle = 'rgba(116,90,54,0.085)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(x, y + TH / 2);
+      g.lineTo(x + TW / 2, y);
+      g.stroke();
+
       // Warmes Streiflicht von oben rechts
       if (!wasser && n > 0.5) {
-        g.fillStyle = 'rgba(255,226,170,0.07)';
+        g.fillStyle = 'rgba(255,228,172,0.1)';
         g.beginPath();
         g.moveTo(x, y - TH / 2);
         g.lineTo(x + TW / 2, y);
@@ -3465,7 +3705,7 @@ function draw() {
   else {
     for (const t of state.towers) {
       const rw = towerReach(t);
-      if (rw) markRange(t, rw, 'rgba(140,34,48,0.09)');
+      if (rw) markRange(t, rw, 'rgba(150,60,40,0.045)');
     }
   }
 

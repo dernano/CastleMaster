@@ -198,6 +198,44 @@ Beim Betreten einer Station und nach gehaltener Station fährt ein Banner über
 das Bild.
 Karten fächern sich beim Nachziehen auf.
 
+## Mauerwerk und Boden
+
+Lange war jede Wand **eine einzige Farbfüllung** mit ein paar blassen Strichen
+darüber. Neben den harten Pixeln der Figuren sah das flach und fremd aus: zwei
+Bildsprachen in einem Bild.
+
+Jetzt bekommt jede Fläche echtes Mauerwerk:
+
+- **Steinlagen im Verband.** Jede Lage ist gegen die darüber versetzt, jeder
+  Stein hat seinen eigenen Ton.
+- **Fugen und Grate.** Über jedem Stein ein heller Grat, darunter eine dunkle
+  Fuge, dazu die senkrechten Stoßfugen.
+- **Moos am Fuß**, dort wo die Mauer im Boden steht.
+- **Kanten:** heller Grat zum Licht hin, dunkle Naht in der Kehle.
+- Die Deckflächen bekommen Plattenfugen und einzelne hellere Platten.
+
+Der Boden dazu: Sandriffel, Trockenrisse, Kiesel mit eigenem kleinen Schatten,
+trockene Grasbüschel und die Wagenspur, auf der das Gerät herangerollt wird.
+Lage und Länge der Riffel fallen je Kachel anders aus — sitzen sie gleich,
+bilden sie über das Feld regelmäßige Streifen.
+
+### Warum das schneller ist als vorher
+
+Jeden Bildaufbau so viele Steine zu malen wäre unbezahlbar. Deshalb wird jeder
+Quader **einmal in ein eigenes kleines Bild gemalt** und danach nur noch
+aufgesetzt. Der Schlüssel ist Form, Höhe, Farbe und eines von sechs
+Steinmustern; zwei gleiche Türme teilen sich also dasselbe Bild.
+
+Damit ersetzt ein einziges `drawImage` die vielen Einzelflächen von früher.
+Gemessen mit fünf Türmen, Mauerring und Aufgebot: **13,7 Millisekunden je Bild
+gegenüber 18,1 vorher** — mehr Detail und trotzdem schneller.
+
+Zwei Fallen dabei: Die Aufbauanimation eines Turms durchläuft jede Höhe
+einzeln und legte allein dafür über hundert Bilder an. Deshalb wird die Höhe
+auf gerade Werte gerundet und es gibt nur sechs Steinmuster statt eines je
+Position. Und der Vorrat wirft das älteste Bild weg, statt bei Überlauf alles
+auf einmal zu leeren; sonst hätte es an genau dieser Stelle geruckelt.
+
 ## Aufbau des Bildes
 
 Das Spiel ist eine einzige gerahmte Ansicht, keine Seite mit Kästen darunter.
