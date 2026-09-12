@@ -1150,6 +1150,7 @@
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus"><i class="ic" data-ikone="horn"></i></button>
+    <button class="icon-btn hidden" id="musik-btn" type="button" title="Musik an oder aus"><i class="ic" data-ikone="note"></i></button>
     <button class="icon-btn" id="werk-btn" type="button" title="Figuren zeichnen"><i class="ic" data-ikone="pinsel"></i></button>
     <button class="icon-btn" id="help-btn" type="button" title="Steuerung"><i class="ic" data-ikone="rolle"></i></button>
   </div>
@@ -1910,6 +1911,77 @@ const BEWEGUNG_TEMPO = 4.4;   // Felder je Sekunde
 const PFEIL_DAUER = 0.28;     // Sekunden bis zum Einschlag
 // ---------- Ton ----------
 // Alles wird zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
+/*
+ * ============================================================
+ *  Musik
+ * ============================================================
+ * Die Stuecke liegen als Dateien neben dem Spiel, nicht als Datenadresse
+ * darin. Bei den Kartenbildern war das Einbetten richtig - ein Kartenmotiv
+ * sind vierzig Kilobyte. Ein Stueck Musik sind einige Megabyte, und als
+ * Base64 im Quelltext waere `index.html` zehnmal so gross, bei jeder
+ * Aenderung neu im Verlauf und von Hand nicht mehr zu lesen. Die
+ * veroeffentlichte Seite bekommt die Dateien als Beilage mit; das ist
+ * dieselbe Herkunft, also nichts von aussen.
+ *
+ * Fehlt eine Datei, bleibt es still und der Knopf erscheint gar nicht erst.
+ * Das Spiel haengt an keinem Ton.
+ */
+const MUSIK = [
+  'musik/soundtrack.mp3',
+];
+const MUSIK_LAUT = 0.34;   // deutlich unter den Klaengen, sie tragen das Spiel
+
+let musikAn = true;
+try { musikAn = localStorage.getItem('cm-musik') !== 'aus'; } catch (e) { /* ohne Speicher eben so */ }
+let musikStueck = null;
+let musikNr = 0;
+let musikBereit = false;
+
+/**
+ * Legt das naechste Stueck auf. Browser lassen Ton erst zu, nachdem der
+ * Benutzer etwas angefasst hat - darum wird gespielt erst beim ersten Griff,
+ * und ein abgelehntes `play()` ist kein Fehler, sondern ein spaeter Versuch.
+ */
+function musikLegeAuf(nr) {
+  if (!MUSIK.length) return;
+  musikNr = ((nr % MUSIK.length) + MUSIK.length) % MUSIK.length;
+  if (!musikStueck) {
+    musikStueck = new Audio();
+    musikStueck.preload = 'auto';
+    // Ein einzelnes Stueck laeuft im Kreis, mehrere gehen der Reihe nach.
+    musikStueck.addEventListener('ended', () => {
+      if (MUSIK.length > 1) { musikLegeAuf(musikNr + 1); musikSpiele(); }
+    });
+    musikStueck.addEventListener('canplay', () => {
+      if (musikBereit) return;
+      musikBereit = true;
+      document.getElementById('musik-btn').classList.remove('hidden');
+    });
+    musikStueck.addEventListener('error', () => {
+      // Keine Datei da: still bleiben, keinen Knopf zeigen, nichts melden.
+      musikBereit = false;
+      document.getElementById('musik-btn').classList.add('hidden');
+    });
+  }
+  musikStueck.loop = MUSIK.length === 1;
+  musikStueck.volume = MUSIK_LAUT;
+  musikStueck.src = MUSIK[musikNr];
+}
+
+function musikSpiele() {
+  if (!musikStueck || !musikAn) return;
+  const versuch = musikStueck.play();
+  if (versuch && versuch.catch) versuch.catch(() => { /* noch nicht erlaubt */ });
+}
+
+function musikSchalte() {
+  musikAn = !musikAn;
+  try { localStorage.setItem('cm-musik', musikAn ? 'an' : 'aus'); } catch (e) { /* egal */ }
+  document.getElementById('musik-btn').classList.toggle('aus', !musikAn);
+  if (musikAn) musikSpiele(); else if (musikStueck) musikStueck.pause();
+  setMessage(musikAn ? 'Musik an.' : 'Musik aus.');
+}
+
 let tonAn = true;
 try { tonAn = localStorage.getItem('cm-ton') !== 'aus'; } catch (e) { /* ohne Speicher eben so */ }
 let tonKontext = null;
@@ -6049,6 +6121,20 @@ const IKONEN = {
     '....dd.....',
     '...........',
   ],
+  // Musik: eine Note mit Fahne.
+  note: [
+    '......dddd.',
+    '......dGGd.',
+    '......dGGd.',
+    '......dGGd.',
+    '......dGGd.',
+    '..dddddGGd.',
+    '.dGGGGdGGd.',
+    'dGGGGGdGGd.',
+    'dGGGGGdGGd.',
+    '.dGGGd.dd..',
+    '..ddd......',
+  ],
   // Werkstatt: ein Pinsel.
   pinsel: [
     '.......ddd.',
@@ -8167,6 +8253,14 @@ document.getElementById('sound-btn').addEventListener('click', () => {
   setMessage(tonAn ? 'Ton an.' : 'Ton aus.');
 });
 document.getElementById('sound-btn').classList.toggle('aus', !tonAn);
+
+document.getElementById('musik-btn').addEventListener('click', musikSchalte);
+document.getElementById('musik-btn').classList.toggle('aus', !musikAn);
+musikLegeAuf(0);
+// Der erste Griff des Spielers ist die Erlaubnis des Browsers, Ton zu machen.
+for (const art of ['pointerdown', 'keydown']) {
+  window.addEventListener(art, () => musikSpiele(), { once: true });
+}
 
 document.getElementById('reward-skip').addEventListener('click', () => nimmBelohnung(null));
 

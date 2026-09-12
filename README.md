@@ -222,6 +222,34 @@ im Aufgebot.
 Gleichzeitig stehen jetzt bis zu **sechzehn** Gegner auf dem Feld statt acht,
 und je Zug treten mehr aus dem Lager. Vier Männer sind kein Sturm.
 
+## Musik
+
+Der Soundtrack liegt als Datei neben dem Spiel, unter `musik/`. Standardname
+ist `musik/soundtrack.mp3`; mehrere Stücke trägt man in die Liste `MUSIK` ein.
+Eines läuft in Schleife, mehrere gehen der Reihe nach durch.
+
+**Warum nicht eingebettet wie die Kartenbilder.** Ein Kartenmotiv sind vierzig
+Kilobyte — als Datenadresse in `index.html` ist das richtig, und die Seite
+bleibt eine einzige Datei. Ein Stück Musik sind einige Megabyte. Als Base64 im
+Quelltext wäre `index.html` zehnmal so groß, läge bei jeder Änderung neu im
+Verlauf und wäre von Hand nicht mehr zu lesen. Die veröffentlichte Seite
+bekommt die Dateien stattdessen als Beilage mit — dieselbe Herkunft, also
+nichts von außen geladen.
+
+Drei Dinge, die der Spieler nie merken soll:
+
+- **Fehlt die Datei, bleibt es still.** Kein Fehler, keine Meldung — der
+  Notenknopf erscheint erst, wenn eine Datei wirklich geladen wurde
+  (`canplay`), und verschwindet wieder bei `error`.
+- **Browser lassen Ton erst nach einer Berührung zu.** Die Musik beginnt darum
+  beim ersten Klick oder Tastendruck, nicht beim Laden, und ein abgelehntes
+  `play()` wird geschluckt statt gemeldet.
+- **Sie liegt unter den Klängen** (`MUSIK_LAUT = 0.34`). Die Salve, der Schritt
+  und das Horn tragen das Spiel; die Musik trägt den Raum.
+
+Der Schalter merkt sich seinen Zustand im Browser (`cm-musik`), getrennt vom
+Klangschalter (`cm-ton`).
+
 ## Der Wall
 
 Bis hierher fing jede Station als leeres Feld an. Die Mauer war **abgeleitet**:
