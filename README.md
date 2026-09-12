@@ -268,20 +268,42 @@ Zug endet dann nie. `bezahlbarkeitSichern` erzwingt deshalb für jede Karte
 Nettokosten von mindestens einem Tatendrang, sowohl beim Laden des Stapels als
 auch nach jedem Schärfen.
 
-## Die Zier-Mauer
+## Die Wälle
 
-Sobald der erste Turm steht, schließt sich eine Mauer um Burg und Türme. Sie
-kostet nichts, hat keine Lebenspunkte und hält niemanden auf: Gegner laufen
-weiterhin auf den nächsten Turm zu und danach weiter. Sie ist reine Zier.
+Sobald der erste Turm steht, ziehen sich Wälle von der Burg zu den Türmen und
+von Turm zu Turm. Sie kosten nichts, haben keine Lebenspunkte und halten
+niemanden auf: Gegner laufen weiterhin auf den nächsten Turm zu und danach
+weiter. Sie sind reine Zier.
 
-Gebaut wird sie so: Um alle Grundflächen wird die konvexe Hülle gelegt, alle
-Felder darin bilden den Hof. Über jede Kante eines Hoffeldes, hinter der kein
-Hof mehr liegt, läuft ein Stück Mauer. Kanten an Bauwerken bleiben frei, dort
-ist das Bauwerk selbst die Mauer. Kommt ein Turm dazu, wächst die Mauer von
-selbst dorthin; die neuen Stücke steigen aus dem Boden auf wie die Türme.
+Gebaut wird ein **minimaler Spannbaum** über Burg und Türme. Jedes Bauwerk
+hängt am Netz, aber es entsteht nie ein Ring. Das ist der Kern der Sache.
+
+### Warum kein Ring
+
+Zuerst lag eine konvexe Hülle um alle Bauwerke. Das sah nach Burghof aus, hatte
+aber einen Fehler: Ein neuer Turm weit draußen zog die Hülle mit und schloss
+jeden Gegner ein, der dazwischen stand. Man baute einen Turm und hatte plötzlich
+Belagerer im eigenen Hof.
+
+Ein Baum umschließt keine Fläche, kann also niemanden einsperren. Zwei Wallwege
+können sich auf dem Raster aber trotzdem berühren und zusammen mit einem Bauwerk
+eine kleine Tasche bilden. Deshalb flutet `oeffneTaschen` nach dem Bauen vom
+Spielfeldrand aus und öffnet jede abgeschnittene Tasche durch ein Loch im Wall.
+Das Loch sieht aus wie ein Durchlass und ist genau das.
+
+Geprüft wird das an 400 zufälligen Turmstellungen je Durchlauf: keine einzige
+schneidet ein Feld vom Rand ab.
 
 Gerechnet wird nur, wenn sich die Türme geändert haben, nicht bei jedem
-Bildaufbau.
+Bildaufbau. Neue Stücke steigen aus dem Boden auf wie die Türme.
+
+## Die Burg
+
+Ein Mauerring mit Zinnen, vier Ecktürmen unter roten Spitzdächern, einem
+Torhaus mit Fallgitter an der zum Feld zeigenden Wand und dem Bergfried am
+hinteren Ende. Im Bergfried brennt ein Fenster, das leicht flackert. Auf dem
+Dach weht das Banner; darunter steht der Lebensbalken, sobald die Burg getroffen
+wurde.
 
 ## Angreifen
 
@@ -404,8 +426,8 @@ Station, `oeffneHaendler`, `oeffneRast` und `oeffneEreignis` für die Stationen
 ohne Kampf, `EREIGNISSE` für die Begegnungen, `schaerfeKarte` und
 `entferneKarte` fürs Deck, `zielArt`, `playCard` und `wirke` für das Ausspielen
 einer Karte, `wendeMachtAn` für anhaltende Wirkungen, `treffeGegner` als
-gemeinsamer Weg für allen Schaden, `pruefeMauer` und `drawMauerstueck` für die
-Zier-Mauer, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
+gemeinsamer Weg für allen Schaden, `pruefeMauer`, `oeffneTaschen` und `drawMauerstueck` für die
+Wälle, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die Absicht eines Gegners,
 `resolveEnemyTurn` für den Gegnerzug sowie `towerReach` und `towerDamageAt` für
 Reichweite und Salve eines Turms.
 

@@ -1767,53 +1767,54 @@ function drawMerlons(col, row, w, h, height, col3) {
 }
 
 // ============================================================
-//  Die Zier-Mauer
+//  Die Waelle
 // ============================================================
-// Sobald der erste Turm steht, schliesst sich eine Mauer um Burg und Tuerme.
-// Sie haelt nichts auf und hat keine Lebenspunkte: Gegner laufen weiter auf
-// den naechsten Turm zu. Sie ist reine Zier und kostet nichts.
+// Sobald der erste Turm steht, ziehen sich Waelle von der Burg zu den Tuermen
+// und von Turm zu Turm. Sie halten nichts auf und haben keine Lebenspunkte:
+// Gegner laufen weiter auf den naechsten Turm zu. Sie sind reine Zier.
 //
-// Gebaut wird sie so: Um alle Grundflaechen wird die konvexe Huelle gelegt,
-// alle Felder darin bilden den Hof. Die Mauer laeuft ueber jede Kante eines
-// Hoffeldes, hinter der kein Hof mehr liegt. Kanten an Bauwerken bleiben frei,
-// dort ist das Bauwerk selbst die Mauer.
+// Gebaut wird ein minimaler Spannbaum ueber Burg und Tuerme: Jedes Bauwerk
+// haengt am Netz, aber es entsteht nie ein Ring. Das ist der Kern der Sache.
+// Frueher lag eine konvexe Huelle um alles; ein neuer Turm weit draussen zog
+// sie mit und schloss jeden Gegner ein, der dazwischen stand. Ein Baum
+// umschliesst keine Flaeche, also kann er auch niemanden einsperren.
 
-const MAUER_DICKE = 0.26;         // Bruchteil eines Feldes
-const MAUER_HOEHE = 18;           // niedrig genug, dass nichts dahinter verschwindet
-const MAUER_WACHSEN = 0.42;       // Sekunden, in denen ein neues Stueck aufsteigt
-const MAUER = { oben: '#bfb08c', links: '#5f5442', rechts: '#8b7d5f' };
+const WALL_DICKE = 0.46;          // Bruchteil eines Feldes
+const WALL_HOEHE = 17;
+const WALL_WACHSEN = 0.4;         // Sekunden, in denen ein neues Stueck aufsteigt
+const WALL = { oben: '#bfb08c', links: '#5f5442', rechts: '#8b7d5f' };
 
 let mauerWerk = { schluessel: '', stuecke: [] };
 
-/** Konvexe Huelle einer Punktwolke, Andrews monotone Kette. */
-function konvexeHuelle(punkte) {
-  const pts = punkte.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  if (pts.length < 3) return pts;
-  const kreuz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const bauen = (liste) => {
-    const raus = [];
-    for (const pt of liste) {
-      while (raus.length >= 2 && kreuz(raus[raus.length - 2], raus[raus.length - 1], pt) <= 0) raus.pop();
-      raus.push(pt);
-    }
-    raus.pop();
-    return raus;
-  };
-  return bauen(pts).concat(bauen(pts.slice().reverse()));
-}
-
-function imPolygon(x, y, poly) {
-  let drin = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i], [xj, yj] = poly[j];
-    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) drin = !drin;
-  }
-  return drin;
+/** Kuerzester Abstand zweier Grundflaechen, in Feldern. */
+function bautenAbstand(a, b) {
+  const dx = Math.max(0, Math.max(a.col - (b.col + b.w), b.col - (a.col + a.w)));
+  const dy = Math.max(0, Math.max(a.row - (b.row + b.h), b.row - (a.row + a.h)));
+  return Math.max(dx, dy) + (dx + dy) * 0.01;   // Chebyshev, mit leichtem Vorzug fuer gerade Linien
 }
 
 /**
- * Rechnet die Mauerstuecke neu aus. Das geschieht nur, wenn sich die Bauwerke
- * geaendert haben: Jeden Bildaufbau die Huelle zu legen waere Verschwendung.
+ * Die Felder, ueber die ein Wall von einem Bauwerk zum anderen laeuft:
+ * erst waagerecht, dann senkrecht. Felder auf Bauwerken fallen heraus, dort
+ * ist das Bauwerk selbst die Mauer.
+ */
+function wallWeg(a, b, bebaut) {
+  const mitteB = { col: b.col + b.w / 2, row: b.row + b.h / 2 };
+  const pa = closestPointOnRect(mitteB.col, mitteB.row, a);
+  const pb = closestPointOnRect(pa.col, pa.row, b);
+  const pa2 = closestPointOnRect(pb.col, pb.row, a);
+
+  const felder = [];
+  let c = pa2.col, r = pa2.row;
+  let schutz = COLS + ROWS + 4;
+  while (c !== pb.col && schutz-- > 0) { c += Math.sign(pb.col - c); felder.push([c, r]); }
+  while (r !== pb.row && schutz-- > 0) { r += Math.sign(pb.row - r); felder.push([c, r]); }
+  return felder.filter(([fc, fr]) => imFeld(fc, fr) && !bebaut(fc, fr));
+}
+
+/**
+ * Rechnet die Wallstuecke neu aus. Das geschieht nur, wenn sich die Bauwerke
+ * geaendert haben, nicht bei jedem Bildaufbau.
  */
 function pruefeMauer() {
   const schluessel = state.towers.length === 0 ? ''
@@ -1825,60 +1826,112 @@ function pruefeMauer() {
   if (!schluessel) return;
 
   const bauten = [CASTLE, ...state.towers];
-  const ecken = [];
-  for (const b of bauten) {
-    ecken.push([b.col, b.row], [b.col + b.w, b.row], [b.col + b.w, b.row + b.h], [b.col, b.row + b.h]);
-  }
-  const huelle = konvexeHuelle(ecken);
-  if (huelle.length < 3) return;
-
-  const hof = new Set();
-  for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      if (imPolygon(c + 0.5, r + 0.5, huelle)) hof.add(c + ',' + r);
-    }
-  }
-  // Bauwerke gehoeren immer dazu, auch wenn ihre Mitte knapp danebenliegt.
-  for (const b of bauten) {
-    for (let c = b.col; c < b.col + b.w; c++) for (let r = b.row; r < b.row + b.h; r++) hof.add(c + ',' + r);
-  }
-
   const bebaut = (c, r) => bauten.some(b => cellInsideRect(c, r, b));
-  const seiten = [
-    { dc: 0, dr: -1, rect: (c, r) => [c, r, 1, MAUER_DICKE] },                    // Nord
-    { dc: 0, dr: 1, rect: (c, r) => [c, r + 1 - MAUER_DICKE, 1, MAUER_DICKE] },   // Sued
-    { dc: -1, dr: 0, rect: (c, r) => [c, r, MAUER_DICKE, 1] },                    // West
-    { dc: 1, dr: 0, rect: (c, r) => [c + 1 - MAUER_DICKE, r, MAUER_DICKE, 1] },   // Ost
-  ];
 
-  for (const feld of hof) {
+  // Minimaler Spannbaum ueber alle Bauwerke
+  const kanten = [];
+  for (let i = 0; i < bauten.length; i++) {
+    for (let j = i + 1; j < bauten.length; j++) kanten.push({ i, j, d: bautenAbstand(bauten[i], bauten[j]) });
+  }
+  kanten.sort((x, y) => x.d - y.d);
+  const eltern = bauten.map((_, i) => i);
+  const finde = (x) => (eltern[x] === x ? x : (eltern[x] = finde(eltern[x])));
+
+  const felder = new Set();
+  for (const k of kanten) {
+    const a = finde(k.i), b = finde(k.j);
+    if (a === b) continue;              // schliesst einen Ring, also weglassen
+    eltern[a] = b;
+    for (const [c, r] of wallWeg(bauten[k.i], bauten[k.j], bebaut)) felder.add(c + ',' + r);
+  }
+
+  oeffneTaschen(felder, bebaut);
+
+  // Jedes Feld bekommt ein Stueck, das genau zu seinen Nachbarn hin waechst.
+  // So schliessen die Laeufe nahtlos an und Ecken sehen wie Ecken aus.
+  const rand = (1 - WALL_DICKE) / 2;
+  const angebaut = (c, r) => felder.has(c + ',' + r) || bebaut(c, r);
+  for (const feld of felder) {
     const [c, r] = feld.split(',').map(Number);
-    if (bebaut(c, r)) continue;                 // dort steht schon Mauerwerk
-    for (const s of seiten) {
-      if (hof.has((c + s.dc) + ',' + (r + s.dr))) continue;
-      const [mc, mr, mw, mh] = s.rect(c, r);
-      const sch = c + ',' + r + ':' + s.dc + ',' + s.dr;
-      mauerWerk.stuecke.push({
-        schluessel: sch, col: mc, row: mr, w: mw, h: mh,
-        // Neue Stuecke wachsen auf, bekannte stehen schon.
-        wachsen: alt.has(sch) ? MAUER_WACHSEN : 0,
-        zinne: true,
-      });
-    }
+    let x0 = rand, x1 = 1 - rand, y0 = rand, y1 = 1 - rand;
+    if (angebaut(c - 1, r)) x0 = 0;
+    if (angebaut(c + 1, r)) x1 = 1;
+    if (angebaut(c, r - 1)) y0 = 0;
+    if (angebaut(c, r + 1)) y1 = 1;
+    mauerWerk.stuecke.push({
+      schluessel: feld, col: c + x0, row: r + y0, w: x1 - x0, h: y1 - y0,
+      wachsen: alt.has(feld) ? WALL_WACHSEN : 0,
+      // Ein Zinnenkranz auf jedem zweiten Feld, damit es nicht wie ein
+      // Bretterzaun aussieht.
+      zinne: ((c + r) % 2) === 0,
+      eck: (x0 === 0 || x1 === 1) && (y0 === 0 || y1 === 1),
+    });
   }
 }
 
-/** Ein Stueck Mauer samt Schatten und Zinne. */
+/**
+ * Sicherung gegen Kessel. Der Spannbaum hat zwar keinen Ring, aber zwei
+ * Wallwege koennen sich auf dem Raster beruehren und mit einem Bauwerk eine
+ * Tasche bilden. Wer darin steht, saesse in der Burg fest. Also wird vom Rand
+ * geflutet und jede abgeschnittene Tasche durch ein Loch im Wall geoeffnet.
+ * Das Loch sieht aus wie ein Durchlass und ist genau das.
+ */
+function oeffneTaschen(felder, bebaut) {
+  const frei = (c, r) => imFeld(c, r) && !felder.has(c + ',' + r) && !bebaut(c, r);
+
+  for (let runde = 0; runde < 12; runde++) {
+    const gesehen = new Set();
+    const stapel = [];
+    for (let c = 0; c < COLS; c++) { if (frei(c, 0)) stapel.push([c, 0]); if (frei(c, ROWS - 1)) stapel.push([c, ROWS - 1]); }
+    for (let r = 0; r < ROWS; r++) { if (frei(0, r)) stapel.push([0, r]); if (frei(COLS - 1, r)) stapel.push([COLS - 1, r]); }
+    while (stapel.length) {
+      const [c, r] = stapel.pop();
+      const sch = c + ',' + r;
+      if (gesehen.has(sch) || !frei(c, r)) continue;
+      gesehen.add(sch);
+      stapel.push([c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]);
+    }
+
+    const tasche = [];
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS; r++) if (frei(c, r) && !gesehen.has(c + ',' + r)) tasche.push([c, r]);
+    }
+    if (!tasche.length) return;
+
+    // Ein Wallfeld neben der Tasche faellt weg, damit sie Luft bekommt.
+    let geoeffnet = false;
+    for (const [c, r] of tasche) {
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const sch = (c + dc) + ',' + (r + dr);
+        if (felder.has(sch)) { felder.delete(sch); geoeffnet = true; break; }
+      }
+      if (geoeffnet) break;
+    }
+    // Liegt die Tasche nur zwischen Bauwerken, hilft kein Loch im Wall.
+    // Das ist dann kein Fehler der Mauer, sondern der Baustelle.
+    if (!geoeffnet) return;
+  }
+}
+
+/** Ein Stueck Wall samt Zinne. */
 function drawMauerstueck(m) {
-  const f = wenigerBewegung ? 1 : Math.min(1, m.wachsen / MAUER_WACHSEN);
+  const f = wenigerBewegung ? 1 : Math.min(1, m.wachsen / WALL_WACHSEN);
   if (f <= 0.01) return;
-  const H = MAUER_HOEHE * ueberschwingen(f);
-  drawBlock(m.col, m.row, m.w, m.h, H, MAUER);
-  if (m.zinne && f > 0.7) {
-    const s = 0.3;
-    const zc = m.col + (m.w > m.h ? 0.35 : (m.w - s) / 2);
-    const zr = m.row + (m.h > m.w ? 0.35 : (m.h - s) / 2);
-    drawBlock(zc, zr, s, s, 6, MAUER, H);
+  const H = (m.eck ? WALL_HOEHE + 5 : WALL_HOEHE) * ueberschwingen(f);
+  drawBlock(m.col, m.row, m.w, m.h, H, WALL);
+  if (f < 0.7) return;
+  if (m.eck) {
+    // An einer Ecke sitzt ein kleiner Rundling, wie ein Flankierturm
+    const s = 0.34;
+    drawBlock(m.col + (m.w - s) / 2, m.row + (m.h - s) / 2, s, s, 9, WALL, H);
+  } else if (m.zinne) {
+    const s = 0.26;
+    const waagerecht = m.w > m.h;
+    for (const t of [0.3, 0.7]) {
+      const zc = waagerecht ? m.col + m.w * t - s / 2 : m.col + (m.w - s) / 2;
+      const zr = waagerecht ? m.row + (m.h - s) / 2 : m.row + m.h * t - s / 2;
+      drawBlock(zc, zr, s, s, 6, WALL, H);
+    }
   }
 }
 
@@ -2209,38 +2262,77 @@ function drawBanner(x, y, farbe) {
 
 function drawCastle() {
   const C = CASTLE;
-  const H = 34;           // Hoehe des Mauerrings
-  const KEEP = 40;        // zusaetzliche Hoehe des Bergfrieds
+  const H = 32;           // Hoehe des Mauerrings
+  const ECK = 15;         // wie weit die Ecktuerme darueber hinausragen
+  const TOR = 12;         // Hoehe des Torhauses ueber dem Ring
+  const KEEP = 42;        // zusaetzliche Hoehe des Bergfrieds
 
-  drawBauSchatten(C.col, C.row, C.w, C.h, H);
+  drawBauSchatten(C.col, C.row, C.w, C.h, H + KEEP);
   drawBlock(C.col, C.row, C.w, C.h, H, BURG);
   drawMerlons(C.col, C.row, C.w, C.h, H, STEIN);
 
-  // Tor in der zum Feld zeigenden Wand
+  // Vier Ecktuerme. Sie machen aus dem Klotz eine Burg.
+  const e = 0.56;
+  const ecken = [
+    [C.col - 0.12, C.row - 0.12],
+    [C.col + C.w - e + 0.12, C.row - 0.12],
+    [C.col - 0.12, C.row + C.h - e + 0.12],
+    [C.col + C.w - e + 0.12, C.row + C.h - e + 0.12],
+  ];
+  for (const [ec, er] of ecken) {
+    drawBlock(ec, er, e, e, H + ECK, STEIN_HELL);
+    drawMerlons(ec, er, e, e, H + ECK, STEIN);
+    drawDach(ec + 0.04, er + 0.04, e - 0.08, e - 0.08, H + ECK + 7, 13, '#8e3f34', '#6a2c26');
+  }
+
+  // Torhaus in der zum Feld zeigenden Wand, mit zwei Flankentuermen
+  const tr = C.row + C.h / 2 - 0.55;
+  drawBlock(C.col + C.w - 0.34, tr, 0.34, 1.1, H + TOR, STEIN_HELL);
+  drawMerlons(C.col + C.w - 0.34, tr, 0.34, 1.1, H + TOR, STEIN);
+
   const gx = isoX(C.col + C.w, C.row + C.h / 2 + 0.5);
   const gy = isoY(C.col + C.w, C.row + C.h / 2 + 0.5);
-  ctx.fillStyle = '#3a2a1a';
+  // Torbogen
+  ctx.fillStyle = '#2a1c10';
   ctx.beginPath();
   ctx.moveTo(gx - 1, gy - 4);
-  ctx.lineTo(gx + 9, gy + 1);
-  ctx.lineTo(gx + 9, gy - 13);
-  ctx.quadraticCurveTo(gx + 4, gy - 22, gx - 1, gy - 18);
+  ctx.lineTo(gx + 10, gy + 2);
+  ctx.lineTo(gx + 10, gy - 14);
+  ctx.quadraticCurveTo(gx + 4.5, gy - 24, gx - 1, gy - 19);
   ctx.closePath();
   ctx.fill();
+  // Fallgitter: ein paar helle Streben im Dunkel
+  ctx.strokeStyle = 'rgba(206,184,145,0.55)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    const t = i / 4;
+    ctx.beginPath();
+    ctx.moveTo(gx - 1 + 11 * t, gy - 4 + 6 * t);
+    ctx.lineTo(gx - 1 + 11 * t, gy - 19 - 1 * t);
+    ctx.stroke();
+  }
 
   // Bergfried am hinteren Ende
-  drawBlock(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN_HELL, H);
-  drawMerlons(C.col + 0.15, C.row + 0.4, 1.7, 2.1, KEEP, STEIN, H + KEEP - 7);
-  drawDach(C.col + 0.3, C.row + 0.55, 1.4, 1.8, H + KEEP + 7, 24, '#8e3f34', '#6a2c26');
+  drawBlock(C.col + 0.2, C.row + 0.5, 1.6, 2.0, KEEP, STEIN_HELL, H);
+  drawMerlons(C.col + 0.2, C.row + 0.5, 1.6, 2.0, KEEP, STEIN, H + KEEP - 7);
+  drawDach(C.col + 0.34, C.row + 0.64, 1.32, 1.72, H + KEEP + 7, 26, '#8e3f34', '#6a2c26');
+
+  // Ein Fenster im Bergfried, warm beleuchtet
+  const fx = isoX(C.col + 1.8, C.row + 1.5);
+  const fy = isoY(C.col + 1.8, C.row + 1.5) - H - KEEP * 0.55;
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(fx - 2, fy - 6, 4, 7);
+  ctx.fillStyle = 'rgba(255,206,110,' + (wenigerBewegung ? 0.8 : 0.6 + Math.sin(animZeit * 2.1) * 0.2).toFixed(2) + ')';
+  ctx.fillRect(fx - 1, fy - 5, 2, 5);
 
   const kx = isoX(C.col + 1, C.row + 1.45);
   const ky = isoY(C.col + 1, C.row + 1.45) - H - KEEP;
   drawBanner(kx + 11, ky + 4, '#2f5fa8');
-  if (state.castleHp < C.maxHp) drawHpBar(kx, ky - 16, 44, state.castleHp, C.maxHp, '#c0392b');
+  if (state.castleHp < C.maxHp) drawHpBar(kx, ky - 18, 46, state.castleHp, C.maxHp, '#c0392b');
 
   const links = isoX(C.col, C.row + C.h) - TW / 2;
   const rechts = isoX(C.col + C.w, C.row) + TW / 2;
-  const oben = isoY(C.col, C.row) - H - KEEP - 20;
+  const oben = isoY(C.col, C.row) - H - KEEP - 22;
   const unten = isoY(C.col + C.w, C.row + C.h) + TH;
   addPick('castle', C, links, oben, rechts - links, unten - oben);
 }
@@ -2740,7 +2832,7 @@ function updateAnimations(dt) {
   schreiteGegnerzug(dt);
   pruefeMauer();
   for (const m of mauerWerk.stuecke) {
-    if (m.wachsen < MAUER_WACHSEN) m.wachsen = Math.min(MAUER_WACHSEN, m.wachsen + dt);
+    if (m.wachsen < WALL_WACHSEN) m.wachsen = Math.min(WALL_WACHSEN, m.wachsen + dt);
   }
 
   for (const e of state.enemies) {
