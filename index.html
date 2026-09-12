@@ -109,6 +109,9 @@
   .wave-top b { font-size: 16px; }
   .wave-top .swords { color: var(--muted); }
   .wave-top .foes { color: #e9917f; margin-left: auto; }
+  #turn-frist { color: var(--muted); }
+  #turn-frist.knapp { color: #ff8a5c; animation: fristPochen 0.9s ease-in-out infinite; }
+  @keyframes fristPochen { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   .wave-bar { height: 5px; background: #3a1a1a; border-radius: 2px; overflow: hidden; }
   .wave-bar i { display: block; height: 100%; background: linear-gradient(90deg, #e0503c, #8c2230); }
 
@@ -240,6 +243,12 @@
     box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 0 0 #3a0d14;
   }
   button.endround:disabled { filter: grayscale(0.7) brightness(0.7); cursor: not-allowed; }
+  /* Steht eine Salve bereit, soll der Knopf danach verlangen */
+  button.endround.scharf { animation: scharf 1.5s ease-in-out infinite; }
+  @keyframes scharf {
+    0%, 100% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.28), 0 5px 0 #3a0d14, 0 0 0 0 rgba(227,181,82,0.5); }
+    50%      { box-shadow: inset 0 2px 0 rgba(255,255,255,0.28), 0 5px 0 #3a0d14, 0 0 0 7px rgba(227,181,82,0); }
+  }
 
   #deck-pile {
     padding: 5px 10px; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.3;
@@ -886,7 +895,7 @@
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span class="swords">⚔</span> <span>Feldzug <b id="run-val">1</b> · Station <b id="round-val">1</b>/<b id="round-max">17</b> · Zug <b id="turn-val">1</b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
+      <div class="wave-top"><span class="swords">⚔</span> <span>Feldzug <b id="run-val">1</b> · Station <b id="round-val">1</b>/<b id="round-max">17</b> · Zug <b id="turn-val">1</b><b id="turn-frist"></b></span><span class="foes"><b id="enemy-count">0</b> Gegner</span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus">♪</button>
@@ -1132,7 +1141,7 @@ const ENEMY_TYPES = {
     punkte: 5, abRunde: 3, scale: 2, pal: { r: '#6b6f78', R: '#98a0ab' } },
   ramme: { id: 'ramme', name: 'Ramme', hp: 20, dmg: 5, move: 2, reach: 1,
     punkte: 7, abRunde: 5, scale: 3, geraet: 'ramme', pal: { r: '#5d4023', R: '#8a6238' } },
-  katapult: { id: 'katapult', name: 'Katapult', hp: 12, dmg: 4, move: 1, reach: 7,
+  katapult: { id: 'katapult', name: 'Katapult', hp: 12, dmg: 6, move: 1, reach: 5,
     punkte: 6, abRunde: 6, scale: 3, geraet: 'katapult', pal: { r: '#6b4a2a', R: '#9a7448' } },
   // Nur in der letzten Runde eines Feldzugs, nie im normalen Aufgebot.
   meister: { id: 'meister', name: 'Belagerungsmeister', hp: 65, dmg: 8, move: 2, reach: 2,
@@ -1174,15 +1183,23 @@ const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
 // in Slay the Spire.
 const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
 
-const rundenBudget = (runde) => Math.round((5 + runde * 2.15) * feldzugHaerte(state.feldzug || 1));
+const rundenBudget = (runde) => Math.round((4 + runde * 1.55) * feldzugHaerte(state.feldzug || 1));
 const einsatzProZug = (runde) => 2 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
 const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
+// Jede Station hat eine Frist. Wer sie verstreichen laesst, dem rennt das
+// ganze Aufgebot ins Tor. Das ist der Druck, der den Zug wertvoll macht.
+const zugFrist = (runde, typ) => {
+  const grund = 7 + Math.floor(runde / 4);
+  if (typ === 'elite') return grund + 1;
+  if (typ === 'meister') return grund + 3;
+  return grund;
+};
 const MAX_GEGNER_AUF_DEM_FELD = 16;                  // wie viele gleichzeitig draussen stehen
 const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
 // Spaetere Runden schicken zaehere Gegner.
-const belagerungsHp = (runde) => (1 + 0.06 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
-const belagerungsSchaden = (runde) => Math.floor((runde - 1) / 5);
+const belagerungsHp = (runde) => (1.15 + 0.07 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+const belagerungsSchaden = (runde) => Math.floor(runde / 1.7);
 
 // Das geschuetzte Lager liegt rechts neben dem Spielfeld.
 const LAGER_COL = COLS;
@@ -1625,7 +1642,12 @@ function klang(art) {
     q.start(jetzt);
   };
 
-  if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
+  if (art === 'salveEnde') {
+    ton('triangle', 520, 780, 0.3, 0.06);
+    ton('sine', 260, 390, 0.36, 0.05);
+    rauschen(0.2, 0.05, 1800);
+  }
+  else if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
   else if (art === 'schuss') { ton('sawtooth', 900, 260, 0.13, 0.05); rauschen(0.09, 0.05, 2600); }
   else if (art === 'treffer') { ton('square', 240, 90, 0.12, 0.06); rauschen(0.1, 0.07, 900); }
   else if (art === 'bau') { ton('triangle', 180, 70, 0.3, 0.09); rauschen(0.26, 0.09, 700); }
@@ -4366,7 +4388,9 @@ function updateAnimations(dt) {
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
   }
 
+  schreiteSalve(dt);
   schreiteGegnerzug(dt);
+  if (letzteSalve && !salve) letzteSalve.t += dt;
   pruefeMauer();
   for (const m of mauerWerk.stuecke) {
     if (m.wachsen < WALL_WACHSEN) m.wachsen = Math.min(WALL_WACHSEN, m.wachsen + dt);
@@ -4510,6 +4534,7 @@ function draw() {
     ctx.fillStyle = 'rgba(255,232,190,' + Math.min(0.5, blitzSchirm * 0.42).toFixed(3) + ')';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+  drawSalveZahl();
   drawBanner_Runde();
 }
 
@@ -5037,13 +5062,16 @@ canvas.addEventListener('click', (evt) => {
  * zur naechsten Einheit darauf.
  */
 function handleSelectionClick(treffer, cell) {
+  // Auf einen Gegner zu klicken schiesst nicht mehr. Gefeuert wird die ganze
+  // Salve auf einmal, am Zugende.
   const gegner = treffer && treffer.art === 'enemy'
     ? treffer.ref
     : state.enemies.find(e => e.col === cell.col && e.row === cell.row);
   if (gegner) {
-    const turm = getSelectedTower();
-    if (!turm) { setMessage('Wähle zuerst einen Turm, dann den Gegner.'); renderAll(); return; }
-    attackWithTower(turm, gegner);
+    const art = ENEMY_TYPES[gegner.typ];
+    setMessage(gegner.name + ': ' + gegner.hp + '/' + gegner.maxHp + ' LP, ' +
+      art.dmg + ' Schaden, Reichweite ' + art.reach + '. Die Salve trifft am Zugende.');
+    renderAll();
     return;
   }
 
@@ -5701,6 +5729,165 @@ function resolveEnemyTurn() {
     (meldungen.length > 3 ? ' · und ' + (meldungen.length - 3) + ' weitere' : ''));
 }
 
+// ============================================================
+//  Die Salve
+// ============================================================
+// Gemessen: dreizehn Zuege je Kampf, vierhundertvierundachtzig je Lauf, und
+// in jedem Zug fuenf kleine Handgriffe fuer sieben Schaden. Das ist Arbeit,
+// kein Sog. Es fehlte der Augenblick, in dem etwas Grosses passiert.
+//
+// Darum feuert jetzt nicht mehr jeder Turm einzeln auf Zuruf, sondern das
+// ganze Werk auf einmal: Turm fuer Turm, jeder Treffer zaehlt auf einen
+// Gesamtschaden, der in der Mitte des Bildes steht und mitwaechst, und der
+// Ton steigt mit ihm. Der Tatendrang geht dafuer ganz in die Karten.
+
+const SALVE_TAKT = 0.26;        // Sekunden je Turm
+let salve = null;
+
+/** Das beste Ziel eines Turms: was er trifft und am ehesten faellt. */
+function salveZiel(t) {
+  const reichweite = towerReach(t);
+  let bestes = null, bestWert = -1;
+  for (const e of state.enemies) {
+    const d = distanceTo(t, e);
+    if (d > reichweite) continue;
+    const schaden = towerDamageAt(t, d);
+    if (schaden <= 0) continue;
+    // Was der Turm umwirft, ist mehr wert als was er nur ankratzt
+    const wert = (schaden >= e.hp ? 1000 : 0) + schaden * 10 - e.hp - d;
+    if (wert > bestWert) { bestWert = wert; bestes = e; }
+  }
+  return bestes;
+}
+
+/** Wie viele Tuerme in diesem Zug ueberhaupt etwas treffen. */
+function salveBereit() {
+  return state.towers.filter(t => towerUnits(t).length && salveZiel(t)).length;
+}
+
+function starteSalve(danach) {
+  const schuetzen = state.towers.filter(t => towerUnits(t).length);
+  salve = {
+    liste: schuetzen, i: 0, warten: 0.12,
+    gesamt: 0, treffer: 0, gefallen: 0, danach,
+    zeit: 0,
+  };
+  state.zugLaeuft = true;
+  renderAll();
+}
+
+function schreiteSalve(dt) {
+  if (!salve) return;
+  salve.zeit += dt;
+  salve.warten -= dt;
+  if (salve.warten > 0) return;
+
+  while (salve.i < salve.liste.length) {
+    const t = salve.liste[salve.i++];
+    if (!state.towers.includes(t)) continue;
+    const ziel = salveZiel(t);
+    if (!ziel) continue;
+
+    const d = distanceTo(t, ziel);
+    const schaden = towerDamageAt(t, d);
+    const anzahl = towerUnits(t).filter(u => unitRange(t, u) >= d).length;
+    const ex = ziel.vx === undefined ? ziel.col : ziel.vx;
+    const ey = ziel.vy === undefined ? ziel.row : ziel.vy;
+    for (let i = 0; i < anzahl; i++) {
+      setTimeout(() => zeigePfeil(t.col + t.w / 2, t.row + t.h / 2, ex, ey, '#f0e2bd'), i * 55);
+    }
+    t.rueckstoss = 1;
+    loeseAus('salve');
+    const gefallen = treffeGegner(ziel, schaden, t.name);
+
+    salve.gesamt += schaden;
+    salve.treffer++;
+    if (gefallen) salve.gefallen++;
+    salveKlang(salve.treffer);
+    schirmBlitz(gefallen ? 0.4 : 0.16);
+    salve.warten = SALVE_TAKT;
+    renderAll();
+    return;
+  }
+
+  // Durch. Der Schlussakkord, dann weiter.
+  const g = salve;
+  salve = null;
+  if (g.treffer) {
+    schirmBlitz(0.5 + Math.min(0.8, g.gesamt / 90));
+    ruetteln(3 + Math.min(9, g.gesamt / 12));
+    klang('salveEnde');
+    setMessage('Salve: ' + g.gesamt + ' Schaden' + (g.gefallen ? ', ' + g.gefallen + ' gefallen' : '') + '.');
+  }
+  letzteSalve = { gesamt: g.gesamt, treffer: g.treffer, t: 0 };
+  if (rundeGewonnen()) { state.zugLaeuft = false; beginneBelohnung(); return; }
+  g.danach();
+}
+
+/** Der Ton steigt mit jedem Treffer, wie eine Tonleiter hinauf. */
+function salveKlang(nummer) {
+  if (!tonAn) return;
+  const stufe = Math.min(14, nummer - 1);
+  const grund = 330 * Math.pow(2, stufe / 12);
+  try {
+    if (!tonKontext) tonKontext = new (window.AudioContext || window.webkitAudioContext)();
+    const k = tonKontext, jetzt = k.currentTime;
+    const o = k.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(grund, jetzt);
+    o.frequency.exponentialRampToValueAtTime(grund * 1.5, jetzt + 0.1);
+    const gg = k.createGain();
+    gg.gain.setValueAtTime(0.06, jetzt);
+    gg.gain.exponentialRampToValueAtTime(0.0008, jetzt + 0.18);
+    o.connect(gg); gg.connect(k.destination);
+    o.start(jetzt); o.stop(jetzt + 0.2);
+  } catch (e) { /* ohne Ton eben still */ }
+}
+
+// Die Zahl bleibt nach der Salve noch kurz stehen
+let letzteSalve = null;
+
+/**
+ * Der Gesamtschaden der laufenden Salve, gross in der Mitte des Bildes. Er
+ * waechst mit jedem Turm, und bei jedem Treffer springt er kurz auf.
+ */
+function drawSalveZahl() {
+  const s = salve || letzteSalve;
+  if (!s || !s.gesamt) return;
+  const frisch = salve ? Math.max(0, 1 - salve.zeit % SALVE_TAKT / 0.16) : 0;
+  const ausklang = salve ? 1 : Math.max(0, 1 - letzteSalve.t / 1.1);
+  if (ausklang <= 0) { letzteSalve = null; return; }
+
+  const x = canvas.width / 2;
+  const y = 188;
+  const gross = 1 + Math.min(1.1, s.gesamt / 80) + frisch * 0.3;
+  ctx.save();
+  ctx.globalAlpha = ausklang;
+  ctx.translate(x, y);
+  ctx.scale(gross, gross);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.font = '700 15px "Pixelify Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,232,180,0.75)';
+  ctx.fillText('SALVE', 0, -22);
+
+  const text = String(s.gesamt);
+  ctx.font = '700 38px "Pixelify Sans", sans-serif';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'rgba(20,12,6,0.8)';
+  ctx.strokeText(text, 0, 0);
+  const hitze = Math.min(1, s.gesamt / 70);
+  ctx.fillStyle = hitze > 0.7 ? '#ffd166' : hitze > 0.35 ? '#ffb347' : '#f0e2bd';
+  ctx.fillText(text, 0, 0);
+
+  if (s.treffer > 1) {
+    ctx.font = '700 13px "Pixelify Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,214,140,0.8)';
+    ctx.fillText(s.treffer + ' Türme', 0, 24);
+  }
+  ctx.restore();
+}
+
 // ---------- Der Takt des Gegnerzugs ----------
 // Frueher handelte das ganze Aufgebot in einem einzigen Augenblick. Man sah
 // nichts und konnte nichts lesen. Jetzt tritt einer nach dem anderen vor,
@@ -5779,6 +5966,8 @@ function betreteKnoten(id) {
   staubkoerner.length = 0;
   mauerWerk = { schluessel: '', stuecke: [] };
   gegnerzug = null;
+  salve = null;
+  letzteSalve = null;
   state.zugLaeuft = false;
   state.handelnder = null;
 
@@ -5788,6 +5977,7 @@ function betreteKnoten(id) {
   state.maxTatendrang = maxTatendrangFuer(state.runde);
   state.tatendrang = state.maxTatendrang;
   state.zug = 1;
+  state.frist = KNOTEN[k.typ].kampf ? zugFrist(state.runde, k.typ) : 0;
 
   // Die Hand gehoert zur Station, nicht zum Ritt. Sie wandert immer zurueck
   // ins Deck, damit an jeder Station frisch gezogen wird.
@@ -5864,6 +6054,7 @@ function neuerFeldzug(stufe) {
   state.nextEnemyId = 1;
   state.runde = 1;
   state.zug = 1;
+  state.frist = 0;
   leichen.length = 0;
   projektile.length = 0;
   state.route = baueRoute();
@@ -6422,12 +6613,48 @@ function ereignisSicht(e, meldung, erledigt) {
 function endTurn() {
   if (state.phase !== 'kampf' || state.castleHp <= 0 || state.zugLaeuft) return;
   setMessage('');
+  state.pendingCard = null;
+  state.selectedTower = null;
+
   if (!zugTheater) {
+    // Ohne Takt laeuft alles sofort: erst die Salve, dann das Aufgebot.
+    for (const t of state.towers.slice()) {
+      const ziel = salveZiel(t);
+      if (!ziel) continue;
+      loeseAus('salve');
+      treffeGegner(ziel, towerDamageAt(t, distanceTo(t, ziel)), t.name);
+    }
+    if (rundeGewonnen()) { beginneBelohnung(); return; }
     resolveEnemyTurn();
     zugAbschluss({ stumm: true });
     return;
   }
-  starteGegnerzug();
+
+  // Erst feuert das ganze Werk, dann rueckt das Aufgebot nach.
+  starteSalve(() => starteGegnerzug());
+}
+
+/**
+ * Der Sturm. Ist die Frist verstrichen, laeuft alles, was noch steht - auf
+ * dem Feld wie im Lager - gemeinsam ins Tor. Jeder bringt seinen Schaden mit.
+ * Wer das ueberlebt, hat die Station gehalten, aber teuer bezahlt.
+ */
+function derSturm() {
+  const alle = [...state.enemies, ...state.lager];
+  const schaden = alle.reduce((sum, e) => sum + Math.max(1, e.dmg), 0);
+  for (const e of state.enemies) zeigeZahl(e.col, e.row, 'Sturm', '#ff9a5c');
+  state.enemies = [];
+  state.lager = [];
+  state.castleHp -= schaden;
+  state.zugLaeuft = false;
+  zeigeZahl(CASTLE.col + 1, CASTLE.row + 2, '-' + schaden, '#ff6b6b');
+  ruetteln(16);
+  schirmBlitz(1.3);
+  klang('burg');
+  zeigeBanner('Der Sturm', alle.length + ' Belagerer rennen ins Tor · ' + schaden + ' Schaden');
+  if (state.castleHp <= 0) { feldzugVerloren(); return; }
+  setMessage('Die Frist ist verstrichen. Der Sturm kostet ' + schaden + ' Mauerwerk.');
+  beginneBelohnung();
 }
 
 /** Was nach dem Aufgebot kommt: Nachschub, neue Hand, naechster Zug. */
@@ -6441,6 +6668,8 @@ function zugAbschluss(lauf) {
   const neu = deployFromLager();
 
   if (rundeGewonnen()) { beginneBelohnung(); return; }
+
+  if (state.frist && state.zug >= state.frist) { derSturm(); return; }
 
   const abgelegt = state.hand.length;
   state.discard.push(...state.hand);
@@ -7083,6 +7312,9 @@ function renderAll() {
   document.getElementById('round-max').textContent = STATIONEN;
   document.getElementById('sold-val').textContent = state.sold;
   document.getElementById('turn-val').textContent = state.zug;
+  const fristFeld = document.getElementById('turn-frist');
+  fristFeld.textContent = state.frist ? '/' + state.frist : '';
+  fristFeld.classList.toggle('knapp', !!state.frist && state.frist - state.zug <= 1);
   document.getElementById('tatendrang-val').textContent = state.tatendrang;
   document.getElementById('tatendrang-max').textContent = state.maxTatendrang;
   document.getElementById('castle-hp-val').textContent = Math.max(0, state.castleHp);
@@ -7092,7 +7324,9 @@ function renderAll() {
   document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
   const knopf = document.getElementById('endround-btn');
   knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
-  knopf.textContent = state.zugLaeuft ? 'Aufgebot zieht' : 'Zug beenden';
+  const bereit = state.phase === 'kampf' ? salveBereit() : 0;
+  knopf.textContent = state.zugLaeuft ? 'Es feuert' : (bereit ? 'SALVE · ' + bereit : 'Zug beenden');
+  knopf.classList.toggle('scharf', bereit > 0 && !state.zugLaeuft);
 
   // Ausserhalb des Kampfes sagen die Zahlen nichts; die Routenkarte und die
   // Stationsfenster zeigen dasselbe an der richtigen Stelle.
