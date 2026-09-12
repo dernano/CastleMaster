@@ -2339,6 +2339,23 @@ function teilZinnen(g, x, y, z, w, d, stoffName) {
   for (const [px, py] of punkte) teilQuader(g, px, py, z, s, s, h, stoffName, 3);
 }
 
+/**
+ * Eine geschlossene Bruestung rund um eine Flaeche: vier Balken auf den
+ * Kanten, von hinten nach vorn gemalt. Sie deckt den Schuetzen, ohne ihm
+ * die Sicht zu nehmen - genau deshalb traegt ein Wehrturm kein Dach.
+ */
+function teilBruestung(g, x, y, z, w, d, h, stoffName) {
+  const t = 0.2;
+  const balken = [
+    [x, y, w, t],                       // hinten
+    [x, y + t, t, d - 2 * t],           // links
+    [x + w - t, y + t, t, d - 2 * t],   // rechts
+    [x, y + d - t, w, t],               // vorn
+  ];
+  balken.sort((a, b) => (a[0] + a[2] / 2 + a[1] + a[3] / 2) - (b[0] + b[2] / 2 + b[1] + b[3] / 2));
+  for (const [bx, by, bw, bd] of balken) teilQuader(g, bx, by, z, bw, bd, h, stoffName, 9);
+}
+
 /** Ein Pfahl oder Pfosten, oben angespitzt. */
 function teilPfahl(g, x, y, z, h, stoffName, spitz) {
   const st = STOFF[stoffName] || STOFF.stamm;
@@ -2407,17 +2424,18 @@ const MODELLE = {
       teilPfahl(g, 0.05, 0.05 + j * 0.44, 0, h * (0.85 + noise(j, 9) * 0.3), 'stamm');
       teilPfahl(g, 1.78, 0.05 + j * 0.44, 0, h * (0.85 + noise(j, 3) * 0.3), 'stamm');
     }
-    if (f > 0.8) teilQuader(g, 0.05, 0.05, h * 0.55, 1.9, 1.9, 2, 'holz', 2);
+    // Der Wehrgang liegt dort, wo die Besatzung steht, nicht auf halber Hoehe
+    if (f > 0.8) teilQuader(g, 0.18, 0.18, h * 0.86, 1.64, 1.64, 3, 'holz', 2);
   },
   schanze: (g, f) => {
-    const h = 17 * f;
+    const h = 26 * f;
     teilQuader(g, 0, 0, 0, 2, 2, h, 'erde', 4);
     if (f < 0.6) return;
+    teilQuader(g, 0.1, 0.1, h, 1.8, 1.8, 4, 'holz', 5);          // Bohlenboden
     for (let i = 0; i < 4; i++) {
-      teilPfahl(g, 0.15 + i * 0.5, 0.12, h, 11, 'stamm');
-      teilPfahl(g, 0.15 + i * 0.5, 1.72, h, 11, 'stamm');
+      teilPfahl(g, 0.15 + i * 0.5, 0.12, h + 4, 9, 'stamm');
+      teilPfahl(g, 0.15 + i * 0.5, 1.72, h + 4, 9, 'stamm');
     }
-    teilQuader(g, 0.1, 0.1, h, 1.8, 1.8, 3, 'holz', 5);
   },
   wallgraben: (g, f) => {
     const h = 19 * f;
@@ -2443,12 +2461,11 @@ const MODELLE = {
 
   // ---- Mauern und Gaenge ----
   wehrgang: (g, f) => {
-    const h = 17 * f;
+    const h = 22 * f;
     teilQuader(g, 0, 0.35, 0, 2, 1.3, h, 'stein', 11);
     if (f < 0.7) return;
-    for (const x of [0.12, 1.72]) teilPfahl(g, x, 0.42, h, 12, 'holz', false);
-    for (const x of [0.12, 1.72]) teilPfahl(g, x, 1.5, h, 12, 'holz', false);
-    teilDach(g, -0.05, 0.3, h + 12, 2.1, 1.4, 9, 'schiefer');
+    teilQuader(g, -0.06, 0.29, h, 2.12, 1.42, 5, 'holz', 12);   // Bohlenboden
+    teilBruestung(g, -0.06, 0.29, h + 5, 2.12, 1.42, 8, 'holz');
   },
   bollwerk: (g, f) => {
     teilQuader(g, 0, 0, 0, 2, 2, 14 * f, 'bruch', 13);
@@ -2462,9 +2479,9 @@ const MODELLE = {
     teilQuader(g, 0.25, 0.25, 0, 1.5, 1.5, h, 'stein', 17);
     teilFenster(g, 1.75, 0.9, h * 0.6, 9, false);
     if (f < 0.75) return;
-    teilQuader(g, 0.12, 0.12, h, 1.76, 1.76, 7, 'holz', 18);   // Hurde
-    teilDach(g, 0.08, 0.08, h + 7, 1.84, 1.84, 15, 'ziegel');
-    teilFahne(g, 1.4, 0.3, h + 22, '#2f5fa8');
+    teilQuader(g, 0.12, 0.12, h, 1.76, 1.76, 7, 'holz', 18);   // auskragende Hurde
+    teilBruestung(g, 0.12, 0.12, h + 7, 1.76, 1.76, 9, 'holz');
+    teilFahne(g, 1.72, 0.16, h + 7, '#2f5fa8');
   },
   steinturm: (g, f) => {
     const h = 36 * f;
@@ -2482,7 +2499,7 @@ const MODELLE = {
     teilFahne(g, 0.4, 1.6, h + 6, '#e3b552');
   },
   alterturm: (g, f) => {
-    const h = 28 * f;
+    const h = 33 * f;
     teilQuader(g, 0.22, 0.22, 0, 1.56, 1.56, h, 'bruch', 27);
     if (f < 0.7) return;
     // Eine Seite ist eingestuerzt, darum nur ein halber Zinnenkranz
@@ -2502,7 +2519,7 @@ const MODELLE = {
       teilPfahl(g, x, y, 0, h, 'holz', false);
     if (f < 0.7) return;
     teilQuader(g, 0.14, 0.14, h, 1.72, 1.72, 9, 'holz', 33);
-    teilDach(g, 0.08, 0.08, h + 9, 1.84, 1.84, 13, 'stroh');
+    teilBruestung(g, 0.14, 0.14, h + 9, 1.72, 1.72, 10, 'holz');
   },
   pechnase: (g, f) => {
     const h = 27 * f;
@@ -2519,23 +2536,24 @@ const MODELLE = {
     teilFenster(g, 1.58, 0.85, h * 0.45, 9, false);
     teilFenster(g, 1.58, 0.85, h * 0.72, 9, true);
     if (f < 0.8) return;
-    teilQuader(g, 0.3, 0.3, h, 1.4, 1.4, 5, 'stein', 42);
-    teilKegel(g, 1, 1, h + 5, 0.72, 22, 'schiefer');
+    teilQuader(g, 0.3, 0.3, h, 1.4, 1.4, 5, 'stein', 42);   // auskragender Kranz
+    teilZinnen(g, 0.3, 0.3, h + 5, 1.4, 1.4, 'steinHell');
   },
 
   // ---- Doppelbauten ----
   doppelturm: (g, f) => {
+    // Die beiden Schaefte stossen in der Mitte aneinander. Schmaler waere
+    // huebscher, aber dann haengt die Besatzung ueber der Kante.
     const h1 = 26 * f, h2 = 32 * f;
-    teilQuader(g, 0.08, 0.08, 0, 0.8, 0.8, h1, 'stein', 45);
-    teilQuader(g, 1.12, 1.12, 0, 0.8, 0.8, h2, 'stein', 46);
+    teilQuader(g, 0.02, 0.02, 0, 1.06, 1.06, h1, 'stein', 45);
+    teilQuader(g, 0.92, 0.92, 0, 1.06, 1.06, h2, 'stein', 46);
     if (f < 0.7) return;
-    teilQuader(g, 0.5, 0.5, h1 - 6, 1.0, 0.34, 5, 'holz', 47);   // Steg
-    teilDach(g, 0.04, 0.04, h1, 0.88, 0.88, 11, 'ziegel');
-    teilDach(g, 1.08, 1.08, h2, 0.88, 0.88, 11, 'ziegel');
-    teilFahne(g, 1.5, 1.2, h2 + 11, '#8c2230');
+    teilZinnen(g, 0.02, 0.02, h1, 1.06, 1.06, 'steinHell');
+    teilZinnen(g, 0.92, 0.92, h2, 1.06, 1.06, 'steinHell');
+    teilFahne(g, 1.92, 1.02, h2, '#8c2230');
   },
   zwinger: (g, f) => {
-    const h = 18 * f;
+    const h = 26 * f;
     teilQuader(g, 0, 0, 0, 2, 0.42, h, 'stein', 51);
     teilQuader(g, 0, 1.58, 0, 2, 0.42, h, 'stein', 52);
     teilQuader(g, 0, 0.42, 0, 0.42, 1.16, h, 'stein', 53);
@@ -2552,12 +2570,12 @@ const MODELLE = {
     teilQuader(g, 0.24, 0.24, h * 0.35, 1.52, 1.52, h * 0.65, 'stein', 62);
     teilFenster(g, 1.76, 0.85, h * 0.62, 11, true);
     if (f < 0.8) return;
+    // Vier Ecktuerme, dazwischen bleibt die Plattform offen
     for (const [x, y] of [[0.1, 0.1], [1.4, 0.1], [0.1, 1.4], [1.4, 1.4]]) {
-      teilQuader(g, x, y, h, 0.5, 0.5, 10, 'steinHell', 63);
-      teilKegel(g, x + 0.25, y + 0.25, h + 10, 0.3, 11, 'ziegel');
+      teilQuader(g, x, y, h, 0.5, 0.5, 9, 'steinHell', 63);
+      teilZinnen(g, x, y, h + 9, 0.5, 0.5, 'stein');
     }
-    teilDach(g, 0.36, 0.36, h, 1.28, 1.28, 20, 'ziegel');
-    teilFahne(g, 1.0, 0.2, h + 20, '#2f5fa8');
+    teilFahne(g, 1.05, 0.06, h, '#2f5fa8');
   },
   trutzburg: (g, f) => {
     const h = 34 * f;
@@ -2581,7 +2599,7 @@ const MODELLE = {
     if (f < 0.85) return;
     teilZinnen(g, 0.05, 0.05, h * 0.6, 0.75, 1.9, 'stein');
     teilZinnen(g, 1.2, 0.05, h * 0.6, 0.75, 1.9, 'stein');
-    teilKegel(g, 1, 1, h, 0.62, 26, 'schiefer');
+    teilZinnen(g, 0.42, 0.42, h, 1.16, 1.16, 'steinHell');
     teilFahne(g, 0.2, 1.8, h * 0.6, '#e3b552');
     teilFahne(g, 1.8, 0.2, h * 0.6, '#e3b552');
   },
@@ -2667,7 +2685,7 @@ const MODELL_MASS = {
 // Bogenschuetze beim Lugaus in der Luft und beim Erdwall im Stein.
 const MODELL_HOEHE = {
   palisade: 26, schanze: 30, wallgraben: 25, erdwall: 26,
-  wehrgang: 29, bollwerk: 28,
+  wehrgang: 27, bollwerk: 28,
   wachturm: 37, steinturm: 36, turmwache: 32, alterturm: 33,
   lugaus: 49, pechnase: 27, hoherhorst: 53,
   doppelturm: 32, zwinger: 26,

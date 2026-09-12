@@ -323,6 +323,37 @@ Bauwerke *auf* dem Boden statt *darin*. Das kann nicht in den vorgemalten
 Boden, weil sich die Türme ändern, wird also live gerechnet, aber nur für die
 Felder ringsum.
 
+### Ein Wehrturm trägt kein Dach
+
+Lange saß auf Wachturm, Wehrgang, Lugaus, Doppelturm, Bergfried, Hohem
+Horst und Grenzfeste ein Ziegel-, Schiefer- oder Strohdach. Es sah hübsch
+aus und war falsch: `MODELL_HOEHE` — die Höhe, auf der die Besatzung steht —
+war bei jedem dieser Modelle **genau die Höhe, auf der das Dach ansetzt**.
+Die Bogenschützen standen also auf dem First.
+
+Der Fehler war nicht die Zahl, sondern das Dach. Ein Turm, aus dem geschossen
+wird, hat oben eine offene Kampfplattform; ein geschlossenes Dach nimmt dem
+Schützen die Sicht. Jedes dieser Modelle trägt jetzt statt des Daches:
+
+    Wachturm      auskragende Hurde mit hölzerner Brustwehr
+    Wehrgang      Bohlenboden mit Brustwehr
+    Lugaus        offener Ausguck mit Geländer
+    Doppelturm    zwei Zinnenkränze
+    Hoher Horst   auskragender Kranz mit Zinnen
+    Bergfried     offene Plattform zwischen vier Ecktürmen
+    Grenzfeste    Zinnenkrone
+
+Dafür gibt es ein neues Bauteil, `teilBruestung()`: vier Balken auf den
+Kanten einer Fläche, von hinten nach vorn gemalt. Die Burg selbst behält ihr
+Dach — dort steht keine Besatzung.
+
+Bei der Gelegenheit vier Modelle, bei denen die Besatzung in der Luft stand,
+weil `MODELL_HOEHE` über der wirklichen Plattform lag: Alter Turm (Körper 28,
+Figur auf 33), Zwinger (Ring 18, Figur auf 26), Schanze (Boden 20, Figur auf
+30) und Palisade (Steg auf halber Höhe). Bei allen vieren ist jetzt der
+Baukörper auf die Standhöhe gezogen, nicht die Standhöhe gesenkt — sonst
+stünden sie wieder unter der Wallkrone.
+
 ### Jedes Bauwerk steht über seinem Wall
 
 Palisade, Erdwall und Wallgraben waren mit 15 bis 19 Bildpunkten **niedriger
