@@ -241,6 +241,12 @@ halb eingestürzt und mit Efeu bewachsen, die Pechnase mit auskragendem Erker
 auf Konsolen, der Doppelturm zwei Türme mit einem Steg dazwischen, die
 Grenzfeste ein Bergfried zwischen zwei Flügeln mit Wimpeln.
 
+Auch **die Burg** läuft über diese Engine: derselbe Mauerring mit Zinnen, vier
+Ecktürme unter Schieferkegeln, das Torhaus mit Fallgitter zum Feld hin, der
+Bergfried mit Ziegeldach und Banner, dazu ein flackerndes Feuer im Hof. Sie
+spricht damit dieselbe Sprache wie die Türme davor, statt als einziges Bauwerk
+aus der Reihe zu fallen.
+
 `MODELL_HOEHE` sagt, auf welcher Höhe die Besatzung steht — sonst stünde der
 Bogenschütze beim Lugaus in der Luft und beim Erdwall im Stein.
 
@@ -336,9 +342,19 @@ Handy passen soll, verdeckt sich sonst fast vollständig selbst.
 
 ## Figuren und die Werkstatt
 
-Lange gab es genau **zwei** Figuren im ganzen Spiel: eine für deine Leute, eine
-für alle Angreifer. Späher, Armbrustschütze, Ritter und Belagerungsmeister
-waren dieselbe Figur in anderer Farbe — deshalb sahen sie alle gleich aus.
+Lange gab es genau **zwei** Figuren im ganzen Spiel, jede neun mal neun Felder:
+eine für deine Leute, eine für alle Angreifer. Späher, Armbrustschütze, Ritter
+und Belagerungsmeister waren dieselbe Figur in anderer Farbe.
+
+Heute sind es neun Figuren zu **elf mal dreizehn** Feldern. Neun mal neun ließ
+keinen Platz für Haltung und Licht, und daneben hatte durch die Bauwerks-Engine
+alles andere im Bild inzwischen Volumen.
+
+Die Palette führt dieselbe Ordnung wie die Stoffe der Bauwerke: **kleine
+Buchstaben sind Schatten, große sind Licht.** `s`/`S` Haut, `b`/`B` Tuch,
+`r`/`R` Wappenfarbe, `m`/`M` Metall, `y`/`Y` Holz, `g`/`G` Gold, `k`/`K`
+Kontur. Damit bekommen die Figuren dasselbe Licht wie die Mauern, statt flach
+davor zu stehen.
 
 Jetzt hat jeder seine eigene Silhouette: der Späher schmal mit Kapuze, der
 Armbrustschütze mit der Waffe quer vor der Brust, der Ritter mit Helm,
@@ -350,7 +366,7 @@ sind gar keine Figuren mehr, sondern gezeichnete Maschinen.
 ### Selbst zeichnen
 
 Der Knopf `✎` oben rechts öffnet die **Werkstatt**. Dort liegen alle neun
-Figuren als Raster aus neun mal neun Feldern. Man wählt eine Farbe und malt;
+Figuren als Raster; es richtet sich nach der Figur, nicht umgekehrt. Man wählt eine Farbe und malt;
 jede Änderung wirkt sofort im Spiel, auch mitten im Kampf. Eine geänderte
 Figur trägt in der Auswahl ein `✎`.
 
@@ -365,10 +381,8 @@ Wer eine Figur fest ins Spiel bauen will, gibt sie aus und ersetzt damit das
 Raster im Quelltext — die Buchstaben in der Werkstatt sind genau dieselben wie
 dort.
 
-Die Farbbuchstaben: `.` leer, `k` Kontur, `s` Haut, `b`/`B` Tuch dunkel und
-hell, `r`/`R` Wappenfarbe dunkel und hell, `m` Metall, `y` Holz, `g` Gold. Bei
-den Angreifern tauscht der Gegnertyp `r` und `R` gegen seine eigene Farbe, alles
-andere bleibt.
+Bei den Angreifern tauscht der Gegnertyp `r` und `R` gegen seine eigene Farbe,
+alles andere bleibt. Deshalb reicht **eine** Zeichnung für alle Farbvarianten.
 
 ## Ton
 

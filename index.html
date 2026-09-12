@@ -451,8 +451,8 @@
   #werk-mitte { display: flex; gap: 12px; justify-content: center; align-items: flex-start;
     flex: 0 1 auto; min-height: 0; overflow: auto; }
   #werk-raster {
-    display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
-    width: 234px; height: 234px; flex: none;
+    display: grid; gap: 1px;
+    width: 220px; flex: none;
     background: #2a2118; padding: 2px; border: 2px solid var(--frame); border-radius: 3px;
     touch-action: none;
   }
@@ -755,7 +755,7 @@
     .werk-box h2 { font-size: 16px; }
     .werk-box > p { font-size: 9.5px; margin-bottom: 6px; }
     #werk-mitte { gap: 7px; }
-    #werk-raster { width: 162px; height: 162px; }
+    #werk-raster { width: 154px; }
     #werk-farben { grid-template-columns: 1fr; gap: 2px; }
     #werk-farben button { font-size: 8px; padding: 1px 4px 1px 2px; }
     #werk-farben i { width: 10px; height: 10px; }
@@ -830,7 +830,8 @@
     <div class="werk-box panel">
       <h2>Werkstatt</h2>
       <p>Zeichne die Figuren des Spiels selbst. Jedes Feld eine Farbe, jede
-        Änderung sofort im Spiel. Gespeichert wird in deinem Browser.</p>
+        Änderung sofort im Spiel. Kleine Buchstaben sind Schatten, große Licht.
+        Gespeichert wird in deinem Browser.</p>
       <div id="werk-wahl"></div>
       <div id="werk-mitte">
         <div id="werk-raster"></div>
@@ -2367,6 +2368,82 @@ const MODELLE = {
     teilFahne(g, 0.2, 1.8, h * 0.6, '#e3b552');
     teilFahne(g, 1.8, 0.2, h * 0.6, '#e3b552');
   },
+
+  // ---- Die Burg selbst ----
+  // Zwei Felder breit, fuenf tief. Ein Mauerring mit Ecktuermen, das Torhaus
+  // zum Feld hin, dahinter der Bergfried.
+  burg: (g) => {
+    const W = 2, D = 5, RING = 26;
+
+    // Mauerring: vier Zuege um einen offenen Hof
+    teilQuader(g, 0, 0, 0, W, 0.5, RING, 'stein', 81);
+    teilQuader(g, 0, D - 0.5, 0, W, 0.5, RING, 'stein', 82);
+    teilQuader(g, 0, 0.5, 0, 0.5, D - 1, RING, 'stein', 83);
+    teilQuader(g, W - 0.5, 0.5, 0, 0.5, D - 1, RING, 'stein', 84);
+    teilZinnen(g, 0, 0, RING, W, 0.5, 'steinHell');
+    teilZinnen(g, 0, D - 0.5, RING, W, 0.5, 'steinHell');
+    teilZinnen(g, 0, 0.5, RING, 0.5, D - 1, 'steinHell');
+
+    // Der Bergfried im hinteren Drittel
+    const KEEP = 46;
+    teilQuader(g, 0.3, 0.55, RING - 4, 1.4, 1.7, KEEP, 'steinHell', 85);
+    teilFenster(g, 1.7, 1.0, RING + KEEP * 0.55, 12, true);
+    teilFenster(g, 1.7, 1.55, RING + KEEP * 0.55, 12, false);
+    teilQuader(g, 0.2, 0.45, RING - 4 + KEEP, 1.6, 1.9, 6, 'holz', 86);
+    teilDach(g, 0.16, 0.41, RING + KEEP + 2, 1.68, 1.98, 24, 'ziegel');
+    teilFahne(g, 1.0, 1.4, RING + KEEP + 26, '#2f5fa8');
+
+    // Vier Ecktuerme unter Schieferkegeln
+    for (const [x, y] of [[-0.14, -0.14], [W - 0.44, -0.14], [-0.14, D - 0.44], [W - 0.44, D - 0.44]]) {
+      teilQuader(g, x, y, 0, 0.58, 0.58, RING + 12, 'steinHell', 87);
+      teilKegel(g, x + 0.29, y + 0.29, RING + 12, 0.34, 15, 'schiefer');
+    }
+
+    // Torhaus zum Feld, mit Bogen und Fallgitter
+    const ty = D / 2 - 0.6;
+    teilQuader(g, W - 0.42, ty, 0, 0.52, 1.2, RING + 10, 'steinHell', 88);
+    teilZinnen(g, W - 0.42, ty, RING + 10, 0.52, 1.2, 'stein');
+    const gx = mx(W + 0.1, ty + 0.6), gy = my(W + 0.1, ty + 0.6, 0);
+    g.fillStyle = '#231a2c';
+    g.beginPath();
+    g.moveTo(gx - 9, gy - 2);
+    g.lineTo(gx + 1, gy + 3);
+    g.lineTo(gx + 1, gy - 13);
+    g.quadraticCurveTo(gx - 4, gy - 23, gx - 9, gy - 18);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = 'rgba(206,184,145,0.5)';
+    g.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const t = i / 4;
+      g.beginPath();
+      g.moveTo(gx - 9 + 10 * t, gy - 2 + 5 * t);
+      g.lineTo(gx - 9 + 10 * t, gy - 18 - t);
+      g.stroke();
+    }
+
+    // Ein Feuer im Hof, damit die Burg bewohnt wirkt
+    const fx = mx(1.0, D / 2 + 0.9), fy = my(1.0, D / 2 + 0.9, RING - 22);
+    const flacker = wenigerBewegung ? 1 : 0.8 + Math.sin(animZeit * 6) * 0.2;
+    g.fillStyle = 'rgba(255,170,70,' + (0.5 * flacker).toFixed(2) + ')';
+    g.beginPath(); g.ellipse(fx, fy, 7, 4, 0, 0, 6.2832); g.fill();
+  },
+};
+
+// Grundflaeche und lichte Hoehe jedes Modells. Danach richtet sich, wie gross
+// sein Bild wird; ohne das waere das Kegeldach der Grenzfeste abgeschnitten.
+const MODELL_MASS = {
+  palisade: { w: 2, d: 2, hoch: 40 }, schanze: { w: 2, d: 2, hoch: 40 },
+  wallgraben: { w: 2, d: 2, hoch: 40 }, erdwall: { w: 2, d: 2, hoch: 40 },
+  wehrgang: { w: 2, d: 2, hoch: 60 }, bollwerk: { w: 2, d: 2, hoch: 50 },
+  wachturm: { w: 2, d: 2, hoch: 80 }, steinturm: { w: 2, d: 2, hoch: 60 },
+  turmwache: { w: 2, d: 2, hoch: 70 }, alterturm: { w: 2, d: 2, hoch: 56 },
+  lugaus: { w: 2, d: 2, hoch: 80 }, pechnase: { w: 2, d: 2, hoch: 50 },
+  hoherhorst: { w: 2, d: 2, hoch: 92 },
+  doppelturm: { w: 2, d: 2, hoch: 76 }, zwinger: { w: 2, d: 2, hoch: 40 },
+  bergfried: { w: 2, d: 2, hoch: 96 }, trutzburg: { w: 2, d: 2, hoch: 76 },
+  grenzfeste: { w: 2, d: 2, hoch: 106 },
+  burg: { w: 2, d: 5, hoch: 116 },
 };
 
 // Auf welcher Hoehe die Besatzung eines Modells steht. Ohne das stuende der
@@ -2401,13 +2478,15 @@ function modellBild(name, stufe) {
   if (bild) return bild;
 
   const bauer = MODELLE[name] || MODELLE.wachturm;
+  const mass = MODELL_MASS[name] || { w: 2, d: 2, hoch: 130 };
   const rand = 26;
   const cv = document.createElement('canvas');
-  cv.width = 2 * TW + rand * 2;
-  cv.height = 150 + rand;   // hoch genug fuer Kegeldach und Fahne der Grenzfeste
+  cv.width = Math.ceil((mass.w + mass.d) * TW / 2) + rand * 2;
+  cv.height = Math.ceil(mass.hoch + (mass.w + mass.d) * TH / 2) + rand;
   const g = cv.getContext('2d');
-  const ankerX = TW + rand;          // Ursprung des Modellraums im Bild
-  const ankerY = cv.height - rand - TH;
+  // Der Ursprung des Modellraums liegt in der hinteren Ecke der Grundflaeche
+  const ankerX = mass.d * TW / 2 + rand;
+  const ankerY = mass.hoch + rand / 2;
   g.translate(ankerX, ankerY);
   bauer(g, stufe / 10);
 
@@ -2798,15 +2877,18 @@ const BURG = { oben: '#c2b391', links: '#645845', rechts: '#8e7f60' };
 const HOLZ = { oben: '#8a6238', links: '#4e361d', rechts: '#6b4a2a' };
 
 // ---------- Pixelfiguren ----------
+// Jede Farbe zweimal: klein im Schatten, gross im Licht. Damit bekommen auch
+// die Figuren dasselbe Licht wie die Bauwerke, statt flach zu bleiben.
 const PAL = {
   '.': null,
-  k: '#171009',
-  b: '#2c5f9e', B: '#4e8ad6',
-  r: '#8f2b2b', R: '#c4483c',
-  s: '#d9b48f',
-  y: '#6b4a2a',
-  m: '#9aa0a8',
-  g: '#e3b552',
+  k: '#140f1c', K: '#2b2438',
+  b: '#25507f', B: '#4e8ad6',
+  r: '#7d2534', R: '#c4483c',
+  s: '#c2926b', S: '#f0c79c',
+  y: '#5c3f22', Y: '#9c6d3e',
+  m: '#6f7a88', M: '#b7c1cc',
+  g: '#b4841f', G: '#f5d572',
+  w: '#8d8a9c', W: '#e8e6f0',
 };
 
 // ---------- Eigene Figuren aus der Werkstatt ----------
@@ -2830,108 +2912,146 @@ function merkeFiguren() {
 // bleibt. Wer eine Figur umzeichnen will, findet sie in der Werkstatt: die
 // Buchstaben hier sind genau das, was dort im Raster steht.
 
-// Deine Leute auf den Tuermen, nach Waffe
+// Deine Leute auf den Tuermen, nach Waffe. Elf Felder breit, dreizehn hoch:
+// Neun mal neun liess keinen Platz fuer Haltung und Licht, und daneben hatte
+// alles andere im Bild inzwischen Volumen.
 const FIG_BOGEN = [
-  '..kkk....',
-  '.kbbbk...',
-  '.ksssk...',
-  '..kkk..y.',
-  'ybBBBby.y',
-  'ykbBBBbky',
-  'y.bbbbb.y',
-  '..b...b.y',
-  '..k...k..',
+  '....kkk....',
+  '...kBBBk.y.',
+  '...kbbbk.Y.',
+  '...kSSsk.Y.',
+  '....kkk..Y.',
+  '..kBBBBBkY.',
+  '.kbBBBBBbY.',
+  '.kbbBBBbkY.',
+  '..kbbbbbkY.',
+  '..kbbbbk.Y.',
+  '...kb.bk.y.',
+  '...kb.bk...',
+  '...K...K...',
 ];
 const FIG_SPEER = [
-  '..kkk..m.',
-  '.kbbbk.m.',
-  '.ksssk.y.',
-  '..kkk..y.',
-  '.bBBBb.y.',
-  'kbBBBBbky',
-  '.bbbbbb.y',
-  '.b....b..',
-  '.k....k..',
+  '.........M.',
+  '....kkk..M.',
+  '...kBBBk.M.',
+  '...kbbbk.Y.',
+  '...kSSsk.Y.',
+  '....kkk..Y.',
+  '..kBBBBBkY.',
+  '.kbBBBBBbY.',
+  '.kbbBBBbkY.',
+  '..kbbbbbkY.',
+  '...kbbbk.Y.',
+  '...kb.bk...',
+  '...K...K...',
 ];
 const FIG_ARMBRUST = [
-  '..kkk....',
-  '.kbbbk...',
-  '.ksssk...',
-  '..kkk....',
-  'mmmmmmmm.',
-  '.bBBBBb..',
-  '.bbbbbb..',
-  '.b....b..',
-  '.k....k..',
+  '....kkk....',
+  '...kBBBk...',
+  '...kbbbk...',
+  '...kSSsk...',
+  '....kkk....',
+  '..kBBBBBk..',
+  '.MMMMMMMMM.',
+  '.kbbYYYbbk.',
+  '..kbbbbbk..',
+  '..kbbbbbk..',
+  '...kb.bk...',
+  '...kb.bk...',
+  '...K...K...',
 ];
 const FIG_SCHLEUDER = [
-  '..kkk.m..',
-  '.kbbbkm..',
-  '.kssskm..',
-  '..kkk.m..',
-  '.bBBBb...',
-  'kbBBBBbk.',
-  '.bbbbbb..',
-  '.b....b..',
-  '.k....k..',
+  '....kkk..m.',
+  '...kBBBk.m.',
+  '...kbbbkm..',
+  '...kSSskm..',
+  '....kkk.m..',
+  '..kBBBBBk..',
+  '.kbBBBBBbk.',
+  '.kbbBBBbbk.',
+  '..kbbbbbk..',
+  '..kbbbbk...',
+  '...kb.bk...',
+  '...kb.bk...',
+  '...K...K...',
 ];
 const FIG_FACKEL = [
-  '..kkk..R.',
-  '.kbbbk.g.',
-  '.ksssk.y.',
-  '..kkk..y.',
-  '.bBBBb.y.',
-  'kbBBBBbky',
-  '.bbbbbb..',
-  '.b....b..',
-  '.k....k..',
+  '.........R.',
+  '........RGR',
+  '....kkk..G.',
+  '...kBBBk.Y.',
+  '...kbbbk.Y.',
+  '...kSSsk.Y.',
+  '....kkk..Y.',
+  '..kBBBBBkY.',
+  '.kbBBBBBbY.',
+  '..kbbbbbk..',
+  '..kbbbbk...',
+  '...kb.bk...',
+  '...K...K...',
 ];
 const FIG_WACHE = FIG_SPEER;   // Altname, falls eine Einheit keine Waffe nennt
 
 // Die Belagerer, jeder mit eigener Silhouette
 const FIG_SPAEHER = [
-  '...kkk...',
-  '..krrrk..',
-  '..ksssk..',
-  '...kkk...',
-  '..rrrr...',
-  '.krrrrk..',
-  '..rrrr...',
-  '..r..r...',
-  '..k..k...',
+  '...........',
+  '....kkk....',
+  '...kRRRk...',
+  '...krrrk...',
+  '...kSSsk...',
+  '....kkk....',
+  '...rRRRr...',
+  '..krRRRrk..',
+  '...rrrrr...',
+  '...rrrrr...',
+  '...kr.rk...',
+  '...kr.rk...',
+  '...K...K...',
 ];
 const FIG_ARMBRUSTER = [
-  '...kkk...',
-  '..krrrk..',
-  '..ksssk..',
-  '...kkk...',
-  'mmmmmmmmm',
-  '.krrrrrk.',
-  '..rrrrr..',
-  '..r...r..',
-  '..k...k..',
+  '....kkk....',
+  '...kRRRk...',
+  '...krrrk...',
+  '...kSSsk...',
+  '....kkk....',
+  '..krRRRrk..',
+  'MMMMMMMMMMM',
+  '.krrYYYrrk.',
+  '..krrrrrk..',
+  '..krrrrrk..',
+  '...kr.rk...',
+  '...kr.rk...',
+  '...K...K...',
 ];
 const FIG_RITTER = [
-  '....R....',
-  '..kkkkk..',
-  '..kmmmk..',
-  '..kkmkk..',
-  '.mrRRRrm.',
-  '.mkrrrkm.',
-  '..rrrrr..',
-  '..r...r..',
-  '..k...k..',
+  '.....R.....',
+  '.....R.....',
+  '...kMMMk...',
+  '...kMMMk...',
+  '...kmkmk...',
+  '...kMMMk...',
+  '.MkrRRRrkM.',
+  '.MkrRRRrkM.',
+  '.Mkrrrrrk..',
+  '..krrrrrk..',
+  '...kr.rk...',
+  '...kr.rk...',
+  '...K...K...',
 ];
 const FIG_MEISTER = [
-  '..g.g.g..',
-  '..kgggk..',
-  '..kmmmk..',
-  '..kkmkk..',
-  'RrRRRRRrR',
-  'RkrRRRrkR',
-  'Rrrrrrrrr',
-  '.rr...rr.',
-  '.kk...kk.',
+  '..G.G.G.G..',
+  '..kGGGGGk..',
+  '...kMMMk...',
+  '...kmkmk...',
+  '...kMMMk...',
+  '.RkRRRRRkR.',
+  'RRkrRRRrkRR',
+  'RRkrRRRrkRR',
+  'RRkrrrrrkRR',
+  '.RkrrrrrkRR',
+  '..krr.rrk..',
+  '..kr...rk..',
+  '..K.....K..',
 ];
 
 // Welche Figur zu welchem Gegner gehoert
@@ -3470,77 +3590,20 @@ function drawBanner(x, y, farbe) {
 
 function drawCastle() {
   const C = CASTLE;
-  const H = 32;           // Hoehe des Mauerrings
-  const ECK = 15;         // wie weit die Ecktuerme darueber hinausragen
-  const TOR = 12;         // Hoehe des Torhauses ueber dem Ring
-  const KEEP = 42;        // zusaetzliche Hoehe des Bergfrieds
+  const HOCH = 92;   // wie hoch die Burg samt Dach und Fahne aufragt
 
-  drawBauSchatten(C.col, C.row, C.w, C.h, H + KEEP);
-  drawBlock(C.col, C.row, C.w, C.h, H, BURG);
-  drawMerlons(C.col, C.row, C.w, C.h, H, STEIN);
+  drawBauSchatten(C.col, C.row, C.w, C.h, 30);
+  // Die Burg laeuft ueber dieselbe Engine wie die Tuerme: gleiches Licht,
+  // gleiche Stoffe, gleiche Silhouettensprache.
+  zeichneModell('burg', C.col, C.row, 1);
 
-  // Vier Ecktuerme. Sie machen aus dem Klotz eine Burg.
-  const e = 0.56;
-  const ecken = [
-    [C.col - 0.12, C.row - 0.12],
-    [C.col + C.w - e + 0.12, C.row - 0.12],
-    [C.col - 0.12, C.row + C.h - e + 0.12],
-    [C.col + C.w - e + 0.12, C.row + C.h - e + 0.12],
-  ];
-  for (const [ec, er] of ecken) {
-    drawBlock(ec, er, e, e, H + ECK, STEIN_HELL);
-    drawMerlons(ec, er, e, e, H + ECK, STEIN);
-    drawDach(ec + 0.04, er + 0.04, e - 0.08, e - 0.08, H + ECK + 7, 13, '#8e3f34', '#6a2c26');
-  }
-
-  // Torhaus in der zum Feld zeigenden Wand, mit zwei Flankentuermen
-  const tr = C.row + C.h / 2 - 0.55;
-  drawBlock(C.col + C.w - 0.34, tr, 0.34, 1.1, H + TOR, STEIN_HELL);
-  drawMerlons(C.col + C.w - 0.34, tr, 0.34, 1.1, H + TOR, STEIN);
-
-  const gx = isoX(C.col + C.w, C.row + C.h / 2 + 0.5);
-  const gy = isoY(C.col + C.w, C.row + C.h / 2 + 0.5);
-  // Torbogen
-  ctx.fillStyle = '#2a1c10';
-  ctx.beginPath();
-  ctx.moveTo(gx - 1, gy - 4);
-  ctx.lineTo(gx + 10, gy + 2);
-  ctx.lineTo(gx + 10, gy - 14);
-  ctx.quadraticCurveTo(gx + 4.5, gy - 24, gx - 1, gy - 19);
-  ctx.closePath();
-  ctx.fill();
-  // Fallgitter: ein paar helle Streben im Dunkel
-  ctx.strokeStyle = 'rgba(206,184,145,0.55)';
-  ctx.lineWidth = 1;
-  for (let i = 1; i <= 3; i++) {
-    const t = i / 4;
-    ctx.beginPath();
-    ctx.moveTo(gx - 1 + 11 * t, gy - 4 + 6 * t);
-    ctx.lineTo(gx - 1 + 11 * t, gy - 19 - 1 * t);
-    ctx.stroke();
-  }
-
-  // Bergfried am hinteren Ende
-  drawBlock(C.col + 0.2, C.row + 0.5, 1.6, 2.0, KEEP, STEIN_HELL, H);
-  drawMerlons(C.col + 0.2, C.row + 0.5, 1.6, 2.0, KEEP, STEIN, H + KEEP - 7);
-  drawDach(C.col + 0.34, C.row + 0.64, 1.32, 1.72, H + KEEP + 7, 26, '#8e3f34', '#6a2c26');
-
-  // Ein Fenster im Bergfried, warm beleuchtet
-  const fx = isoX(C.col + 1.8, C.row + 1.5);
-  const fy = isoY(C.col + 1.8, C.row + 1.5) - H - KEEP * 0.55;
-  ctx.fillStyle = '#3a2a1a';
-  ctx.fillRect(fx - 2, fy - 6, 4, 7);
-  ctx.fillStyle = 'rgba(255,206,110,' + (wenigerBewegung ? 0.8 : 0.6 + Math.sin(animZeit * 2.1) * 0.2).toFixed(2) + ')';
-  ctx.fillRect(fx - 1, fy - 5, 2, 5);
-
-  const kx = isoX(C.col + 1, C.row + 1.45);
-  const ky = isoY(C.col + 1, C.row + 1.45) - H - KEEP;
-  drawBanner(kx + 11, ky + 4, '#2f5fa8');
-  if (state.castleHp < C.maxHp) drawHpBar(kx, ky - 18, 46, state.castleHp, C.maxHp, '#c0392b');
+  const kx = isoX(C.col + 1, C.row + 1.2);
+  const ky = isoY(C.col + 1, C.row + 1.2) - HOCH;
+  if (state.castleHp < C.maxHp) drawHpBar(kx, ky, 46, state.castleHp, C.maxHp, '#c0392b');
 
   const links = isoX(C.col, C.row + C.h) - TW / 2;
   const rechts = isoX(C.col + C.w, C.row) + TW / 2;
-  const oben = isoY(C.col, C.row) - H - KEEP - 22;
+  const oben = isoY(C.col, C.row) - HOCH - 14;
   const unten = isoY(C.col + C.w, C.row + C.h) + TH;
   addPick('castle', C, links, oben, rechts - links, unten - oben);
 }
@@ -6334,11 +6397,17 @@ document.getElementById('reward-skip').addEventListener('click', () => nimmBeloh
 // im Browser. Ausgeben und Einlesen gehen ueber das Textfeld, damit man eine
 // Figur auch weitergeben kann.
 
+// Klein ist Schatten, gross ist Licht. Dieselbe Ordnung wie bei den Stoffen
+// der Bauwerke, damit Figuren und Mauern dasselbe Licht sprechen.
 const WERK_FARBEN = [
-  ['.', 'leer'], ['k', 'Kontur'], ['s', 'Haut'],
-  ['b', 'Tuch dunkel'], ['B', 'Tuch hell'],
-  ['r', 'Wappen dunkel'], ['R', 'Wappen hell'],
-  ['m', 'Metall'], ['y', 'Holz'], ['g', 'Gold'],
+  ['.', 'leer'], ['k', 'Kontur'], ['K', 'Kontur hell'],
+  ['s', 'Haut'], ['S', 'Haut hell'],
+  ['b', 'Tuch'], ['B', 'Tuch hell'],
+  ['r', 'Wappen'], ['R', 'Wappen hell'],
+  ['m', 'Metall'], ['M', 'Metall hell'],
+  ['y', 'Holz'], ['Y', 'Holz hell'],
+  ['g', 'Gold'], ['G', 'Gold hell'],
+  ['w', 'Tuch weiss'], ['W', 'Weiss'],
 ];
 
 const WERK_LISTE = [
@@ -6394,8 +6463,10 @@ function renderWerkstatt() {
     wahl.appendChild(b);
   });
 
-  // Das Raster
+  // Das Raster richtet sich nach der Figur, nicht umgekehrt
   werkRaster.innerHTML = '';
+  werkRaster.style.gridTemplateColumns = 'repeat(' + zeilen[0].length + ', 1fr)';
+  werkRaster.style.aspectRatio = zeilen[0].length + ' / ' + zeilen.length;
   for (let r = 0; r < zeilen.length; r++) {
     for (let c = 0; c < zeilen[r].length; c++) {
       const feld = document.createElement('div');
@@ -6486,8 +6557,11 @@ document.getElementById('werk-einlesen').addEventListener('click', () => {
   const feld = document.getElementById('werk-text');
   try {
     const zeilen = JSON.parse(feld.value);
-    if (!Array.isArray(zeilen) || zeilen.length !== 9 || zeilen.some(z => typeof z !== 'string' || z.length !== 9)) {
-      throw new Error('Eine Figur sind neun Zeilen zu neun Zeichen.');
+    const vorlage = WERK_LISTE[werkWahl].standard;
+    const hoch = vorlage.length, breit = vorlage[0].length;
+    if (!Array.isArray(zeilen) || zeilen.length !== hoch ||
+        zeilen.some(z => typeof z !== 'string' || z.length !== breit)) {
+      throw new Error('Eine Figur sind ' + hoch + ' Zeilen zu ' + breit + ' Zeichen.');
     }
     werkSchreibe(zeilen);
     renderWerkstatt();
