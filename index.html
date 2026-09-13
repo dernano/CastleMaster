@@ -1135,7 +1135,7 @@
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
         <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
-        <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — der <b>Wachturm</b> zum Beispiel. Sie gehen <b>einmal je Kampf</b>, und die ausgespielte Karte kommt danach <b>nicht</b> in den Ablagestapel: sie liegt bis zur nächsten Station beiseite und wird in diesem Kampf nicht mehr gezogen. Wie viele es sind, steht oben am Siegel. Über jeder weiteren Karte derselben Art liegt bis zum Ende der Station das rote Band <b>Verbraucht</b>; ungespielt wandert die wie jede andere in die Ablage. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
+        <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — der <b>Wachturm</b> zum Beispiel. Sie gehen <b>einmal je Kampf</b>, und danach ist die <b>ganze Art aus dem Spiel</b>: die gespielte Karte und jede weitere desselben Namens wandern beiseite, aus der Hand, dem Zugstapel und der Ablage. Du ziehst sie an dieser Station nicht wieder. Wie viele beiseiteliegen, steht oben am Siegel; zur nächsten Station kommen alle zurück ins Deck. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
@@ -7861,13 +7861,38 @@ function wendeKarteAn(ziel) {
 
 // Gespielte Karten verschwinden nicht, sie kommen auf den Ablagestapel
 // und damit spaeter wieder ins Deck. Eine Sonderzug-Karte nicht: die liegt
-// bis zum Ende der Station beiseite und wird in diesem Kampf nicht wieder
-// gezogen. Ungespielt wandert auch sie ganz normal in die Ablage - beiseite
-// legt sie erst das Ausspielen.
+// bis zum Ende der Station beiseite. Ungespielt wandert auch sie ganz normal
+// in die Ablage - beiseite legt sie erst das Ausspielen.
 function removeFromHand(card) {
   state.hand = state.hand.filter(c => c.uid !== card.uid);
-  if (card.einmalJeKampf) state.beiseite.push(card);
-  else state.discard.push(card);
+  if (card.einmalJeKampf) {
+    state.beiseite.push(card);
+    raeumeSonderzug(card.id);
+  } else state.discard.push(card);
+}
+
+/**
+ * Der Sonderzug nimmt die ganze Art aus dem Spiel, nicht nur das eine Blatt:
+ * jede weitere Karte desselben Namens geht mit beiseite - aus der Hand, dem
+ * Zugstapel und der Ablage.
+ *
+ * Vorher blieben die Geschwister im Deck und trugen nur ein rotes Band. Das
+ * war zweimal schlecht: man zog den Rest des Kampfes Karten, die nichts mehr
+ * konnten, und der Zugstapel war mit ihnen verstopft. Eine Karte, die in
+ * diesem Kampf nicht mehr gespielt werden kann, gehoert nicht mehr ins Deck.
+ */
+function raeumeSonderzug(id) {
+  const raus = (liste) => {
+    const bleibt = [];
+    for (const c of liste) {
+      if (c.id === id) state.beiseite.push(c);
+      else bleibt.push(c);
+    }
+    return bleibt;
+  };
+  state.hand = raus(state.hand);
+  state.draw = raus(state.draw);
+  state.discard = raus(state.discard);
 }
 
 /** Holt die beiseitegelegten Karten zurueck. Das Ende des Kampfes loest es. */
@@ -9400,7 +9425,7 @@ function karteRegel(card) {
     ? (() => { const t = teile.join('. '); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; })()
     : '';
   // Die Grenze steht vorn: sie entscheidet, ob die Karte ueberhaupt geht.
-  if (card.einmalJeKampf) return ('Einmal je Kampf, dann beiseite. ' + satz).trim();
+  if (card.einmalJeKampf) return ('Einmal je Kampf, dann aus dem Spiel. ' + satz).trim();
   return satz;
 }
 
@@ -9496,7 +9521,7 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
     const sz = document.createElement('div');
     sz.className = 'card-sonderzug';
     sz.textContent = 'Sonderzug';
-    sz.title = 'Einmal je Kampf. Danach liegt die Karte bis zur nächsten Station beiseite.';
+    sz.title = 'Einmal je Kampf. Danach liegen alle Karten dieser Art bis zur nächsten Station beiseite.';
     el.appendChild(sz);
   }
 

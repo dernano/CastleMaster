@@ -1749,19 +1749,27 @@ Ablagestapel — die Grenze war eine unsichtbare Buchführung mit einem roten Ba
 als einzigem Hinweis.
 
 Jetzt trägt sie das Schlagwort **Sonderzug** gedruckt, und die Regel steht im
-Stapel statt in einer Variablen: die ausgespielte Karte kommt **weder in die
-Ablage noch zurück ins Deck**, sondern liegt bis zum Ende der Station beiseite
-(`state.beiseite`). Oben in der Kopfzeile zeigt ein Siegel, wie viele es sind.
-Am Ende des Kampfes — gehaltene Station oder Sturm — gehen sie zurück in die
-Ablage.
+Stapel statt in einer Variablen: nach dem Ausspielen ist die **ganze Art aus
+dem Spiel**. Nicht nur das gespielte Blatt — jede weitere Karte desselben
+Namens geht mit beiseite, aus der Hand, dem Zugstapel und der Ablage
+(`raeumeSonderzug`). Oben in der Kopfzeile zeigt ein Siegel, wie viele
+beiseiteliegen. Am Ende des Kampfes — gehaltene Station oder Sturm — kommen
+alle zurück in die Ablage.
+
+Die erste Fassung ließ die Geschwister im Deck und gab ihnen nur ein rotes
+Band **Verbraucht**. Das war zweimal schlecht: man zog den Rest des Kampfes
+Karten, die nichts mehr konnten, und der Zugstapel war mit ihnen verstopft.
+Eine Karte, die in diesem Kampf nicht mehr gespielt werden kann, gehört nicht
+mehr ins Deck. Das Band bleibt als Auffanglinie für den seltenen Fall, dass
+eine solche Karte mitten im Kampf ins Deck kommt.
 
 Ungespielt wandert eine Sonderzug-Karte ganz normal in die Ablage: beiseite
-legt sie erst das Ausspielen. Weitere Karten derselben Art tragen bis zum Ende
-der Station weiterhin das rote Band **Verbraucht**.
+legt sie erst das Ausspielen.
 
-Nebenbei ist das ein kleiner Vorteil für den Spieler: die verbrauchte Karte
-liegt nicht mehr im Zugstapel und verstopft ihn nicht. Das gleicht einen Teil
-der siebzehn Punkte Siegquote aus, die die Einmal-Regel gekostet hat.
+Nebenbei ist das ein Vorteil für den Spieler — ein verbrauchtes Blatt
+verstopft den Zugstapel nicht mehr. Acht Feldzüge enden weiterhin im Schnitt
+an Station 14,3, bei zwei Siegen statt einem. Das gleicht einen Teil der
+siebzehn Punkte Siegquote aus, die die Einmal-Regel gekostet hat.
 
 ## Schwierigkeit
 
