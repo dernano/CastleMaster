@@ -800,8 +800,8 @@ Waldläufer als zweitem Sonderzug sind es jetzt sieben Karten.
 
 ### Zinnen
 
-Die einzige neue Karte. Sie sind **kein Heilen und kein Block, der am Zugende
-verfällt** — sie liegen als eigener Vorrat oben auf den Lebenspunkten des Turms:
+Die einzige neue Karte. Sie liegen als eigener Vorrat oben auf den
+Lebenspunkten des Turms:
 
 ```js
 const aufZinnen = Math.min(turm.zinnen || 0, e.dmg);
@@ -809,10 +809,30 @@ turm.zinnen -= aufZinnen;
 turm.hp -= e.dmg - aufZinnen;
 ```
 
-Was am Stein zerspringt, erreicht den Turm nicht. Früh gesetzt sind sie später
-noch da; aufgebraucht sind sie aufgebraucht. Über dem Turm stehen sie auch als
-Zinnen da — ein Stein je zwei Punkte, höchstens zehn, daneben die genaue Zahl
-(`drawZinnen`). Ein Balken wäre einfacher gewesen, aber die Karte heißt Zinnen.
+Was am Stein zerspringt, erreicht den Turm nicht. Über dem Turm stehen sie auch
+als Zinnen da — ein Stein je zwei Punkte, höchstens zehn, daneben die genaue
+Zahl (`drawZinnen`). Ein Balken wäre einfacher gewesen, aber die Karte heißt
+Zinnen.
+
+#### Deckung: sie halten einen Zug
+
+Lange waren sie ein Vorrat: früh gesetzt, später noch da. Jetzt sind sie
+**Block wie in Slay the Spire** — was der Gegnerzug nicht zerschlägt, verfällt
+am Rundenende (`verfalleZinnen`, aufgerufen in `zugAbschluss` nach dem
+Gegnerzug und vor der neuen Hand). Auf dem Blatt steht dafür das Schlagwort
+**Deckung**, in Stein statt in Gold.
+
+Der Unterschied ist nicht die Zahl, sondern die Frage. Als Vorrat war die Karte
+eine Anlage: irgendwann spielen, es hält ja. Als Deckung ist sie eine Antwort
+auf genau den Angriff, der jetzt kommt — und damit stellt sich „schütze ich
+oder schieße ich" in jeder Runde neu.
+
+Gemessen hat das den Bot **nicht** ausgebremst: über je acht Feldzüge kommt er
+vorher bis Station 10,1 und nachher bis 11,4, die Sturmquote bleibt bei rund
+der Hälfte. Das ist kein Widerspruch, sondern der Beleg dafür, wofür die Regel
+da ist: Der Bot spielt Zinnen ohnehin reaktiv auf den Turm, dem der nächste
+Schlag gilt — genau die Spielweise, die die neue Regel erzwingt. Teurer wird
+die Änderung nur für den, der sie wie eine Investition benutzt hat.
 
 ### Was das Deck gekostet hat, und was es zurückbekam
 
@@ -1481,8 +1501,63 @@ Gemessen (offline gerendert, Spitzenpegel / Grundton):
 
 Nichts kommt auch bei „Laut" (×1,6) in die Nähe der Übersteuerung.
 
+### Pfeil und Bogen
+
+Ein Schuss war ein Augenblick: die Zahl stand über dem Gegner, bevor der Pfeil
+bei ihm war, und der Pfeil selbst war ein aufrechtes Rechteck von drei mal
+sechs Punkten — ein Strich quer zur eigenen Flugbahn. Jetzt hat der Schuss drei
+Takte, und zwar nur im Bild; der Schaden ist längst abgezogen, wenn der erste
+Takt anfängt (`spaeter` schiebt ausschließlich Schmuck, nie Spielstand).
+
+**Aufziehen** (0 bis 0,2 s). Die Sehne kommt zurück, die Wurfarme biegen sich
+mit, der aufgelegte Pfeil erscheint. Dazu knarzt Holz unter Last: ein
+anschwellendes Rauschen hinter einem wandernden Bandpass (260 → 760 Hz), leise
+genug, um den Schuss anzukündigen statt ihn zu übertönen.
+
+Gezeichnet statt gepixelt — nur so lässt sich die Sehne stufenlos aufziehen.
+Ein gepixelter Bogen bräuchte ein Dutzend Zwischenbilder je Figur, und die
+Werkstatt müsste sie alle kennen. Solange gespannt wird, verschwindet der
+gerade Strich, den die Figur als Bogen trägt (`ohneBogen`); sonst lägen zwei
+Bogen übereinander und die aufgezogene Sehne sähe aus wie ein Riss quer durch
+den Mann. Damit der Bogen nicht neben dem Mann steht, rechnen Figuren und Bogen
+mit denselben Punkten (`batallionStellungen`).
+
+**Loslassen** (0,2 s). Rückstoß, Bildblitz, die drei Pfeile fliegen los — und
+der Ton aus drei Schichten, weil ein Bogen aus drei Dingen klingt: die Sehne
+schnalzt (kurzes helles Rauschen, das nach unten fährt), die Wurfarme schlagen
+an (ein tiefer Ton **auf der Leiter**, damit der Schlag zur Musik gehört), und
+dreißig Millisekunden später zieht der Pfeil ab (ein leises Zischen, das
+nachläuft). Die melodische Linie der Salve bleibt darüber: je mehr Türme in
+einem Zug feuern, desto höher steigt sie.
+
+**Einschlag** (nach weiteren 0,28 s Flug). Erst jetzt die Zahl, der Staub und
+ein dumpfes Tock — Holz in Holz, kein Klirren. Ein Pfeil bleibt stecken und
+verblasst; ein Einschlag, der nichts hinterlässt, wirkt wie ein Fehlschuss.
+
+Der Pfeil selbst liegt jetzt **in** seiner Bahn: Schaft, Spitze aus Eisen, zwei
+Fiedern, und die Neigung kommt aus der Bahn (der nächste Punkt gegen den
+jetzigen). Unterwegs zeigt er darum nach oben und fällt zum Ziel hin. Ein
+Katapult wirft dagegen keinen Pfeil: sein Stein dreht sich im Flug um sich
+selbst, und schon von weitem ist zu sehen, was da kommt.
+
+Die Spannbewegung bekommt, wer einen Bogen trägt (`BOGEN_ARTEN`: Bogenschütze,
+Waldläufer, Feuerschütze). Armbrust und Schleuder haben eine andere Bewegung
+und behalten den Schuss ohne Vorlauf.
+
+Gemessen, offline gerendert:
+
+| | Spitze | Hz | Dauer |
+| --- | --- | --- | --- |
+| Spannen | 0,025 | 1305 | 0,18 s |
+| Bogen (loslassen) | 0,073 | 1848 | 0,14 s |
+| Einschlag | 0,040 | 390 | 0,05 s |
+
+Die drei stehen im richtigen Verhältnis zueinander: das Spannen ein Drittel des
+Schusses, der Einschlag dazwischen.
+
 Wer im System weniger Bewegung eingestellt hat, bekommt alles ohne Animation,
-die Zahlen und Effekte bleiben lesbar.
+die Zahlen und Effekte bleiben lesbar — `spaeter` führt dann sofort aus, alle
+drei Takte fallen in einen Augenblick zusammen.
 
 Der Boden wird einmal auf eine Zwischenfläche gemalt und danach nur noch
 kopiert, das hält die Bildrate stabil.
@@ -1975,6 +2050,46 @@ der Stationsnummer wächst. Teure Gegnertypen schalten sich erst später frei.
 Kein Typ stellt mehr als einen Teil des Aufgebots, damit späte Stationen nicht
 nur aus Rammen bestehen. Höchstens acht Gegner stehen gleichzeitig auf dem Feld,
 der Rest wartet im Lager. Spätere Stationen schicken zähere und stärkere Gegner.
+
+### Der Anfang war zu billig
+
+Station 1 bestand aus **zwei Spähern mit je fünf Lebenspunkten**. Das war keine
+Verteidigung, das war Aufräumen, und die drei ersten Stationen liefen von
+selbst durch.
+
+Drei Dinge hielten sie so klein, und alle drei mussten angefasst werden:
+
+- **Das Budget** fing bei `4 + 1,55 × Station` an, also bei sechs Punkten.
+  Jetzt: `6,5 + 1,35 × Station`. Höherer Achsenabschnitt, flachere Steigung —
+  an Station 1 ein Drittel mehr, ab Station 12 dasselbe wie vorher.
+- **Die Lebenspunkte** standen bei `1,15 + 0,07 × (Station − 1)`. Jetzt
+  `1,5 + 0,048 × (Station − 1)`: derselbe Griff, an Station 17 auf den Punkt
+  derselbe Wert wie vorher.
+- **Die Typengrenze** war der eigentliche Deckel. Sie erlaubt keinem Typ mehr
+  als `max(2, Budget/6)` Mann — an Station 1 ist aber nur ein einziger Typ
+  freigeschaltet, also *waren* zwei Späher das ganze Aufgebot, und mehr Budget
+  hätte daran nichts geändert. Wo es nur eine Sorte gibt, gibt es nichts zu
+  mischen: dort fällt die Grenze weg.
+
+Über je 40 gewürfelte Aufgebote gemessen, Lebenspunkte des ganzen Aufgebots:
+
+| Station | vorher | nachher |
+| --- | --- | --- |
+| 1 | 2 Gegner, 10 LP | **4 Gegner, 24 LP** |
+| 2 | 2,7 Gegner, 19 LP | 3,0 Gegner, 25 LP |
+| 3 | 2,5 Gegner, 28 LP | 3,4 Gegner, 42 LP |
+| 5 | 2,4 Gegner, 46 LP | 3,3 Gegner, 59 LP |
+| 8 | 3,5 Gegner, 64 LP | 3,6 Gegner, 79 LP |
+| 12 | 5,0 Gegner, 112 LP | 4,8 Gegner, 119 LP |
+| 17 | 5,5 Gegner, 174 LP | 5,8 Gegner, 175 LP |
+
+Härter werden sollte der Anfang, nicht das Ende — das Ende war schon hart
+genug. Genau das zeigt die Tabelle: an Station 1 mehr als das Doppelte, ab
+Station 12 ist der Unterschied Rauschen.
+
+Die **Wucht** der Gegner blieb, wo sie war. „Schwerer zu besiegen" heißt zäher,
+nicht härter schlagend; ein Späher, der plötzlich zuschlägt wie ein Ritter,
+wäre ein anderer Gegner, kein stärkerer.
 
 Eine **Vorhut** bekommt ein um ein Drittel größeres Budget, wählt bevorzugt
 schwere Typen, und ihre Gegner tragen ein Viertel mehr Lebenspunkte. Der

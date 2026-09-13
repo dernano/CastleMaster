@@ -646,6 +646,12 @@
     line-height: 1.25; text-align: center; padding: 2px 5px;
     max-width: 100%; white-space: normal;
   }
+  /* Deckung ist Stein: die Zinnen halten einen Zug, dann sind sie hin. */
+  .card-sonderzug.deckung {
+    color: #efeae0;
+    background: linear-gradient(180deg, #8b8478, #565046);
+    border-color: #3b362e;
+  }
   /* Fixiert ist kein Gold, sondern Stahl: die Karte gehoert nicht dem Deck. */
   .card-sonderzug.fixiert {
     color: #e8f0f7;
@@ -1167,7 +1173,7 @@
         <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
         <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — <b>Wachturm</b> und <b>Waldläufer</b> im Startdeck. Sie gehen <b>einmal je Kampf</b>, und danach ist die <b>ganze Art aus dem Spiel</b>: die gespielte Karte und jede weitere desselben Namens wandern beiseite, aus der Hand, dem Zugstapel und der Ablage. Du ziehst sie an dieser Station nicht wieder. Wie viele beiseiteliegen, steht oben am Siegel; zur nächsten Station kommen alle zurück ins Deck. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
-        <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
+        <li><b>Zinnen (Deckung):</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie halten <b>genau einen Zug</b>: was der Gegnerzug nicht zerschlägt, verfällt am Rundenende. Zinnen sind also die Antwort auf den Angriff, der jetzt kommt, kein Vorrat für später. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
         <li><b>Gewicht:</b> Wer schwer ist, geht langsam. Ein Späher steht nach fünf Zügen am Tor und kratzt; die Ramme braucht neun und schlägt ein Loch, das Katapult zwölf. Die bronzene Plakette markiert schweres Gerät — es kommt spät, aber es kommt.</li>
@@ -1652,7 +1658,15 @@ const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
 // in Slay the Spire.
 const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
 
-const rundenBudget = (runde) => Math.round((4 + runde * 1.55) * feldzugHaerte(state.feldzug || 1));
+/*
+ * Das Budget einer Station. Der Anfang war zu billig: mit 4 + 1,55 je Station
+ * stand an Station 1 ein Aufgebot von sechs Punkten - zwei Spaehern -, und die
+ * ersten drei Stationen liefen von selbst durch. Der Achsenabschnitt ist
+ * darum hoeher und die Steigung flacher: an Station 1 ein Drittel mehr, ab
+ * Station 12 dasselbe wie vorher. Haerter werden soll der Anfang, nicht das
+ * Ende - das Ende war schon hart genug.
+ */
+const rundenBudget = (runde) => Math.round((6.5 + runde * 1.35) * feldzugHaerte(state.feldzug || 1));
 const einsatzProZug = (runde) => 2 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
 const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
 // Jede Station hat eine Frist. Wer sie verstreichen laesst, dem rennt das
@@ -1674,8 +1688,14 @@ const zugFrist = (runde, typ) => {
 const MAX_GEGNER_AUF_DEM_FELD = 16;                  // wie viele gleichzeitig draussen stehen
 const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der Runde
 
-// Spaetere Runden schicken zaehere Gegner.
-const belagerungsHp = (runde) => (1.15 + 0.07 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+/*
+ * Spaetere Runden schicken zaehere Gegner - und die fruehen sind jetzt selbst
+ * zaeher. Ein Spaeher mit fuenf Lebenspunkten fiel an Station 1 auf den ersten
+ * Schuss; das war keine Verteidigung, das war Aufraeumen. Derselbe Griff wie
+ * beim Budget: mehr am Anfang, flacher ueber den Feldzug, an Station 17
+ * genau so viel wie vorher.
+ */
+const belagerungsHp = (runde) => (1.5 + 0.048 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
 // Die Wucht waechst mal, nicht plus. Ein Aufschlag von +10 auf alles haette
 // aus dem Spaeher (1) und der Ramme (11) spaete Zwillinge gemacht und genau
 // den Unterschied eingeebnet, der die Typen unterscheidbar macht.
@@ -1917,9 +1937,16 @@ function buildRoster(runde, typ) {
   if (endkampf) lager.push(makeEnemy('meister', runde));
 
   const gezaehlt = {};
-  // Kein Typ soll mehr als die Haelfte des Aufgebots stellen, sonst
-  // bestehen spaete Stationen nur noch aus Rammen.
-  const obergrenze = Math.max(2, Math.ceil(budget / 6));
+  /*
+   * Kein Typ soll mehr als einen Teil des Aufgebots stellen, sonst bestehen
+   * spaete Stationen nur noch aus Rammen.
+   *
+   * An Station 1 war diese Grenze aber der eigentliche Deckel: dort ist nur
+   * ein einziger Typ freigeschaltet, und zwei Spaeher waren das ganze
+   * Aufgebot - mehr Budget haette daran nichts geaendert. Wo es nur eine Sorte
+   * gibt, gibt es auch nichts zu mischen, also faellt die Grenze dort weg.
+   */
+  const obergrenze = offen.length > 1 ? Math.max(2, Math.ceil(budget / 6)) : 99;
   let schutz = 40;
   while (budget >= 2 && schutz-- > 0) {
     let bezahlbar = offen.filter(t => t.punkte <= budget && (gezaehlt[t.id] || 0) < obergrenze);
@@ -2361,6 +2388,17 @@ const istWasser = () => false;   // kein Wassergraben mehr, das Land laeuft durc
 // Die Logik bleibt sofort gueltig, nur die Darstellung laeuft nach.
 const BEWEGUNG_TEMPO = 4.4;   // Felder je Sekunde
 const PFEIL_DAUER = 0.28;     // Sekunden bis zum Einschlag
+/*
+ * Ein Schuss aus dem Bogen hat drei Takte: aufziehen, loslassen, nachschwingen.
+ * SPANN_LOS ist der Augenblick des Loslassens - dort verlaesst der Pfeil die
+ * Sehne, dort schnalzt der Ton, dort zuckt der Turm. SPANN_DAUER laeuft
+ * darueber hinaus, weil die Sehne danach noch ausschwingt.
+ */
+const SPANN_LOS = 0.2;
+const SPANN_DAUER = 0.42;
+// Wer einen Bogen traegt, spannt ihn auch. Armbrust und Schleuder haben eine
+// andere Bewegung und bekommen sie nicht.
+const BOGEN_ARTEN = new Set(['bogen', 'waldlaeufer', 'fackel']);
 // ---------- Ton ----------
 // Alles wird zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
 /*
@@ -2562,6 +2600,37 @@ function klang(art) {
     q.start(jetzt + spaeter);
   };
 
+  /**
+   * Gefiltertes Rauschen mit eigener Huelle - fuer alles, was keine Tonhoehe
+   * hat: die Sehne, der Flug, der Einschlag. `hz` ist die Mitte des Filters,
+   * `bis` faehrt sie waehrend des Klangs dorthin; `anstieg` ist der Anteil der
+   * Dauer bis zum Scheitel (klein = Schlag, gross = Anschwellen).
+   */
+  const rausch = (dauer, laut, hz, art3 = {}) => {
+    const n = Math.max(16, Math.floor(k.sampleRate * dauer));
+    const puffer = k.createBuffer(1, n, k.sampleRate);
+    const d = puffer.getChannelData(0);
+    const anstieg = art3.anstieg === undefined ? 0.06 : art3.anstieg;
+    for (let i = 0; i < n; i++) {
+      const f = i / n;
+      const h = f < anstieg ? f / anstieg
+        : Math.pow(Math.max(0, 1 - (f - anstieg) / (1 - anstieg)), art3.form || 2);
+      d[i] = (Math.random() * 2 - 1) * h;
+    }
+    const beginn = jetzt + (art3.spaeter || 0);
+    const q = k.createBufferSource();
+    q.buffer = puffer;
+    const fl = k.createBiquadFilter();
+    fl.type = art3.typ || 'bandpass';
+    fl.Q.value = art3.q === undefined ? 1 : art3.q;
+    fl.frequency.setValueAtTime(hz, beginn);
+    if (art3.bis) fl.frequency.exponentialRampToValueAtTime(art3.bis, beginn + dauer);
+    const g = k.createGain();
+    g.gain.value = laut;
+    q.connect(fl); fl.connect(g); g.connect(huelle);
+    q.start(beginn);
+  };
+
   if (art === 'schritt') {
     // Leise und tief. Es passiert oft, also darf es kaum auffallen - aber es
     // hat eine Tonhoehe, und die liegt in der Leiter.
@@ -2572,6 +2641,32 @@ function klang(art) {
     // Ein Zupfer, der die Leiter hinaufgeht: die Salve wird eine Figur.
     tonLauf = (tonLauf + 1) % 14;
     ton(stufe(14 + tonLauf), 0.2, 0.05, { glanz: 11, oberton: 0.45, anschlag: 0.004 });
+  } else if (art === 'spannen') {
+    /*
+     * Der Bogen wird aufgezogen: Holz unter Last. Ein knarzendes Anschwellen,
+     * kaum ueber der Hoerschwelle - es soll den Schuss ankuendigen, nicht ihn
+     * uebertoenen.
+     */
+    rausch(0.18, 0.09, 300, { bis: 760, q: 1.6, anstieg: 0.8, form: 1.2 });
+  } else if (art === 'bogen') {
+    /*
+     * Der Schuss selbst, aus drei Schichten, weil ein Bogen aus drei Dingen
+     * klingt: die Sehne schnalzt (kurzes helles Rauschen, das nach unten
+     * faehrt), die Wurfarme schlagen an (ein tiefer, sofort verklingender Ton
+     * auf der Leiter, damit der Schlag zur Musik passt), und der Pfeil zieht
+     * ab (ein leises Zischen, das nachlaeuft).
+     *
+     * Die Reihenfolge ist die Physik: schnalzen und schlagen im selben
+     * Augenblick, das Zischen dreissig Millisekunden spaeter - vorher ist der
+     * Pfeil noch nicht unterwegs.
+     */
+    rausch(0.07, 0.075, 2300, { bis: 900, q: 1.1, form: 3 });
+    ton(stufe(3), 0.075, 0.05, { typ: 'sine', glanz: 3, oberton: 0, anschlag: 0.002 });
+    rausch(0.22, 0.02, 760, { bis: 300, q: 2.4, spaeter: 0.03, anstieg: 0.18, form: 1.6 });
+  } else if (art === 'einschlag') {
+    // Der Pfeil steckt: ein dumpfes Tock, kein Klirren. Holz in Holz.
+    rausch(0.055, 0.1, 820, { typ: 'lowpass', q: 0.7, form: 3 });
+    ton(stufe(5), 0.09, 0.03, { typ: 'triangle', glanz: 2.5, biegen: 0.8, oberton: 0 });
   } else if (art === 'treffer') {
     // Der Einschlag antwortet eine Quinte tiefer und biegt sich nach unten.
     ton(stufe(7 + (tonLauf % 7)), 0.26, 0.055, { typ: 'sawtooth', glanz: 4, biegen: 0.93 });
@@ -2620,6 +2715,9 @@ let blitzSchirm = 0;      // kurzes Aufhellen des ganzen Bildes
 
 function schirmBlitz(staerke) { if (!wenigerBewegung) blitzSchirm = Math.max(blitzSchirm, staerke); }
 const projektile = [];
+// Pfeile, die im Ziel stecken geblieben sind. Sie verblassen nach einem
+// Augenblick - ein Einschlag, der nichts hinterlaesst, wirkt wie ein Fehlschuss.
+const steckPfeile = [];
 const zahlen = [];
 const leichen = [];
 
@@ -2812,20 +2910,33 @@ function zeigeZahl(col, row, text, farbe) {
   zahlen.push({ col, row, text, farbe, t: 0, dauer: 0.9 });
 }
 
-function zeigePfeil(vonCol, vonRow, zuCol, zuRow, farbe, versatz) {
+function zeigePfeil(vonCol, vonRow, zuCol, zuRow, farbe, versatz, art) {
   if (wenigerBewegung) return;
   projektile.push({ vonCol, vonRow, zuCol, zuRow, farbe, versatz: versatz || 0,
+    art: art || 'pfeil', dreh: Math.random() * 6.28,
     t: 0, dauer: PFEIL_DAUER });
 }
 
 /**
  * Eine ganze Salve: aus jeder der drei Stellungen eines Batallions fliegt
  * ein Geschoss, kurz nacheinander. Wer im Bild steht, schiesst auch.
+ * `vorlauf` ist die Spannzeit - erst wenn die Sehne los ist, fliegt etwas.
  */
-function schussSalve(vonCol, vonRow, zuCol, zuRow, farbe, mitte) {
+function schussSalve(vonCol, vonRow, zuCol, zuRow, farbe, mitte, vorlauf, art) {
   batallionPlaetze(mitte || 3).forEach((versatz, i) => {
-    setTimeout(() => zeigePfeil(vonCol, vonRow, zuCol, zuRow, farbe, versatz), i * 55);
+    spaeter((vorlauf || 0) + i * 0.055,
+      () => zeigePfeil(vonCol, vonRow, zuCol, zuRow, farbe, versatz, art));
   });
+}
+
+/**
+ * Etwas nach `sek` Sekunden tun - oder sofort, wenn der Spieler wenig Bewegung
+ * eingestellt hat. Nur fuer Schmuck: der Spielstand aendert sich immer sofort,
+ * sonst haengt die Regel an einer Zeitschaltung.
+ */
+function spaeter(sek, was) {
+  if (wenigerBewegung || sek <= 0) { was(); return; }
+  setTimeout(was, sek * 1000);
 }
 
 function ruetteln(staerke) {
@@ -4598,11 +4709,102 @@ function drawSprite(rows, x, y, scale, context = ctx, palette = PAL) {
  */
 function zeichneBatallion(mitteFigur, seiteFigur, x, y, mitte, kontext, palette) {
   const k = kontext || ctx;
+  for (const st of batallionStellungen(x, y, mitte)) {
+    drawSprite(st.mitte ? mitteFigur : seiteFigur, st.x, st.y, st.s, k, palette);
+  }
+}
+
+/**
+ * Wo die drei Mann eines Batallions stehen und wie gross jeder ist. Frueher
+ * rechnete das nur `zeichneBatallion` fuer sich; seit der Bogen als eigene
+ * Zeichnung ueber die Figuren gelegt wird, brauchen beide dieselben Punkte -
+ * sonst spannt einer den Bogen neben sich.
+ */
+function batallionStellungen(x, y, mitte) {
   const seite = Math.max(1, mitte - 1);
   const abstand = BATALLION_ABSTAND(mitte);
-  drawSprite(seiteFigur, x - abstand, y - mitte * 1.5, seite, k, palette);
-  drawSprite(seiteFigur, x + abstand, y - mitte * 1.5, seite, k, palette);
-  drawSprite(mitteFigur, x, y, mitte, k, palette);
+  return [
+    { x: x - abstand, y: y - mitte * 1.5, s: seite, mitte: false },
+    { x: x + abstand, y: y - mitte * 1.5, s: seite, mitte: false },
+    { x, y, s: mitte, mitte: true },
+  ];
+}
+
+/**
+ * Dieselbe Figur ohne ihren Bogen. Waehrend des Schusses tritt an seine Stelle
+ * ein gezeichneter, gebogener Bogen; bliebe der gerade Strich der Figur
+ * stehen, lagen zwei Bogen uebereinander und die aufgezogene Sehne sah aus wie
+ * ein Riss quer durch den Mann.
+ */
+const ohneBogenMerker = new Map();
+function ohneBogen(figur) {
+  let fertig = ohneBogenMerker.get(figur);
+  if (!fertig) {
+    fertig = figur.map(zeile => zeile.replace(/[yY]/g, '.'));
+    ohneBogenMerker.set(figur, fertig);
+  }
+  return fertig;
+}
+
+/**
+ * Ein Bogen im Anschlag, gezeichnet statt gepixelt: nur so laesst sich die
+ * Sehne stufenlos aufziehen. `zug` ist 0 (entspannt) bis 1 (ganz aufgezogen).
+ * Die Masse folgen der Figur - sie ist elf Felder breit und dreizehn hoch, der
+ * Bogen steht in Spalte 9 ueber die Zeilen 1 bis 11.
+ */
+function zeichneBogen(x, y, s, zug) {
+  const bx = x + 3.7 * s, by = y - 7 * s, h = 4.1 * s;
+  const bauch = 0.8 * s + zug * 0.9 * s;   // die Wurfarme biegen sich mit
+  const zx = bx - zug * 2.2 * s;           // wohin die Sehne gezogen ist
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = PAL.Y;
+  ctx.lineWidth = Math.max(1.3, s * 0.55);
+  ctx.beginPath();
+  ctx.moveTo(bx, by - h);
+  ctx.quadraticCurveTo(bx + bauch * 2, by, bx, by + h);
+  ctx.stroke();
+  // Die Sehne: zwei gerade Stuecke ueber den Nockpunkt
+  ctx.strokeStyle = 'rgba(240,236,220,0.9)';
+  ctx.lineWidth = Math.max(1, s * 0.3);
+  ctx.beginPath();
+  ctx.moveTo(bx, by - h);
+  ctx.lineTo(zx, by);
+  ctx.lineTo(bx, by + h);
+  ctx.stroke();
+  // Der aufgelegte Pfeil liegt auf der Faust und reicht ueber den Bogen hinaus
+  if (zug > 0.12) {
+    ctx.strokeStyle = '#e8dcc0';
+    ctx.lineWidth = Math.max(1, s * 0.36);
+    ctx.beginPath();
+    ctx.moveTo(zx, by);
+    ctx.lineTo(bx + bauch + 1.1 * s, by);
+    ctx.stroke();
+    ctx.fillStyle = '#cbd3dc';
+    ctx.beginPath();
+    ctx.moveTo(bx + bauch + 1.1 * s, by);
+    ctx.lineTo(bx + bauch + 0.2 * s, by - 0.75 * s);
+    ctx.lineTo(bx + bauch + 0.2 * s, by + 0.75 * s);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * Wie weit die Sehne in diesem Augenblick aufgezogen ist. Bis zum Loslassen
+ * waechst der Zug, danach schwingt die Sehne aus - ein paar Mal hin und her,
+ * immer schwaecher. Das Nachschwingen ist der Teil, der den Schuss erst wie
+ * einen Schuss aussehen laesst; ohne ihn springt der Bogen zurueck, als waere
+ * nichts gewesen.
+ */
+function bogenZug(rest) {
+  const p = 1 - Math.max(0, Math.min(1, rest / SPANN_DAUER));
+  const los = SPANN_LOS / SPANN_DAUER;
+  if (p < los) return weich(p / los);
+  const nach = (p - los) / (1 - los);
+  return Math.cos(nach * Math.PI * 2.6) * (1 - nach) * 0.3;
 }
 
 // Wie weit die beiden Flanken von der Mitte wegstehen.
@@ -5339,10 +5541,26 @@ function drawTower(t) {
    */
   const einheiten = t.slots.filter(s => s);
   if (einheiten.length) {
+    /*
+     * Waehrend des Schusses tritt an die Stelle des gepixelten Bogens ein
+     * gezeichneter: die Sehne wird aufgezogen, schnellt vor und schwingt aus.
+     * Gepixelt ginge das nicht - dafuer braeuchte es ein Dutzend Zwischen-
+     * bilder je Figur, und die Werkstatt muesste sie alle kennen.
+     */
+    const zug = t.spann > 0 ? bogenZug(t.spann) : 0;
+    const mitte = einheitFigur(einheiten[0].art);
+    const seite = einheitFigur((einheiten[1] || einheiten[0]).art);
+    const spanntMitte = t.spann > 0 && BOGEN_ARTEN.has(einheiten[0].art);
+    const spanntSeite = t.spann > 0 && BOGEN_ARTEN.has((einheiten[1] || einheiten[0]).art);
     zeichneBatallion(
-      einheitFigur(einheiten[0].art),
-      einheitFigur((einheiten[1] || einheiten[0]).art),
+      spanntMitte ? ohneBogen(mitte) : mitte,
+      spanntSeite ? ohneBogen(seite) : seite,
       cx, cy + 4, 3);
+    if (spanntMitte || spanntSeite) {
+      for (const st of batallionStellungen(cx, cy + 4, 3)) {
+        if (st.mitte ? spanntMitte : spanntSeite) zeichneBogen(st.x, st.y, st.s, zug);
+      }
+    }
     drawBanner(cx + 22, cy - 2, '#2f5fa8');
   }
 
@@ -5683,19 +5901,85 @@ function drawVignette() {
   ctx.drawImage(vignetteBild, 0, 0);
 }
 
-/** Fliegende Geschosse mit leichtem Bogen. */
+/**
+ * Wo ein Geschoss zum Zeitpunkt `f` (0 bis 1) steht. Der seitliche Versatz
+ * gilt am Abschuss und laeuft zum Ziel hin aus; dazu ein flacher Bogen nach
+ * oben, damit die Bahn nicht als Strich liest.
+ */
+function pfeilOrt(p, f) {
+  const c = p.vonCol + (p.zuCol - p.vonCol) * f;
+  const r = p.vonRow + (p.zuRow - p.vonRow) * f;
+  return [
+    isoX(c, r) + (p.versatz || 0) * (1 - f),
+    isoY(c, r) + TH / 2 - 22 - Math.sin(f * Math.PI) * 16,
+  ];
+}
+
+/**
+ * Fliegende Pfeile. Vorher war das ein aufrechtes Rechteck, drei mal sechs
+ * Punkte - ein Strich, der quer zur eigenen Flugbahn stand. Jetzt liegt der
+ * Pfeil in der Bahn: Schaft, Spitze aus Eisen, zwei Fiedern am Ende, und die
+ * Neigung kommt aus der Bahn selbst (der naechste Punkt gegen den jetzigen).
+ * Damit zeigt er unterwegs nach oben und faellt zum Ziel hin.
+ */
 function drawProjektile() {
   for (const p of projektile) {
     const f = Math.min(1, p.t / p.dauer);
-    // Der seitliche Versatz gilt am Abschuss und laeuft zum Ziel hin aus
-    const cx = isoX(p.vonCol + (p.zuCol - p.vonCol) * f, p.vonRow + (p.zuRow - p.vonRow) * f)
-      + (p.versatz || 0) * (1 - f);
-    const cy = isoY(p.vonCol + (p.zuCol - p.vonCol) * f, p.vonRow + (p.zuRow - p.vonRow) * f)
-      + TH / 2 - 22 - Math.sin(f * Math.PI) * 16;
+    const [cx, cy] = pfeilOrt(p, f);
+    const [nx, ny] = pfeilOrt(p, Math.min(1, f + 0.08));
+    const winkel = Math.atan2(ny - cy, nx - cx);
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(cy));
+    /*
+     * Ein Katapult wirft keinen Pfeil. Der Stein dreht sich im Flug um sich
+     * selbst statt in der Bahn zu liegen - schon daran ist von weitem zu
+     * sehen, was da kommt.
+     */
+    if (p.art === 'stein') {
+      ctx.rotate(p.dreh + f * 7);
+      ctx.fillStyle = p.farbe;
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(0, 0, 4, 4);
+      ctx.restore();
+      continue;
+    }
+    ctx.rotate(winkel);
+    // Die Luftspur hinter dem Schaft: nur am Anfang, wo er am schnellsten ist
+    if (f < 0.55) {
+      ctx.fillStyle = 'rgba(255,242,214,' + (0.2 * (1 - f / 0.55)).toFixed(3) + ')';
+      ctx.fillRect(-20, -0.5, 12, 1);
+    }
     ctx.fillStyle = p.farbe;
-    ctx.fillRect(Math.round(cx) - 1, Math.round(cy) - 3, 3, 6);
-    ctx.fillStyle = 'rgba(255,240,200,0.35)';
-    ctx.fillRect(Math.round(cx), Math.round(cy) + 3, 1, 4);
+    ctx.fillRect(-8, -1, 12, 2);          // Schaft
+    ctx.fillStyle = '#cdd5de';            // Spitze
+    ctx.beginPath();
+    ctx.moveTo(8, 0); ctx.lineTo(3.5, -2.2); ctx.lineTo(3.5, 2.2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(232,220,190,0.95)';   // Fiedern
+    ctx.beginPath();
+    ctx.moveTo(-8, -0.5); ctx.lineTo(-4, -3); ctx.lineTo(-3.5, -0.5);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-8, 0.5); ctx.lineTo(-4, 3); ctx.lineTo(-3.5, 0.5);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  for (const p of steckPfeile) {
+    const f = p.t / p.dauer;
+    const x = isoX(p.col, p.row), y = isoY(p.col, p.row) + TH / 2;
+    ctx.save();
+    ctx.globalAlpha = f < 0.6 ? 1 : 1 - (f - 0.6) / 0.4;
+    ctx.translate(Math.round(x), Math.round(y - 10 - p.hoehe));
+    ctx.rotate(p.winkel);
+    ctx.fillStyle = '#d8c8a4';
+    ctx.fillRect(-9, -1, 9, 2);
+    ctx.fillStyle = 'rgba(232,220,190,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(-9, -0.5); ctx.lineTo(-5, -3); ctx.lineTo(-4.5, -0.5);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -6145,6 +6429,7 @@ function updateAnimations(dt) {
       }
     }
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
+    if (t.spann > 0) t.spann = Math.max(0, t.spann - dt);
   }
 
   schreiteGegnerzug(dt);
@@ -6173,6 +6458,10 @@ function updateAnimations(dt) {
   for (let i = projektile.length - 1; i >= 0; i--) {
     projektile[i].t += dt;
     if (projektile[i].t >= projektile[i].dauer) projektile.splice(i, 1);
+  }
+  for (let i = steckPfeile.length - 1; i >= 0; i--) {
+    steckPfeile[i].t += dt;
+    if (steckPfeile[i].t >= steckPfeile[i].dauer) steckPfeile.splice(i, 1);
   }
   for (let i = zahlen.length - 1; i >= 0; i--) {
     zahlen[i].t += dt;
@@ -7566,20 +7855,39 @@ function attackWithTower(tower, enemy) {
   const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d && hatBefehl(u)).length;
   const salve = anzahl > 1 ? ' (' + anzahl + ' Einheiten)' : '';
 
-  // Sichtbarer Schuss: aus allen drei Stellungen des Batallions
+  /*
+   * Der sichtbare Schuss laeuft in drei Takten ab, und zwar nur im Bild: der
+   * Schaden oben ist schon abgezogen. Aufziehen (die Sehne kommt zurueck,
+   * Holz knarzt), Loslassen (Schnalzen, Rueckstoss, die Pfeile fliegen los),
+   * Einschlag (das Tock, die Zahl, der Staub). Vorher passierte alles im
+   * selben Augenblick: die Zahl stand ueber dem Gegner, bevor der Pfeil ihn
+   * erreicht hatte.
+   */
   const ex = enemy.vx === undefined ? enemy.col : enemy.vx;
   const ey = enemy.vy === undefined ? enemy.row : enemy.vy;
-  schussSalve(tower.col + tower.w / 2, tower.row + tower.h / 2, ex, ey, '#f0e2bd');
-  enemy.blitz = 1;
-  enemy.stoss = 1;
-  tower.rueckstoss = 1;
-  zeigeZahl(ex, ey, '-' + schaden, '#ffd166');
-  staub(ex, ey, 5, '#e8d5a8');
-  klang('schuss');
+  const mitBogen = schiessen.some(u => BOGEN_ARTEN.has(u.art));
+  const vorlauf = mitBogen ? SPANN_LOS : 0;
+  if (mitBogen) { tower.spann = SPANN_DAUER; klang('spannen'); }
+  schussSalve(tower.col + tower.w / 2, tower.row + tower.h / 2, ex, ey, '#f0e2bd', 3, vorlauf);
   // Die Tonleiter der alten Salve, jetzt vom Spieler gespielt: je mehr Tuerme
   // er in einem Zug durchklickt, desto hoeher steigt der Ton.
-  schussKlang(++schuesseImZug);
-  schirmBlitz(0.16);
+  const tonNummer = ++schuesseImZug;
+  spaeter(vorlauf, () => {
+    tower.rueckstoss = 1;
+    klang(mitBogen ? 'bogen' : 'schuss');
+    schussKlang(tonNummer);
+    schirmBlitz(0.16);
+  });
+  spaeter(vorlauf + PFEIL_DAUER, () => {
+    enemy.blitz = 1;
+    enemy.stoss = 1;
+    zeigeZahl(ex, ey, '-' + schaden, '#ffd166');
+    staub(ex, ey, 5, '#e8d5a8');
+    if (mitBogen) {
+      klang('einschlag');
+      steckePfeil(ex, ey);
+    }
+  });
 
   const gefallen = raeumeGefallene(enemy);
   if (gefallen) setMessage(tower.name + ' streckt ' + enemy.name + ' nieder' + salve + '!');
@@ -7983,7 +8291,7 @@ function wirkungText(w) {
   if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
   if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
   if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
-  if (w.zinnen) teile.push('gibt einem Turm ' + w.zinnen + ' Zinnen');
+  if (w.zinnen) teile.push('gibt einem Turm ' + w.zinnen + ' Zinnen für diesen Zug');
   if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
   if (w.flickeAlle) teile.push('flickt alle Türme um ' + w.flickeAlle);
   if (w.turmSchild) teile.push('Turm +' + w.turmSchild + ' Leben dauerhaft');
@@ -8519,8 +8827,9 @@ function handleGegner(e) {
   } else {
     e.lunge = 0.35;   // nur ein Ruck, kein Anlauf
     schussSalve(e.vx === undefined ? e.col : e.vx, e.vy === undefined ? e.row : e.vy,
-      zx, zy, geraet === 'katapult' ? '#d8b070' : '#ffb3a7',
-      geraet ? 1 : ENEMY_TYPES[e.typ].scale + 1);
+      zx, zy, geraet === 'katapult' ? '#9b8565' : '#ffb3a7',
+      geraet ? 1 : ENEMY_TYPES[e.typ].scale + 1, 0,
+      geraet === 'katapult' ? 'stein' : 'pfeil');
     klang('schuss');
   }
   /*
@@ -8659,6 +8968,34 @@ function ungenutzteTuerme() {
  * `schuesseImZug` zaehlt mit; `zugAbschluss` setzt ihn zurueck.
  */
 let schuesseImZug = 0;
+/**
+ * Raeumt am Rundenende alle Zinnen ab und meldet, wie viele es waren.
+ * Sichtbar wird das ueber dem Turm: die Steinreihe ist weg, und wer sie
+ * wiederhaben will, spielt die Karte noch einmal.
+ */
+/** Ein Pfeil bleibt im Ziel stecken und verblasst. */
+function steckePfeil(col, row) {
+  if (wenigerBewegung) return;
+  steckPfeile.push({
+    col, row, t: 0, dauer: 0.85,
+    hoehe: 4 + Math.random() * 10,
+    winkel: -0.55 + Math.random() * 0.5,
+  });
+  if (steckPfeile.length > 40) steckPfeile.splice(0, steckPfeile.length - 40);
+}
+
+function verfalleZinnen() {
+  let summe = 0;
+  for (const t of state.towers) {
+    if (t.zinnen > 0) {
+      summe += t.zinnen;
+      staub(t.col + t.w / 2, t.row + t.h / 2, 3, STEINSTAUB);
+      t.zinnen = 0;
+    }
+  }
+  return summe;
+}
+
 function schussKlang(nummer) {
   if (!tonAn) return;
   const stufe = Math.min(14, nummer - 1);
@@ -8752,6 +9089,7 @@ function betreteKnoten(id) {
   state.hoverCell = null;
   leichen.length = 0;
   projektile.length = 0;
+  steckPfeile.length = 0;
   staubkoerner.length = 0;
   state.wall = new Map();
   state.tor = [];
@@ -8856,6 +9194,7 @@ function neuerFeldzug(stufe) {
   state.frist = 0;
   leichen.length = 0;
   projektile.length = 0;
+  steckPfeile.length = 0;
   state.route = baueRoute();
   state.maechte = {};
   state.ausloeser = [];
@@ -9483,6 +9822,19 @@ function zugAbschluss(lauf) {
   const { drawn, reshuffled } = drawCards(handGroesse());
   legeFixierteAufHand();
 
+  /*
+   * Zinnen halten einen Zug. Sie sind Deckung gegen den Angriff, der jetzt
+   * vorbei ist, kein Vorrat, der sich ueber den Kampf anhaeuft - wie der Block
+   * in Slay the Spire. Vorher war eine frueh gespielte Zinnenkarte eine
+   * Anlage, die den ganzen Kampf hielt; jetzt ist sie eine Antwort auf diesen
+   * einen Gegnerzug, und die Frage "schuetze ich oder schiesse ich" stellt
+   * sich in jeder Runde neu.
+   *
+   * Abgeraeumt wird HIER, nach dem Gegnerzug und vor der neuen Hand: so deckt
+   * die Karte genau den Angriff, gegen den sie gespielt wurde.
+   */
+  const verfallen = verfalleZinnen();
+
   state.zug += 1;
   state.tatendrang = state.maxTatendrang;
   state.pendingCard = null;
@@ -9496,6 +9848,7 @@ function zugAbschluss(lauf) {
   text += 'Zug ' + state.zug + ': ';
   text += abgelegt > 0 ? abgelegt + ' Karte' + (abgelegt === 1 ? '' : 'n') + ' abgelegt, ' : '';
   text += drawn + ' nachgezogen.';
+  if (verfallen) text += ' ' + verfallen + ' Zinnen verfallen.';
   if (reshuffled) text += ' Ablagestapel neu gemischt.';
   setMessage(text);
   if (neu.length) klang('runde');
@@ -10071,6 +10424,10 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   if (card.einmalJeKampf) {
     schlagwort('Sonderzug', '',
       'Einmal je Kampf. Danach liegen alle Karten dieser Art bis zur nächsten Station beiseite.');
+  }
+  if ((card.sofort || {}).zinnen) {
+    schlagwort('Deckung', 'deckung',
+      'Zinnen halten einen Zug. Was der Gegnerzug nicht zerschlägt, verfällt am Rundenende.');
   }
   if (card.type === 'Einheit') {
     schlagwort('Ziehe die Karte Angriff ' + card.name, 'mitbringsel',
