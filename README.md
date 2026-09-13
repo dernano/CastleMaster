@@ -384,6 +384,39 @@ war jede Deckfläche ein glatter Farbfleck; am stärksten fiel das auf der groß
 Wehrplatte des Torhauses auf. Kostet nichts: 23,2 ms je Bild davor, 22,9 ms
 danach — die Modelle liegen ohnehin im Zwischenspeicher.
 
+### Was hinter den Gebäuden durchschien
+
+Zwei getrennte Fehler, beide erst mit einem Testbild eindeutig zu benennen —
+ich habe die Zinnen probeweise **rot** und die Wallfelder **grün** gefärbt.
+Ohne das hätte ich am falschen Ende gesucht: die hellen Blöcke, die neben dem
+Turmschaft zu schweben schienen, waren gar keine Zinnen.
+
+**Zinnen im Torhaus.** Die Felder unter dem Torhaus werden beim Aufbau aus der
+Mauerkarte *gelöscht* — anders als die unter einem Turm, die nur verdeckt
+werden — damit die Durchfahrt frei bleibt. `istWall` meldete dort also „keine
+Mauer", und die Nachbarfelder setzten eine Zinne mitten ins Torhaus hinein. Die
+stand dann auf Wallhöhe vor einem dahinterliegenden Turm und leuchtete auf
+dessen Schaft durch. Dafür gibt es jetzt `wallOderBau`, das auch Türme und Burg
+kennt — aber nur für die Zinnen, nicht fürs Sperren.
+
+**Der Wall neben dem Turmschaft.** Die Modelle lassen ringsum einen Rand (der
+Wachturm ist 1,6 von 2 Feldern breit), und neben dem schmaleren Schaft blieb die
+Krone des dahinterliegenden Walls sichtbar. Der Turmfuß ragt darum jetzt ein
+Stück über seine Grundfläche hinaus (0,14 je Seite) und reicht knapp über
+Wallkrone samt Zinnen — ein Wallturm springt vor und **unterbricht** den Wall,
+statt von ihm umflossen zu werden.
+
+Bei der Höhe war ein Zwischenstand zu viel des Guten: mit `WALL_HOEHE + halbe
+Modellhöhe` verschluckte der Sockel den Turmkörper, und der Turm las sich als
+etwas erhöhtes Stück Wall. Jetzt sind es `WALL_HOEHE + 11`.
+
+**Der Wachturm** bekommt denselben Sandstein wie Wall und Torhaus statt des
+grauen `stein` aus der Zeit, als Türme frei auf der Wiese standen. Seine
+hölzerne Hurde bleibt: ein Versuch mit steinerner Wehrplatte ging zwar besser
+mit dem Wall zusammen, nahm ihm aber die Silhouette — er las sich dann als
+breiteres, höheres Wallstück. Falsch ist am Holz nichts, eine Hurde auf einem
+Steinturm ist genau so gebaut worden.
+
 ### Zwei Felder dick, und warum das nötig war
 
 Der Wall war ein Feld dick, Türme und Torhaus sind zwei Felder breit. Sie hingen

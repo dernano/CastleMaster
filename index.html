@@ -2804,12 +2804,26 @@ const MODELLE = {
   },
 
   // ---- Tuerme ----
+  /*
+   * Der Wachturm steht seit dem Umbau immer im Wall. Er trug bis dahin einen
+   * grauen Steinkoerper und darauf eine hoelzerne Hurde - beides aus der Zeit,
+   * als Tuerme frei auf der Wiese standen. In einem steinernen Wall war das
+   * der letzte Fremdkoerper: eine braune Kiste auf Sandstein. Jetzt derselbe
+   * Stein wie Wall und Torhaus, und oben eine Wehrplatte mit Zinnen.
+   */
   wachturm: (g, f) => {
     const h = 30 * f;
-    teilQuader(g, 0.25, 0.25, 0, 1.5, 1.5, h, 'stein', 17);
-    teilFenster(g, 1.75, 0.9, h * 0.6, 9, false);
+    teilQuader(g, 0.2, 0.2, 0, 1.6, 1.6, h, 'wallstein', 17);
+    teilFenster(g, 1.8, 0.9, h * 0.6, 9, false);
     if (f < 0.75) return;
-    teilQuader(g, 0.12, 0.12, h, 1.76, 1.76, 7, 'holz', 18);   // auskragende Hurde
+    /*
+     * Die hoelzerne Hurde bleibt. Ein Versuch mit steinerner Wehrplatte und
+     * Zinnen ging zwar besser mit dem Wall zusammen, nahm dem Wachturm aber
+     * die Silhouette - er las sich dann als breiteres, etwas hoeheres Stueck
+     * Wall. Das Holz ist sein Erkennungszeichen; falsch ist daran nichts, eine
+     * Hurde auf einem Steinturm ist genau so gebaut worden.
+     */
+    teilQuader(g, 0.12, 0.12, h, 1.76, 1.76, 7, 'holz', 18);
     teilBruestung(g, 0.12, 0.12, h + 7, 1.76, 1.76, 9, 'holz');
     teilFahne(g, 1.72, 0.16, h + 7, '#2f5fa8');
   },
@@ -3426,6 +3440,22 @@ function istWall(c, r) {
 }
 
 /**
+ * Schliesst hier ueberhaupt etwas Gebautes an - Mauer, Turm oder Burg?
+ *
+ * Nur fuer die Zinnen gedacht, nicht fuers Sperren. Die Felder unter dem
+ * Torhaus werden beim Aufbau aus der Mauerkarte geloescht (anders als die
+ * unter einem Turm, die nur verdeckt werden), damit die Durchfahrt frei
+ * bleibt. `istWall` meldete dort also "keine Mauer", und die Nachbarfelder
+ * setzten eine Zinne mitten ins Torhaus hinein. Die stand dann auf Wallhoehe
+ * vor einem dahinterliegenden Turm und leuchtete auf dessen Schaft durch.
+ */
+function wallOderBau(c, r) {
+  if (istWall(c, r)) return true;
+  if (cellInsideRect(c, r, CASTLE)) return true;
+  return state.towers.some(t => cellInsideRect(c, r, t));
+}
+
+/**
  * Baut den Wall einer Station. Vier Grundformen, dazu eine gewuerfelte
  * Grundspalte und Torzeile - so sieht keine Station aus
  * wie die davor, aber innerhalb einer Station steht alles fest.
@@ -3670,8 +3700,8 @@ function drawWallFeld(m) {
    */
   if (anteil > 0.55 && f > 0.7) {
     const s = 0.34;
-    if (!istWall(m.col + 1, m.row)) drawBlock(m.col + 1 - s - 0.02, m.row + 0.33 - s / 2, s, s, 9, farbe, H);
-    if (!istWall(m.col, m.row + 1)) drawBlock(m.col + 0.33 - s / 2, m.row + 1 - s - 0.02, s, s, 9, farbe, H);
+    if (!wallOderBau(m.col + 1, m.row)) drawBlock(m.col + 1 - s - 0.02, m.row + 0.33 - s / 2, s, s, 9, farbe, H);
+    if (!wallOderBau(m.col, m.row + 1)) drawBlock(m.col + 0.33 - s / 2, m.row + 1 - s - 0.02, s, s, 9, farbe, H);
   }
   if (m.hp < m.maxHp) {
     drawHpBar(isoX(m.col + 0.5, m.row + 0.5) + wanken, isoY(m.col + 0.5, m.row + 0.5) - H - 8,
@@ -4631,8 +4661,27 @@ function drawTower(t) {
    * laeuft der Wall durch die Grundflaeche hindurch und der Turm waechst
    * daraus hervor.
    */
+  /*
+   * Der Sockel traegt die volle Grundflaeche und reicht bis in den Schaft
+   * hinein. Nur bis Wallhoehe war er zu niedrig: die Modelle lassen ringsum
+   * einen Rand (der Wachturm ist 1.5 von 2 Feldern breit), und neben dem
+   * schmaleren Schaft blieb die Krone des dahinterliegenden Walls sichtbar -
+   * sie schien durch den Turm durchzuscheinen. Ein voll breiter Sockel bis
+   * ueber die Wallkrone hinaus deckt das ab und liest sich als angeschraegter
+   * Turmfuss.
+   */
   const sockel = t.imWall ? Math.round(WALL_HOEHE * gewachsen) : 0;
-  if (t.imWall) drawBlock(t.col, t.row, t.w, t.h, WALL_HOEHE * gewachsen, WALL);
+  if (t.imWall) {
+    // Etwas ueber die Grundflaeche hinaus: ein Wallturm springt vor und
+    // unterbricht den Wall, statt von ihm umflossen zu werden. Buendig
+    // abgeschnitten schaute die Krone des Walls dahinter seitlich am
+    // schmaleren Schaft vorbei.
+    // Nur knapp ueber die Wallkrone samt Zinnen (27 + 9). Hoeher verschluckte
+    // der Sockel den Turmkoerper, und der Turm sah aus wie ein etwas
+    // erhoehtes Stueck Wall statt wie ein Turm.
+    const fuss = (WALL_HOEHE + 11) * gewachsen;
+    drawBlock(t.col - 0.14, t.row - 0.14, t.w + 0.28, t.h + 0.28, fuss, WALL);
+  }
   /*
    * Das Modell sitzt AUF dem Sockel, nicht darin. Ohne die Anhebung steckte
    * der Steinkoerper des Wachturms (30 hoch) fast vollstaendig im Sockel (27),
