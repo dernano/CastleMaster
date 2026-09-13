@@ -1766,65 +1766,64 @@ Ein Schuss war die einzige Handlung im Spiel, die nichts kostete und nie
 ausblieb: jeder besetzte Turm feuerte einmal je Zug, umsonst. Damit war die
 Frage nie *ob*, sondern nur *worauf*.
 
-Jetzt legt **jede Einheit, die Stellung bezieht, eine Karte `Angriff` ins
-Deck** — gemischt in den Zugstapel, nicht obenauf: sie soll gezogen werden,
-nicht garantiert sein. Erst die ausgespielte Angriffskarte gibt einen Schuss
-frei (`state.schuesse`), und jeder abgegebene Schuss verbraucht einen. Am
-Zugende verfallen die übrigen, wie die Karte, die sie freigegeben hat.
+Jetzt bringt **jede Einheit ihre eigene Befehlskarte mit** — „Angriff
+Waldläufer", „Angriff Bogenschütze", je nach Besatzung (`angriffKarteFuer`).
+Man zieht sie **auf die Figur**, dann legt die Einheit an und schießt in diesem
+Zug. Das kostet **1 Tatendrang**. Ohne Befehl hält die Besatzung still.
 
-Die Karte kostet nichts an Tatendrang. Ihr Preis ist der Platz in der Hand.
+Die Bereitschaft hängt an der Einheit, nicht am Turm (`einheit.befehlZug`), und
+`towerDamageAt` zählt nur Einheiten mit Befehl. Damit ist die Vorschau ehrlich:
+was der rote Bogen anzeigt, kommt auch an. Was der Turm *könnte*, zeigt die
+Plakette über ihm — blau, solange kein Befehl da ist.
 
-**Die Hand wächst mit.** Fünf Karten, dazu eine je Angriffskarte im Deck:
+#### Fixiert
 
-```js
-const handGroesse = () => HAND_SIZE + (state.maechte.handKarten || 0)
-  + (state.angriffKarten || 0);
-```
+Die Befehlskarte trägt den Status **fixiert**, und der ist das eigentlich Neue:
 
-Ohne diesen Ausgleich würde jede neue Einheit die Chance senken, überhaupt an
-Zinnen oder ein Gebäude zu kommen — man hätte sich mit dem eigenen Aufgebot
-selbst zugeschüttet. Fünf für den Plan, eine je Einheit für das Schießen.
+> Eine fixierte Karte liegt **nicht im Deck**. Sie wird nie gemischt und nie
+> gezogen, sondern kommt zu **jeder Runde zusätzlich in die Hand** — gespielt
+> oder nicht, in der nächsten Runde ist sie wieder da.
 
-Die Angriffskarten gehören zur Station, nicht zum Feldzug: Türme und Einheiten
-fallen an ihrem Ende weg, also werden auch ihre Karten wieder aus dem Deck
-genommen (`nimmAngriffskartenZurueck`, sucht in Zugstapel, Hand, Ablage und
-Sonderzug-Stapel). Gekauft oder gefunden wird sie nie — `ziehKarten`
+Technisch ein eigener Vorrat neben dem Deck (`state.fixiert`);
+`legeFixierteAufHand` schiebt ihn nach jedem Ziehen auf die Hand, das
+Zugende legt fixierte Karten nicht in die Ablage, und `removeFromHand` lässt
+sie einfach dorthin zurückfallen, wo sie hergekommen sind. Die Hand ist damit
+**fünf gezogene Karten plus eine je Einheit im Feld**.
+
+Fällt die Einheit — oder ihr Turm —, geht ihre Karte mit
+(`nimmAngriffskarteWeg`). Am Ende der Station gehen alle
+(`nimmAngriffskartenZurueck`). Gekauft oder gefunden wird sie nie: `ziehKarten`
 überspringt alles mit `nichtImHandel`.
 
-#### Was sie kostet
+Gezogen wird sie mit einer Animation — ein Abbild der Karte löst sich aus der
+Hand, fährt zur Figur und verschwindet dort (`fliegeKarteZu`). Geflogen wird
+mit einem Klon im Dokument, nicht mit der Karte selbst; die ist im nächsten
+Bild ohnehin neu gezeichnet.
 
-Sehr viel. Je zehn Bot-Feldzüge, jeder Schalter einzeln:
+#### Warum nicht ins Deck
+
+Die erste Fassung mischte die Angriffskarte **in den Zugstapel**. Dann
+entschied die Ziehung, ob ein Turm überhaupt feuern durfte — und das Ergebnis
+war eindeutig:
 
 | | Siege | Station im Schnitt |
 | --- | --- | --- |
-| vorher (1 Wachturm, 4 Waldläufer, 4 Zinnen, 1 Krone) | 3/12 | 13,3 |
-| nur Angriffskarten, Waldläufer noch frei | 1/10 | 9,0 |
-| nur Waldläufer als Sonderzug, Schuss frei | 1/10 | 12,5 |
-| **beides, wie ausgeliefert** | 0/10 | **4,5** |
+| ohne Angriffskarten (1 Wachturm, 4 Waldläufer, 4 Zinnen, 1 Krone) | 3/12 | 13,3 |
+| Angriffskarte **ins Deck gemischt** | 0/10 | **4,5** |
+| Angriffskarte **fixiert**, 1 Tatendrang | 0/12 | **10,0** |
 
-Die Angriffskarte allein kostet rund vier Stationen, der zweite Sonderzug ein
-bis zwei — zusammen neun. Das ist kein Rundungsfehler, das ist eine andere
-Schwierigkeit: der Feldzug endet jetzt an Station vier statt an dreizehn.
+Von dreizehn auf viereinhalb — der Feldzug brach zusammen. Und die
+naheliegende Gegenmaßnahme war die falsche: gibt die Karte *zwei* Schüsse statt
+einem, ändert das fast nichts (Station 5,3). Der Engpass waren nämlich nicht
+die Schüsse, sondern die **Stellungen** — jeder Turm feuert höchstens einmal je
+Zug, und mit einem einzigen Waldläufer gibt es nur einen besetzten Turm.
 
-Der Grund ist die Kette. Ein Sonderzug-Waldläufer heißt **eine** Einheit je
-Station aus dem Startdeck, eine Einheit heißt **eine** Angriffskarte, und eine
-Angriffskarte in einem Deck von acht heißt: in einem von vier Zügen fällt der
-Schuss ganz aus. Was vorher zwei bis drei Schüsse je Zug waren, ist jetzt
-höchstens einer, oft keiner.
-
-Das ist kein Fehler der Mechanik, sondern ihre Wirkung — nur ist die Tuning-Lage
-darauf noch nicht eingestellt.
-
-**Und die naheliegende Stellschraube ist die falsche.** Gibt die Angriffskarte
-*zwei* Schüsse statt einem, ändert das fast nichts: 0/10 Siege, Station 5,3
-statt 4,6. Der Engpass sind nämlich nicht die Schüsse, sondern die **Stellungen**
-— jeder Turm feuert höchstens einmal je Zug, und mit einem einzigen Waldläufer
-gibt es nur einen besetzten Turm. Der zweite Schuss auf der Karte hat gar
-niemanden, der ihn abgeben könnte.
-
-Der wirksame Hebel ist deshalb die Zahl der Einheiten, nicht die der Schüsse:
-den Sonderzug am Waldläufer wieder zu lösen bringt den Feldzug von Station 4,6
-auf 9,0. Danach erst lohnen die groben Regler `zugFrist` und `rundenBudget`.
+Fixiert kostet den Feldzug noch drei Stationen statt neun, und der Preis ist
+jetzt **Tatendrang statt Glück**: nicht *ob ich die Karte ziehe*, sondern *ob
+ich mir den Schuss diese Runde leiste*. Der Rest zeigt sich an der Sturmquote,
+die von rund einem Viertel auf 46 Prozent steigt: die Kämpfe werden nicht mehr
+rechtzeitig fertig. Das ist die Stelle, an der die Frist nachziehen müsste —
+genau wie beim Umbau auf das kleine Deck.
 
 ### Sonderzug
 

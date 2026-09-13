@@ -627,7 +627,22 @@
     border-radius: 2px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 1px 0 rgba(0,0,0,0.35);
   }
-  .card.mit-bild .card-sonderzug { display: none; }
+  .card-schlagworte { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  /* Auf einer Bildkarte legen sich die Schlagworte ueber das Blatt. */
+  .card.mit-bild .card-schlagworte {
+    position: absolute; left: 4px; right: 4px; bottom: 26px; z-index: 3;
+  }
+  .card-sonderzug.mitbringsel {
+    color: #f3e6c8; border-color: #4a3a22;
+    background: linear-gradient(180deg, #6b5334, #3b2c18);
+    letter-spacing: 0.06em; text-transform: none; font-size: 8px;
+  }
+  /* Fixiert ist kein Gold, sondern Stahl: die Karte gehoert nicht dem Deck. */
+  .card-sonderzug.fixiert {
+    color: #e8f0f7;
+    background: linear-gradient(180deg, #5d7d99, #33485c);
+    border-color: #26384a;
+  }
 
   .card-stats {
     display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;
@@ -1128,7 +1143,8 @@
         <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
         <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt höchstens einmal je Zug.</li>
-        <li><b>Angriffskarten:</b> Ein Schuss ist kein Selbstläufer. Jede <b>Einheit</b>, die Stellung bezieht, legt eine Karte <b>Angriff</b> in dein Deck — und erst eine ausgespielte Angriffskarte gibt einen Schuss frei. Oben zeigen die Schwerter, wie viele bereitliegen; am Zugende verfallen sie. Damit dein eigenes Aufgebot dir nicht das Deck verstopft, wächst die Hand mit: <b>fünf Karten plus eine je Angriffskarte</b>. Am Ende der Station gehen die Angriffskarten mit den Einheiten wieder aus dem Deck.</li>
+        <li><b>Der Befehl zum Schuss:</b> Jede <b>Einheit</b>, die Stellung bezieht, bringt ihre eigene Befehlskarte mit — <b>„Angriff Waldläufer"</b>, „Angriff Bogenschütze", je nachdem, wer oben steht. Zieh die Karte <b>auf die Figur</b>, dann legt sie an und schießt in diesem Zug. Das kostet <b>1 Tatendrang</b>. Ohne Befehl hält die Besatzung still: die Plakette über dem Turm steht dann blau statt gold.</li>
+        <li><b>Fixiert:</b> Befehlskarten liegen <b>nicht im Deck</b>. Sie werden nie gemischt und nie gezogen, sondern kommen zu <b>jeder Runde zusätzlich in die Hand</b> — gespielt oder nicht, nächste Runde sind sie wieder da. Deine Hand ist also fünf gezogene Karten plus eine je Einheit im Feld. Fällt die Einheit, geht ihre Karte mit; am Ende der Station gehen alle.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt höchstens einmal je Zug, und nur, wenn du es anweist und eine Angriffskarte freigegeben hast. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug mit freigegebenen, aber ungenutzten Schüssen, verfallen sie — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu zwei Flanken, die nach hinten laufen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinten steht keine Mauer: dort steht die Burg, und von hinten kommt niemand.</li>
@@ -1263,7 +1279,7 @@
     <span class="chip dim" id="pile-draw" title="Zugstapel"><i class="ic" data-ikone="stapel"></i> <b id="draw-count">0</b></span>
     <span class="chip dim" id="pile-discard" title="Ablage"><i class="ic" data-ikone="ablage"></i> <b id="discard-count">0</b></span>
     <span class="chip dim hidden" id="pile-beiseite" title="Sonderzug: liegt bis zum Ende der Station beiseite"><i class="ic" data-ikone="siegel"></i> <b id="beiseite-count">0</b></span>
-    <span class="chip schuss hidden" id="chip-schuss" title="Freigegebene Schüsse in diesem Zug"><i class="ic" data-ikone="schwerter"></i> <b id="schuss-count">0</b></span>
+    <span class="chip schuss hidden" id="chip-schuss" title="Einheiten mit Befehl, die noch nicht geschossen haben"><i class="ic" data-ikone="schwerter"></i> <b id="schuss-count">0</b></span>
   </div>
 
   <div id="frist-tafel" class="hidden" title="Zuege bis zum Sturm">
@@ -1505,16 +1521,39 @@ const CARD_POOL = [
     wenn: { ausloeser: 'zugBeginn', dann: { flickeAlle: 2, heileBurg: 1 } },
     text: 'Vor dem ersten Licht wird gezählt und geflickt.' },
 
-  /*
-   * Der Angriff. Diese Karte wird nicht gekauft und nicht gefunden - jede
-   * Einheit, die Stellung bezieht, legt eine davon ins Deck, und am Ende der
-   * Station gehen sie mit den Einheiten wieder. Ein Schuss ist seither keine
-   * Selbstverstaendlichkeit mehr, sondern eine gezogene Karte.
-   */
-  { id: 'angriff', name: 'Angriff', type: 'Fähigkeit', suit: '🍃', cost: 0, art: 'pfeil',
-    sel: 'gewoehnlich', nichtImHandel: true, sofort: { schuss: 1 },
-    text: 'Ohne Befehl bleibt der Pfeil im Köcher.' },
 ];
+
+/*
+ * ============================================================
+ *  Angriffskarten: der Befehl zum Schuss
+ * ============================================================
+ *
+ * Jede Einheit bringt ihre eigene Befehlskarte mit - "Angriff Waldlaeufer",
+ * "Angriff Bogenschuetze" -, und die traegt den Status FIXIERT: sie liegt
+ * nicht im Deck, wird nie gemischt und nie gezogen, sondern kommt zu jeder
+ * Runde zusaetzlich in die Hand. Gespielt oder nicht, in der naechsten Runde
+ * ist sie wieder da.
+ *
+ * Damit kostet ein Schuss nicht Glueck, sondern Tatendrang. Das ist der
+ * Unterschied zur ersten Fassung, in der die Angriffskarte ins Deck gemischt
+ * wurde: dort entschied die Ziehung, ob ein Turm ueberhaupt feuern durfte -
+ * gemessen brach der Feldzug dadurch von Station 13 auf 4,5 ein. Jetzt
+ * entscheidet der Spieler, und die Frage lautet nicht "darf ich", sondern
+ * "was ist es mir wert".
+ */
+function angriffKarteFuer(einheitenKarte) {
+  return {
+    id: 'angriff:' + einheitenKarte.id,
+    name: 'Angriff ' + einheitenKarte.name,
+    type: 'Fähigkeit', suit: '🍃', cost: 1, art: 'pfeil',
+    sel: einheitenKarte.sel || 'gewoehnlich',
+    nichtImHandel: true,      // nie im Handel, nie in einer Belohnung
+    fixiert: true,            // liegt nicht im Deck, kommt jede Runde in die Hand
+    angriffAuf: einheitenKarte.id,
+    dmg: einheitenKarte.dmg, range: einheitenKarte.range,
+    text: 'Ohne Befehl bleibt der Pfeil im Köcher.',
+  };
+}
 
 // Der Stapel wird beim Laden einmal gegen dieselbe Regel geprueft.
 for (const karte of CARD_POOL) {
@@ -1656,16 +1695,11 @@ const STARTER_DECK = [
 ];
 const HAND_SIZE = 5;
 /*
- * Fuenf Karten, dazu eine je Angriffskarte im Deck.
- *
- * Die Angriffskarten kommen von den Einheiten und verduennen das Deck. Ohne
- * Ausgleich wuerde jede neue Einheit die Chance senken, ueberhaupt an Zinnen
- * oder ein Gebaeude zu kommen - man haette sich mit dem eigenen Aufgebot
- * selbst zugeschuettet. Die Hand waechst darum mit: fuenf fuer den Plan, eine
- * je Einheit fuer das Schiessen.
+ * Wie viele Karten GEZOGEN werden. Die fixierten Angriffskarten kommen
+ * zusaetzlich obendrauf und werden nicht gezogen - die Hand ist also fuenf
+ * plus eine je Einheit im Feld.
  */
-const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0)
-  + (state.angriffKarten || 0);
+const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0);
 // Zielen kostet nichts. Gefeuert wird ohnehin jeden Zug; die Entscheidung
 // ist, WORAUF, nicht OB. Der Tatendrang gehoert weiter den Karten.
 const ATTACK_COST = 0;
@@ -1788,12 +1822,12 @@ let state = {
    */
   beiseite: [],
   /*
-   * Freie Schuesse in diesem Zug und die Zahl der Angriffskarten, die im Deck
-   * liegen. Beides gehoert zur Station: Tuerme und Einheiten fallen an ihrem
-   * Ende weg, ihre Karten also auch.
+   * Die fixierten Karten. Sie liegen neben dem Deck, nicht darin: jede Runde
+   * wandern sie zusaetzlich in die Hand und am Zugende wieder heraus.
+   * Sie gehoeren zur Station - mit der Einheit kommt ihre Karte, mit der
+   * Einheit geht sie auch.
    */
-  schuesse: 0,
-  angriffKarten: 0,
+  fixiert: [],
   nextTowerId: 1,
   nextEnemyId: 1,
 };
@@ -2030,6 +2064,17 @@ function getSelectedTower() { return state.selectedTower ? findTowerById(state.s
 
 function towerUnits(t) { return t.slots.filter(s => s); }
 
+/** Kennung des laufenden Zuges - daran haengt jede Bereitschaft. */
+const zugSchluessel = () => state.runde + ':' + state.zug;
+
+/**
+ * Einheiten, deren Befehlskarte in diesem Zug gespielt wurde. Nur sie
+ * schiessen mit; wer keinen Befehl hat, haelt still. Das ist der Grund,
+ * warum es die Angriffskarte ueberhaupt gibt.
+ */
+function bereiteEinheiten(t) { return t.slots.filter(s => s && s.befehlZug === zugSchluessel()); }
+function hatBefehl(einheit) { return Boolean(einheit) && einheit.befehlZug === zugSchluessel(); }
+
 /** Weiteste Reichweite, die dieser Turm mit seiner Besatzung erreicht. */
 function towerReach(t) {
   const us = towerUnits(t);
@@ -2041,7 +2086,13 @@ function towerReach(t) {
  * die selbst so weit reichen. Zwei Bogenschuetzen auf einem Turm schiessen
  * also gemeinsam, ein Waldlaeufer bleibt auf grosse Entfernung aussen vor.
  */
+/** Was der Turm jetzt austeilt: nur Einheiten mit Befehl zaehlen mit. */
 function towerDamageAt(t, d) {
+  return bereiteEinheiten(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + unitDmg(u), 0);
+}
+
+/** Was er austeilen KOENNTE, wenn alle Befehle da waeren - fuer die Plakette. */
+function towerSalve(t, d) {
   return towerUnits(t).filter(u => unitRange(t, u) >= d).reduce((sum, u) => sum + unitDmg(u), 0);
 }
 
@@ -5290,13 +5341,16 @@ function drawTower(t) {
    * erledigt), geladen mit Ziel (gold - hier wartet ein Schuss auf dich) und
    * geladen ohne Ziel (gruen, nichts zu tun). Der goldene ist der Ruf.
    */
-  const schlag = towerDamageAt(t, 0);
-  if (schlag > 0) {
+  const moeglich = towerSalve(t, 0);
+  if (moeglich > 0) {
     const bx = isoX(t.col + t.w / 2, t.row + t.h / 2);
     const by = isoY(t.col + t.w / 2, t.row + t.h / 2) + TH / 2 - 2;
+    const befehl = bereiteEinheiten(t).length > 0;
     if (towerHasFired(t)) drawBadge(bx, by, '⚔ –', '#7d7466', '#4a4438');
-    else if (turmHatZiel(t)) drawBadge(bx, by, '⚔ ' + schlag, '#ffe3a8', '#8a5c12');
-    else drawBadge(bx, by, '⚔ ' + schlag, '#bfe39a', '#5c7a30');
+    // Ohne Befehl steht die Besatzung da und wartet - blass, aber sichtbar.
+    else if (!befehl) drawBadge(bx, by, '⚔ ' + moeglich, '#9fb6cc', '#3d5468');
+    else if (turmHatZiel(t)) drawBadge(bx, by, '⚔ ' + towerDamageAt(t, 0), '#ffe3a8', '#8a5c12');
+    else drawBadge(bx, by, '⚔ ' + towerDamageAt(t, 0), '#bfe39a', '#5c7a30');
   }
 
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
@@ -7261,7 +7315,8 @@ canvas.addEventListener('click', (evt) => {
   if (!state.pendingCard) { handleSelectionClick(treffer, cell); return; }
 
   state.selectedTower = null;
-  const ziel = zielArt(state.pendingCard);
+  const karte = state.pendingCard;
+  const ziel = zielArt(karte);
 
   if (ziel === 'feld') {
     if (isValidTowerPlacement(cell.col, cell.row, 2, 2)) placeTower(cell.col, cell.row);
@@ -7287,6 +7342,15 @@ canvas.addEventListener('click', (evt) => {
     if (slotIdx === -1) { setMessage('Dieser Turm hat keinen freien Platz.'); renderAll(); return; }
     placeUnit(tower, slotIdx);
   } else if (ziel === 'einheit') {
+    if (karte.angriffAuf) {
+      // Der Befehl gilt einer bestimmten Art. Auf dem angeklickten Turm muss
+      // eine solche Einheit stehen, die noch keinen Befehl hat.
+      if (towerHasFired(tower)) { setMessage(tower.name + ' hat in diesem Zug schon geschossen.'); renderAll(); return; }
+      const u = tower.slots.find(x => x && x.kartenId === karte.angriffAuf && !hatBefehl(x));
+      if (!u) { setMessage('Auf ' + tower.name + ' wartet niemand auf diesen Befehl.'); renderAll(); return; }
+      wendeKarteAn({ turm: tower, einheit: u });
+      return;
+    }
     const slotIdx = tower.slots.findIndex(s => s !== null);
     if (slotIdx === -1) { setMessage('Auf diesem Turm steht keine Einheit.'); renderAll(); return; }
     wendeKarteAn({ turm: tower, einheit: tower.slots[slotIdx] });
@@ -7368,11 +7432,11 @@ function attackWithTower(tower, enemy) {
   /*
    * Ohne Befehl kein Schuss. Frueher feuerte jeder besetzte Turm einmal je
    * Zug umsonst; das war die eine Handlung im Spiel, die nichts kostete und
-   * nie ausblieb. Jetzt legt jede Einheit eine Angriffskarte ins Deck, und
-   * erst die gespielte Karte gibt einen Schuss frei.
+   * nie ausblieb. Jetzt bringt jede Einheit ihre Befehlskarte mit, und erst
+   * die auf sie gezogene Karte laesst sie schiessen.
    */
-  if (!state.schuesse) {
-    setMessage('Kein Angriff bereit. Spiele eine Angriffskarte — jede Einheit legt eine ins Deck.');
+  if (!bereiteEinheiten(tower).length) {
+    setMessage(tower.name + ' hat keinen Befehl. Zieh die Angriffskarte auf die Einheit.');
     renderAll();
     return;
   }
@@ -7385,12 +7449,14 @@ function attackWithTower(tower, enemy) {
     return;
   }
 
-  tower.attackedKey = state.runde + ':' + state.zug;
-  state.schuesse--;
+  tower.attackedKey = zugSchluessel();
+  // Der Befehl ist ausgefuehrt: die Einheiten, die mitgeschossen haben,
+  // sind fuer diesen Zug durch.
+  for (const u of bereiteEinheiten(tower)) u.befehlZug = null;
   enemy.hp -= schaden;
   loeseAus('salve');
 
-  const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d).length;
+  const anzahl = towerUnits(tower).filter(u => unitRange(tower, u) >= d && hatBefehl(u)).length;
   const salve = anzahl > 1 ? ' (' + anzahl + ' Einheiten)' : '';
 
   // Sichtbarer Schuss: aus allen drei Stellungen des Batallions
@@ -7474,8 +7540,26 @@ function zielArt(card) {
   const w = card.sofort || {};
   if (w.schaden || w.stoss || w.fessel) return 'gegner';
   if (w.flicke || w.zinnen) return 'turm';
-  if (card.plus) return 'einheit';
+  if (card.angriffAuf || card.plus) return 'einheit';
   return null;
+}
+
+/**
+ * Die Einheit, die diese Befehlskarte meint: bevorzugt genau die, zu der sie
+ * gehoert; sonst irgendeine derselben Art, die noch keinen Befehl hat und auf
+ * einem Turm steht, der in diesem Zug noch nicht geschossen hat.
+ */
+function findeBefehlsziel(card) {
+  let ersatz = null;
+  for (const t of state.towers) {
+    if (towerHasFired(t)) continue;
+    for (const u of t.slots) {
+      if (!u || u.kartenId !== card.angriffAuf || hatBefehl(u)) continue;
+      if (u.uid === card.fuerEinheit) return { turm: t, einheit: u };
+      if (!ersatz) ersatz = { turm: t, einheit: u };
+    }
+  }
+  return ersatz;
 }
 
 /** Gibt es ueberhaupt ein Ziel fuer diese Karte? */
@@ -7484,7 +7568,7 @@ function hatZiel(card) {
     case 'feld': return freiesBaufeld();
     case 'turmFrei': return anyTowerWithFreeSlot();
     case 'turm': return state.towers.length > 0;
-    case 'einheit': return anyTowerWithUnit();
+    case 'einheit': return card.angriffAuf ? Boolean(findeBefehlsziel(card)) : anyTowerWithUnit();
     case 'gegner': return state.enemies.length > 0;
     default:
       // Eine Macht, die Tuerme verstaerkt, braucht wenigstens einen.
@@ -7580,9 +7664,9 @@ function wirke(card, ziel) {
     teile.push(g > 0 ? '+' + g + ' Burg' : 'die Burg steht schon fest');
   }
   if (w.sold) { state.sold += w.sold; teile.push('+' + w.sold + ' Sold'); }
-  if (w.schuss) {
-    state.schuesse = (state.schuesse || 0) + w.schuss;
-    teile.push(state.schuesse === 1 ? 'ein Schuss bereit' : state.schuesse + ' Schüsse bereit');
+  if (card.angriffAuf && ziel && ziel.einheit) {
+    ziel.einheit.befehlZug = zugSchluessel();
+    teile.push(ziel.einheit.name + ' legt an');
   }
 
   if (w.flicke && ziel && ziel.turm) {
@@ -7791,7 +7875,6 @@ function wirkungText(w) {
   if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
   if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
   if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
-  if (w.schuss) teile.push(w.schuss === 1 ? 'gibt einen Schuss frei' : 'gibt ' + w.schuss + ' Schüsse frei');
   if (w.zinnen) teile.push('gibt einem Turm ' + w.zinnen + ' Zinnen');
   if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
   if (w.flickeAlle) teile.push('flickt alle Türme um ' + w.flickeAlle);
@@ -7898,6 +7981,7 @@ function placeTower(col, row) {
   renderAll();
 }
 
+let einheitZaehler = 0;
 function placeUnit(tower, slotIdx) {
   const card = state.pendingCard;
   bezahle(card);
@@ -7907,6 +7991,8 @@ function placeUnit(tower, slotIdx) {
    * unantastbar - ein Armbrustschuetze schoss auf Mauerwerk statt auf Maenner.
    */
   const einheit = {
+    uid: 'e' + (++einheitZaehler),
+    kartenId: card.id,          // daran erkennt die Befehlskarte ihre Einheit
     name: card.name, dmg: card.dmg, range: card.range,
     durchschlag: card.durchschlag || 0, boosted: false,
     hp: 6 + 2 * (card.zaeh || 0), maxHp: 6 + 2 * (card.zaeh || 0),
@@ -7917,7 +8003,7 @@ function placeUnit(tower, slotIdx) {
   removeFromHand(card);
   state.pendingCard = null;
   const zusatz = wirke(card, { turm: tower, einheit });
-  gibAngriffskarte();
+  gibAngriffskarte(card, einheit);
   setMessage(card.name + ' bezieht Stellung auf ' + tower.name +
     (card.zaeh ? ' und verstärkt ihn um ' + card.zaeh + ' LP' : '') +
     (zusatz ? ': ' + zusatz : '.') + ' Eine Angriffskarte geht ins Deck.');
@@ -7926,35 +8012,80 @@ function placeUnit(tower, slotIdx) {
 }
 
 /*
- * Jede Einheit, die Stellung bezieht, legt eine Angriffskarte ins Deck -
- * gemischt in den Zugstapel, nicht obenauf: sie soll gezogen werden, nicht
- * garantiert sein. Dafuer waechst die Hand um eine Karte (siehe
- * `handGroesse`), damit das Deck durch das eigene Aufgebot nicht verstopft.
+ * Jede Einheit, die Stellung bezieht, bringt ihre Befehlskarte mit. Sie geht
+ * NICHT ins Deck, sondern in den Vorrat der fixierten Karten - und gleich
+ * auch auf die Hand, damit die Einheit noch in diesem Zug feuern kann.
  */
-function gibAngriffskarte() {
-  const karte = neueKarte(protoVon('angriff'));
-  state.draw.splice(Math.floor(Math.random() * (state.draw.length + 1)), 0, karte);
-  state.angriffKarten++;
+function gibAngriffskarte(einheitenKarte, einheit) {
+  const karte = neueKarte(angriffKarteFuer(einheitenKarte));
+  karte.fuerEinheit = einheit.uid;
+  state.fixiert.push(karte);
+  state.hand.push(karte);
+}
+
+/** Die fixierten Karten der Station, zu Beginn jeder Runde auf die Hand. */
+function legeFixierteAufHand() {
+  for (const k of state.fixiert) {
+    if (!state.hand.some(h => h.uid === k.uid)) state.hand.push(k);
+  }
 }
 
 /**
- * Am Ende der Station gehen die Angriffskarten mit den Einheiten. Sie liegen
- * ueberall verstreut - im Zugstapel, in der Hand, in der Ablage, beiseite -,
- * also wird ueberall gesucht.
+ * Faellt eine Einheit, geht ihre Befehlskarte mit. Ohne das bliebe ein Befehl
+ * ohne jemanden, der ihn ausfuehrt.
  */
+function nimmAngriffskarteWeg(einheit) {
+  state.fixiert = state.fixiert.filter(k => k.fuerEinheit !== einheit.uid);
+  state.hand = state.hand.filter(k => k.fuerEinheit !== einheit.uid);
+}
+
+/** Am Ende der Station gehen alle fixierten Karten mit ihren Einheiten. */
 function nimmAngriffskartenZurueck() {
-  const ohne = (liste) => liste.filter(c => c.id !== 'angriff');
+  const uids = new Set(state.fixiert.map(k => k.uid));
+  state.fixiert = [];
+  const ohne = (liste) => liste.filter(c => !uids.has(c.uid) && !c.fixiert);
   state.draw = ohne(state.draw);
   state.hand = ohne(state.hand);
   state.discard = ohne(state.discard);
   state.beiseite = ohne(state.beiseite);
-  state.angriffKarten = 0;
-  state.schuesse = 0;
+}
+
+/*
+ * Der Kartenflug. Eine Befehlskarte wird auf die Einheit gezogen - das soll
+ * man sehen: die Karte loest sich aus der Hand, faehrt zur Figur und
+ * verschwindet dort. Geflogen wird mit einem Abbild im Dokument, nicht mit
+ * der Karte selbst; die ist im naechsten Bild ohnehin neu gezeichnet.
+ */
+function fliegeKarteZu(card, turm) {
+  if (wenigerBewegung) return;
+  const quelle = document.querySelector('#hand .card-slot[data-uid="' + card.uid + '"] .card');
+  if (!quelle) return;
+  const r = quelle.getBoundingClientRect();
+  const leinwand = canvas.getBoundingClientRect();
+  const zx = leinwand.left + isoX(turm.col + turm.w / 2, turm.row + turm.h / 2) / SZENE_B * leinwand.width;
+  const zy = leinwand.top + (isoY(turm.col + turm.w / 2, turm.row + turm.h / 2) - 34) / SZENE_H * leinwand.height;
+
+  const flug = quelle.cloneNode(true);
+  flug.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' +
+    r.width + 'px;height:' + r.height + 'px;margin:0;z-index:9999;pointer-events:none;' +
+    'transition:transform .38s cubic-bezier(.3,.85,.4,1),opacity .38s ease-in;';
+  document.body.appendChild(flug);
+  requestAnimationFrame(() => {
+    const dx = zx - (r.left + r.width / 2);
+    const dy = zy - (r.top + r.height / 2);
+    flug.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.16) rotate(12deg)';
+    flug.style.opacity = '0.15';
+  });
+  setTimeout(() => flug.remove(), 430);
 }
 
 /** Eine Fähigkeit auf ein gewaehltes Ziel anwenden. */
 function wendeKarteAn(ziel) {
   const card = state.pendingCard;
+  if (card && card.angriffAuf && ziel && ziel.turm) {
+    fliegeKarteZu(card, ziel.turm);
+    staub(ziel.turm.col + 1, ziel.turm.row + 1, 5, '#e8d5a8');
+  }
   bezahle(card);
   removeFromHand(card);
   state.pendingCard = null;
@@ -7971,6 +8102,9 @@ function wendeKarteAn(ziel) {
 // in die Ablage - beiseite legt sie erst das Ausspielen.
 function removeFromHand(card) {
   state.hand = state.hand.filter(c => c.uid !== card.uid);
+  // Eine fixierte Karte geht weder in die Ablage noch beiseite: sie liegt im
+  // eigenen Vorrat und kommt zur naechsten Runde von selbst zurueck.
+  if (card.fixiert) return;
   if (card.einmalJeKampf) {
     state.beiseite.push(card);
     raeumeSonderzug(card.id);
@@ -8147,6 +8281,7 @@ function handleGegner(e) {
       staub(mx2, my2, 4, '#d8c4a0');
       ruetteln(2);
       if (wer.hp <= 0) {
+        nimmAngriffskarteWeg(wer);
         turm.slots[platz] = null;
         klang('fall');
         schirmBlitz(0.3);
@@ -8177,6 +8312,8 @@ function handleGegner(e) {
     klang('treffer');
     if (turm.hp <= 0) {
       const besatzung = turm.slots.filter(x => x).length;
+      // Mit dem Turm faellt seine Besatzung, und mit ihr ihre Befehlskarten.
+      for (const u of towerUnits(turm)) nimmAngriffskarteWeg(u);
       state.towers = state.towers.filter(t => t.id !== turm.id);
       // Das Mauerwerk darunter kommt wieder zum Vorschein und traegt neu.
       for (let c = turm.col; c < turm.col + turm.w; c++) {
@@ -8254,9 +8391,9 @@ function turmHatZiel(t) {
 
 /** Tuerme, die in diesem Zug noch schiessen koennten und es nicht getan haben. */
 function ungenutzteTuerme() {
-  // Ein Turm ohne freien Schuss ist nicht ungenutzt, sondern ohne Befehl.
-  const bereit = state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && turmHatZiel(t)).length;
-  return Math.min(bereit, state.schuesse || 0);
+  // Ein Turm ohne Befehl ist nicht ungenutzt: dort wartet nichts, was
+  // verfallen koennte. Gezaehlt wird, wer den Befehl hat und ihn nicht nutzt.
+  return state.towers.filter(t => !towerHasFired(t) && bereiteEinheiten(t).length && turmHatZiel(t)).length;
 }
 
 /**
@@ -8379,7 +8516,7 @@ function betreteKnoten(id) {
 
   // Die Hand gehoert zur Station, nicht zum Ritt. Sie wandert immer zurueck
   // ins Deck, damit an jeder Station frisch gezogen wird.
-  state.discard.push(...state.hand);
+  state.discard.push(...state.hand.filter(c => !c.fixiert));
   state.hand = [];
 
   const art = KNOTEN[k.typ];
@@ -8392,6 +8529,7 @@ function betreteKnoten(id) {
     state.lager = buildRoster(state.runde, k.typ);
     state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
     drawCards(handGroesse());
+    legeFixierteAufHand();
     deployFromLager();
     zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
     klang('runde');
@@ -8452,8 +8590,7 @@ function neuerFeldzug(stufe) {
   state.hand = [];
   state.discard = [];
   state.beiseite = [];
-  state.schuesse = 0;
-  state.angriffKarten = 0;
+  state.fixiert = [];
   state.nextTowerId = 1;
   state.nextEnemyId = 1;
   state.runde = 1;
@@ -9065,7 +9202,7 @@ function zugAbschluss(lauf) {
   schuesseImZug = 0;   // die Tonleiter faengt in jedem Zug wieder unten an
   // Ein freigegebener, aber nicht abgegebener Schuss verfaellt mit dem Zug -
   // wie die Karte, die ihn freigegeben hat.
-  state.schuesse = 0;
+
   const kampfMeldung = lauf && lauf.stumm
     ? document.getElementById('message').textContent : '';
 
@@ -9077,10 +9214,13 @@ function zugAbschluss(lauf) {
 
   if (state.frist && state.zug >= state.frist) { derSturm(); return; }
 
-  const abgelegt = state.hand.length;
-  state.discard.push(...state.hand);
+  // Fixierte Karten wandern nicht in die Ablage - sie liegen neben dem Deck
+  // und kommen gleich wieder auf die Hand.
+  const abgelegt = state.hand.filter(c => !c.fixiert).length;
+  state.discard.push(...state.hand.filter(c => !c.fixiert));
   state.hand = [];
   const { drawn, reshuffled } = drawCards(handGroesse());
+  legeFixierteAufHand();
 
   state.zug += 1;
   state.tatendrang = state.maxTatendrang;
@@ -9541,6 +9681,15 @@ function karteRegel(card) {
   const satz = teile.length
     ? (() => { const t = teile.join('. '); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; })()
     : '';
+  // Die Befehlskarte sagt, was sie tut, nicht welche Zahlen sie schiebt.
+  if (card.angriffAuf) {
+    const wer = (CARD_POOL.find(c => c.id === card.angriffAuf) || {}).name || 'die Einheit';
+    return 'Zieh sie auf ' + (wer === 'die Einheit' ? wer : 'einen ' + wer) + ': er schießt in diesem Zug.';
+  }
+  // Die Einheit sagt an, welche Befehlskarte sie mitbringt.
+  if (card.type === 'Einheit') {
+    return ('Bringt die fixierte Karte „Angriff ' + card.name + '“ mit. ' + satz).trim();
+  }
   // Die Grenze steht vorn: sie entscheidet, ob die Karte ueberhaupt geht.
   if (card.einmalJeKampf) return ('Einmal je Kampf, dann aus dem Spiel. ' + satz).trim();
   return satz;
@@ -9559,6 +9708,7 @@ function karteJetzt(card) {
 function cardElement(card, { disabled = false, selected = false, onClick = null } = {}) {
   const slot = document.createElement('div');
   slot.className = 'card-slot' + (disabled ? ' gesperrt' : '');
+  slot.dataset.uid = card.uid;   // damit der Kartenflug seine Karte findet
 
   const verbraucht = state.phase === 'kampf' && schonVerbraucht(card);
   const el = document.createElement('div');
@@ -9634,13 +9784,34 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
 
   // Schlagwort: eine Karte mit Sonderzug traegt das gedruckt, wie eine
   // Faehigkeit im Regelwerk. Ohne das waere die Regel eine Zeile Kleintext.
-  if (card.einmalJeKampf) {
-    const sz = document.createElement('div');
-    sz.className = 'card-sonderzug';
-    sz.textContent = 'Sonderzug';
-    sz.title = 'Einmal je Kampf. Danach liegen alle Karten dieser Art bis zur nächsten Station beiseite.';
-    el.appendChild(sz);
+  /*
+   * Die Schlagworte stehen in einer eigenen Spalte. Bei einer Bildkarte gibt
+   * es keine Regelzeile - dort liegt das Blatt ueber der ganzen Karte -, also
+   * wird diese Spalte ueber das Bild gelegt. Sonst traegt der Waldlaeufer
+   * seinen Sonderzug nirgends, und man muesste ihn wissen.
+   */
+  const schlagworte = document.createElement('div');
+  schlagworte.className = 'card-schlagworte';
+  const schlagwort = (text, klasse, hinweis) => {
+    const b = document.createElement('div');
+    b.className = 'card-sonderzug' + (klasse ? ' ' + klasse : '');
+    b.textContent = text;
+    if (hinweis) b.title = hinweis;
+    schlagworte.appendChild(b);
+  };
+  if (card.fixiert) {
+    schlagwort('Fixiert', 'fixiert',
+      'Liegt nicht im Deck. Kommt zu jeder Runde zusätzlich in die Hand.');
   }
+  if (card.einmalJeKampf) {
+    schlagwort('Sonderzug', '',
+      'Einmal je Kampf. Danach liegen alle Karten dieser Art bis zur nächsten Station beiseite.');
+  }
+  if (card.type === 'Einheit') {
+    schlagwort('+ Angriff ' + card.name, 'mitbringsel',
+      'Diese Einheit bringt ihre fixierte Befehlskarte mit.');
+  }
+  if (schlagworte.childNodes.length) el.appendChild(schlagworte);
 
   const werte = kartenWerte(card);
   const bildkarte = Boolean(kartenBild(card.id));
@@ -10269,8 +10440,9 @@ function renderAll() {
   document.getElementById('beiseite-count').textContent = state.beiseite.length;
   document.getElementById('pile-beiseite').classList.toggle('hidden', !state.beiseite.length);
   // Freigegebene Schuesse: nur zu sehen, wenn welche bereitliegen.
-  document.getElementById('schuss-count').textContent = state.schuesse || 0;
-  document.getElementById('chip-schuss').classList.toggle('hidden', !state.schuesse);
+  const mitBefehl = state.towers.reduce((n, t) => n + (towerHasFired(t) ? 0 : bereiteEinheiten(t).length), 0);
+  document.getElementById('schuss-count').textContent = mitBefehl;
+  document.getElementById('chip-schuss').classList.toggle('hidden', !mitBefehl);
   // Die Deckgroesse zaehlt die beiseitegelegten Karten mit: sie sind nicht
   // verloren, sie kommen mit der naechsten Station zurueck.
   document.getElementById('deck-total').textContent =
