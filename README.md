@@ -1813,9 +1813,18 @@ Schuss ganz aus. Was vorher zwei bis drei Schüsse je Zug waren, ist jetzt
 höchstens einer, oft keiner.
 
 Das ist kein Fehler der Mechanik, sondern ihre Wirkung — nur ist die Tuning-Lage
-darauf noch nicht eingestellt. Die Stellschrauben dafür liegen alle bereit:
-`sofort.schuss` der Angriffskarte (zwei Schüsse je Karte), der Sonderzug am
-Waldläufer, `zugFrist` und `rundenBudget`.
+darauf noch nicht eingestellt.
+
+**Und die naheliegende Stellschraube ist die falsche.** Gibt die Angriffskarte
+*zwei* Schüsse statt einem, ändert das fast nichts: 0/10 Siege, Station 5,3
+statt 4,6. Der Engpass sind nämlich nicht die Schüsse, sondern die **Stellungen**
+— jeder Turm feuert höchstens einmal je Zug, und mit einem einzigen Waldläufer
+gibt es nur einen besetzten Turm. Der zweite Schuss auf der Karte hat gar
+niemanden, der ihn abgeben könnte.
+
+Der wirksame Hebel ist deshalb die Zahl der Einheiten, nicht die der Schüsse:
+den Sonderzug am Waldläufer wieder zu lösen bringt den Feldzug von Station 4,6
+auf 9,0. Danach erst lohnen die groben Regler `zugFrist` und `rundenBudget`.
 
 ### Sonderzug
 
