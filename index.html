@@ -1206,7 +1206,7 @@
         <li><b>Fixiert:</b> Befehlskarten liegen <b>nicht im Deck</b>. Sie werden nie gemischt und nie gezogen, sondern kommen zu <b>jeder Runde zusätzlich in die Hand</b> — gespielt oder nicht, nächste Runde sind sie wieder da. Deine Hand ist also fünf gezogene Karten plus eine je Einheit im Feld. Fällt die Einheit, geht ihre Karte mit; am Ende der Station gehen alle.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt höchstens einmal je Zug, und nur, wenn du es anweist und eine Angriffskarte freigegeben hast. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug mit freigegebenen, aber ungenutzten Schüssen, verfallen sie — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
-        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu zwei Flanken, die nach hinten laufen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinten steht keine Mauer: dort steht die Burg, und von hinten kommt niemand.</li>
+        <li><b>Der Wall:</b> Jeder Feldzug beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu zwei Flanken, die nach hinten laufen. Die Form wird einmal gezogen und bleibt dann deine Burg für den ganzen Ritt. Sie sperrt wirklich. Hinten steht keine Mauer: dort steht die Burg, und von hinten kommt niemand.</li>
         <li><b>Auch auf den Flanken:</b> Gebaut wird am Riegel <i>und</i> auf den seitlichen Mauern. Ein Turm nahe der Ecke flankiert den Anmarsch; einer tief hinten im Hof sieht nichts mehr.</li>
         <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, die <b>Durchfahrt geht hindurch</b>, hinter einer Gittertür. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1.</li>
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
@@ -1218,8 +1218,9 @@
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
         <li><b>Gegner:</b> Unter jedem steht, was er als Nächstes tut. Bewegen und Schlagen schließen sich aus.</li>
         <li><b>Gewicht:</b> Wer schwer ist, geht langsam. Ein Späher steht nach fünf Zügen am Tor und kratzt; die Ramme braucht neun und schlägt ein Loch, das Katapult zwölf. Die bronzene Plakette markiert schweres Gerät — es kommt spät, aber es kommt.</li>
-        <li><b>Route:</b> 17 Stationen bis zum Belagerungsmeister. Du wählst nach jeder Station, wohin es weitergeht.</li>
-        <li><b>Türme:</b> Bleiben nie stehen. An jeder Station baust du von vorn.</li>
+        <li><b>Route:</b> 11 Stationen bis zum Belagerungsmeister. Du wählst nach jeder Station, wohin es weitergeht.</li>
+        <li><b>Deine Burg bleibt stehen.</b> Es ist über den ganzen Feldzug dieselbe Anlage: Wall, Torhaus und jeder Turm, den du gebaut hast. Zwischen zwei Stationen werden Breschen im Wall geschlossen und die Türme teilweise ausgebessert — ein <b>gefallener Turm bleibt gefallen</b>. Im Lager kannst du alle Türme ganz instand setzen.</li>
+        <li><b>Die Besatzung nicht.</b> Männer gehören zum Kampf, nicht zum Bauwerk: an jeder Station besetzt du deine Türme neu. Deshalb wächst auch die Hand nicht mit der Zahl der Türme.</li>
         <li><b>Burg:</b> Ihre Lebenspunkte reitest du mit. Geheilt wird nur im Lager oder durch Begegnungen.</li>
         <li><b>Sold:</b> Nach jedem Kampf, mehr bei einer Vorhut. Beim Marketender kaufst, streichst und schärfst du Karten.</li>
         <li><b>Einstellungen:</b> Das Schieberzeichen oben rechts. Dort stellst du ein, wie viel vom Bild das Schlachtfeld bekommt, wie fein das Spiel malt, wie groß Karten und Anzeigen sind — und was an Himmel, Rand und Bewegung gezeichnet wird. Das Bild wächst mit dem Fenster; die Einstellungen bleiben im Browser.</li>
@@ -1266,7 +1267,7 @@
   <div id="route" class="hidden">
     <div id="route-kopf" class="panel">
       <b>Feldzug <span id="route-feldzug">1</span></b>
-      <span>Station <b id="route-station">1</b> von <span id="route-gesamt">17</span></span>
+      <span>Station <b id="route-station">1</b> von <span id="route-gesamt">11</span></span>
       <span class="burg"><i class="ic" data-ikone="burg"></i> <b id="route-hp">35</b></span>
       <span class="sold"><i class="ic" data-ikone="muenze"></i> <b id="route-sold">0</b></span>
     </div>
@@ -1349,7 +1350,7 @@
 
   <div class="hud hud-right">
     <div class="wave panel">
-      <div class="wave-top"><span id="feldzug-wort" class="hidden">Feldzug <b id="run-val">1</b> · </span><span>Station <b id="round-val">1</b>/<b id="round-max">17</b></span><span class="foes"><i class="ic" data-ikone="schwerter"></i> <b id="enemy-count">0</b></span></div>
+      <div class="wave-top"><span id="feldzug-wort" class="hidden">Feldzug <b id="run-val">1</b> · </span><span>Station <b id="round-val">1</b>/<b id="round-max">11</b></span><span class="foes"><i class="ic" data-ikone="schwerter"></i> <b id="enemy-count">0</b></span></div>
       <div class="wave-bar"><i id="enemy-bar" style="width:100%"></i></div>
     </div>
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus"><i class="ic" data-ikone="horn"></i></button>
@@ -1663,7 +1664,7 @@ const ENEMY_TYPES = {
 
 // Eine Runde ist ein ganzer Kampf gegen ein festes Aufgebot. Innerhalb
 // davon zaehlen Zuege: erst der Spieler, dann die Gegner.
-const STATIONEN = 17;               // Laenge eines Feldzugs
+const STATIONEN = 11;               // Laenge eines Feldzugs
 const ROUTE_SPALTEN = 5;            // Breite der Karte
 const ROUTE_PFADE = 5;              // so viele Wege werden gezogen, sie ueberlappen
 
@@ -1700,6 +1701,19 @@ const FELDZUG_REKORD = 'cm-rekord';  // gespeicherter Bestwert
 const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
 
 /*
+ * Der Feldzug ist kuerzer geworden - elf Stationen statt siebzehn. Die Kurve
+ * ist deshalb nicht flacher: `haerteStufe` rechnet die Station auf die alte
+ * Skala um, auf der alle Zahlen darunter gewachsen sind. Station 11 ist damit
+ * so schwer, wie Station 17 es war; der Aufstieg dorthin ist nur steiler.
+ *
+ * Ohne das waere aus dem Kuerzen ein Verharmlosen geworden: der
+ * Belagerungsmeister haette ein Aufgebot der alten Station 11 mitgebracht.
+ */
+const HAERTE_SKALA = 17;
+const haerteStufe = (runde) =>
+  1 + (Math.max(1, runde) - 1) * (HAERTE_SKALA - 1) / Math.max(1, STATIONEN - 1);
+
+/*
  * Das Budget einer Station. Der Anfang war zu billig: mit 4 + 1,55 je Station
  * stand an Station 1 ein Aufgebot von sechs Punkten - zwei Spaehern -, und die
  * ersten drei Stationen liefen von selbst durch. Der Achsenabschnitt ist
@@ -1707,9 +1721,9 @@ const feldzugHaerte = (stufe) => 1 + 0.18 * (stufe - 1);
  * Station 12 dasselbe wie vorher. Haerter werden soll der Anfang, nicht das
  * Ende - das Ende war schon hart genug.
  */
-const rundenBudget = (runde) => Math.round((6.5 + runde * 1.35) * feldzugHaerte(state.feldzug || 1));
-const einsatzProZug = (runde) => 2 + Math.floor(runde / 3); // wie viele je Zug aus dem Lager treten
-const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((runde - 1) / 2));
+const rundenBudget = (runde) => Math.round((6.5 + haerteStufe(runde) * 1.35) * feldzugHaerte(state.feldzug || 1));
+const einsatzProZug = (runde) => 2 + Math.floor(haerteStufe(runde) / 3); // wie viele je Zug aus dem Lager treten
+const maxTatendrangFuer = (runde) => Math.min(8, 3 + Math.floor((haerteStufe(runde) - 1) / 2));
 // Jede Station hat eine Frist. Wer sie verstreichen laesst, dem rennt das
 // ganze Aufgebot ins Tor. Das ist der Druck, der den Zug wertvoll macht.
 const zugFrist = (runde, typ) => {
@@ -1721,7 +1735,7 @@ const zugFrist = (runde, typ) => {
    * das Feuer steht auf einer festen Linie. Gemessen ueber je 48 Feldzuege:
    * 12 Siege bei acht Zuegen, 16 bei neun, gegen 18 vor dem Wall.
    */
-  const grund = 9 + Math.floor(runde / 4);
+  const grund = 9 + Math.floor(haerteStufe(runde) / 4);
   if (typ === 'elite') return grund + 1;
   if (typ === 'meister') return grund + 3;
   return grund;
@@ -1736,11 +1750,11 @@ const BELOHNUNG_AUSWAHL = 3;                         // Karten zur Wahl nach der
  * beim Budget: mehr am Anfang, flacher ueber den Feldzug, an Station 17
  * genau so viel wie vorher.
  */
-const belagerungsHp = (runde) => (1.5 + 0.048 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+const belagerungsHp = (runde) => (1.5 + 0.048 * (haerteStufe(runde) - 1)) * feldzugHaerte(state.feldzug || 1);
 // Die Wucht waechst mal, nicht plus. Ein Aufschlag von +10 auf alles haette
 // aus dem Spaeher (1) und der Ramme (11) spaete Zwillinge gemacht und genau
 // den Unterschied eingeebnet, der die Typen unterscheidbar macht.
-const belagerungsWucht = (runde) => (1 + 0.085 * (runde - 1)) * feldzugHaerte(state.feldzug || 1);
+const belagerungsWucht = (runde) => (1 + 0.085 * (haerteStufe(runde) - 1)) * feldzugHaerte(state.feldzug || 1);
 
 // Das geschuetzte Lager liegt rechts neben dem Spielfeld.
 const LAGER_COL = COLS;
@@ -1830,7 +1844,9 @@ function baueRoute() {
     wirf('ereignis', 16);
     wirf('haendler', 12);
     wirf('lager', 10);
-    if (k.ebene >= 5) wirf('elite', 20);   // vor Station 6 waere sie eine Mauer
+    // Die Vorhut kommt nach dem ersten Drittel - auf der alten Laenge war das
+    // Station 6, auf der neuen Station 4. Frueher waere sie eine Mauer.
+    if (k.ebene >= Math.round((STATIONEN - 1) * 0.3)) wirf('elite', 20);
     k.typ = topf[Math.floor(Math.random() * topf.length)];
   }
 
@@ -1972,7 +1988,7 @@ function buildRoster(runde, typ) {
   if (vorhut) budget = Math.round(budget * 1.3);
 
   const offen = Object.values(ENEMY_TYPES)
-    .filter(t => t.id !== 'meister' && runde >= t.abRunde)
+    .filter(t => t.id !== 'meister' && haerteStufe(runde) >= t.abRunde)
     .sort((a, b) => b.punkte - a.punkte);
   const lager = [];
   if (endkampf) lager.push(makeEnemy('meister', runde));
@@ -4315,19 +4331,32 @@ function baueWall(runde) {
 }
 
 /**
- * Setzt den Wall einer Station auf und stellt das Torhaus als fertigen Turm
- * hin. Das Torhaus laeuft absichtlich durch `state.towers`: damit gilt fuer
- * es alles, was fuer Tuerme gilt - zielen, Zinnen, Plakette, Fallen.
+ * Die Anlage wird EINMAL JE FELDZUG angelegt, nicht je Station.
+ *
+ * Vorher stand an jeder Station ein anderer Wall auf einem leeren Feld, und
+ * die Tuerme der letzten Station waren weg. Ein Feldzug war damit eine Reihe
+ * von siebzehn Anfaengen; nichts, was man baute, ueberlebte den Ritt, und die
+ * Burg war jedes Mal eine andere. Jetzt ist sie dieselbe Burg: was steht,
+ * steht auch an der naechsten Station, und was faellt, fehlt dort.
+ *
+ * `state.anlage` ist der Bauplan - der Wall, wie er gedacht war. Die gelebte
+ * Mauer in `state.wall` weicht davon ab, sobald etwas zerschlagen wird;
+ * zwischen zwei Stationen wird sie danach wieder hergerichtet.
  */
-function setzeWall(runde) {
-  const w = baueWall(runde);
-  state.wall = w.wall;
-  state.tor = w.tor;
-  state.wallForm = w.form;
-  weltStand++;
+function legeAnlageAn() {
+  state.anlage = baueWall(1);
+  state.wall = new Map();
+  state.tor = state.anlage.tor;
+  state.wallForm = state.anlage.form;
+  state.towers = [];
+  richteAnlageHer();
+}
 
-  const th = w.torhaus;
-  state.towers.push({
+/** Das Torhaus als fertiger Turm. Es laeuft absichtlich durch `state.towers`:
+ *  damit gilt fuer es alles, was fuer Tuerme gilt - zielen, Zinnen, Plakette. */
+function macheTorhaus() {
+  const th = state.anlage.torhaus;
+  return {
     id: state.nextTowerId++, name: 'Torhaus', col: th.col, row: th.row, w: th.w, h: th.h,
     hp: 22, maxHp: 22, rangeBonus: 2, zinnen: 0,
     modell: 'torhaus',
@@ -4335,9 +4364,59 @@ function setzeWall(runde) {
     slots: [null],
     // Durch diese Felder laeuft die Einfahrt: sie gehoeren zum Bauwerk,
     // sperren aber nicht. Sonst waere das Torhaus eine Mauer mit Dach.
-    durchfahrt: w.durchfahrt,
+    durchfahrt: state.anlage.durchfahrt,
     bauZeit: BAU_DAUER, rueckstoss: 0, torhaus: true,
-  });
+  };
+}
+
+// Was ein Turm zwischen zwei Stationen an Lebenspunkten wiederbekommt.
+// Nicht alles: eine schwere Station soll man dem Turm noch ansehen.
+const ANLAGE_HEILUNG = 0.4;
+
+/**
+ * Zwischen zwei Stationen wird ausgebessert. Der Wall steht wieder nach Plan -
+ * eine Bresche, die bliebe, waere das Ende jeder Verteidigung, denn das Tor
+ * waere fuer immer umgehbar. Die Tuerme behalten dagegen ihre Schrammen und
+ * bekommen nur einen Teil zurueck; ein gefallener Turm bleibt gefallen.
+ *
+ * Die Besatzung zieht ab: Maenner gehoeren zum Kampf, nicht zum Bauwerk. Sonst
+ * waechst mit jeder Station auch die Hand (jede Einheit bringt ihre Befehls-
+ * karte mit), und aus fuenf Karten wuerden zwanzig.
+ */
+function richteAnlageHer() {
+  for (const [k, plan] of state.anlage.wall) {
+    const jetzt = state.wall.get(k);
+    if (jetzt) { jetzt.hp = jetzt.maxHp; jetzt.riss = 0; }
+    else state.wall.set(k, { ...plan, hp: WALL_HP, maxHp: WALL_HP, wachsen: 0, riss: 0 });
+  }
+  if (!state.towers.some(t => t.torhaus)) state.towers.push(macheTorhaus());
+  for (const t of state.towers) {
+    t.slots = t.slots.map(() => null);
+    t.zinnen = 0;
+    t.attackedKey = null;
+    t.spann = 0;
+    t.hp = Math.min(t.maxHp, t.hp + Math.ceil(t.maxHp * ANLAGE_HEILUNG));
+  }
+  // Was unter einem Turm liegt, wird verdeckt - auch wieder aufgebautes.
+  for (const m of state.wall.values()) m.verdeckt = false;
+  for (const t of state.towers) {
+    for (let c = t.col; c < t.col + t.w; c++) for (let r = t.row; r < t.row + t.h; r++) {
+      const m = state.wall.get(wkey(c, r));
+      if (m) m.verdeckt = true;
+    }
+  }
+  weltStand++;
+  wegCache = new Map();
+}
+
+/** Setzt alle Tuerme wieder instand - die Nacht im Lager reicht dafuer. */
+function flickeAlleTuerme() {
+  let geflickt = 0;
+  for (const t of state.towers) {
+    geflickt += t.maxHp - t.hp;
+    t.hp = t.maxHp;
+  }
+  return geflickt;
 }
 
 // Zaehlt jede Aenderung an Mauern und Tuermen. Die Wegfelder haengen daran:
@@ -9282,8 +9361,9 @@ function aktuellerKnoten() {
 }
 
 /**
- * Betritt eine Station. Türme werden nie mitgenommen: Du reitest weiter und
- * baust am neuen Ort von vorn. Burg-Lebenspunkte, Deck und Sold bleiben.
+ * Betritt eine Station. Die Anlage bleibt: es ist dieselbe Burg, an der du
+ * den ganzen Feldzug baust. Was mitwandert, ist alles ausser der Besatzung -
+ * Mauern, Türme, Burg-Lebenspunkte, Deck und Sold.
  */
 function betreteKnoten(id) {
   const k = state.route.knoten.find(n => n.id === id);
@@ -9294,8 +9374,7 @@ function betreteKnoten(id) {
   state.route.offen = [];
   state.runde = k.ebene + 1;
 
-  // Frisches Feld an jeder Station
-  state.towers = [];
+  // Das Feld wird geraeumt - die Anlage bleibt stehen.
   state.enemies = [];
   state.lager = [];
   state.selectedTower = null;
@@ -9305,8 +9384,6 @@ function betreteKnoten(id) {
   projektile.length = 0;
   steckPfeile.length = 0;
   staubkoerner.length = 0;
-  state.wall = new Map();
-  state.tor = [];
   state.einmalGenutzt = {};
   holeBeiseiteZurueck();
   nimmAngriffskartenZurueck();
@@ -9332,9 +9409,9 @@ function betreteKnoten(id) {
   const art = KNOTEN[k.typ];
   if (art.kampf) {
     state.phase = 'kampf';
-    // Erst der Wall, dann das Aufgebot: das Torhaus zaehlt als Turm und muss
+    // Erst die Anlage, dann das Aufgebot: das Torhaus zaehlt als Turm und muss
     // stehen, bevor irgendein Gegner sich ein Ziel sucht.
-    setzeWall(state.runde);
+    richteAnlageHer();
     state.lagerStaerke = k.typ;
     state.lager = buildRoster(state.runde, k.typ);
     state.rundenHp = Math.max(1, state.lager.reduce((sum, e) => sum + e.maxHp, 0));
@@ -9343,7 +9420,11 @@ function betreteKnoten(id) {
     deployFromLager();
     zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
     klang('runde');
-    setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. Besetze das Torhaus und baue Türme an den Wall.');
+    const gebaut = state.towers.filter(t => !t.torhaus).length;
+    setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. ' + (gebaut
+      ? 'Deine Anlage steht' + (gebaut === 1 ? ' mit einem Turm' : ' mit ' + gebaut + ' Türmen') +
+        '. Besetze sie und baue weiter.'
+      : 'Besetze das Torhaus und baue Türme an den Wall.'));
   } else if (k.typ === 'haendler') {
     oeffneHaendler();
   } else if (k.typ === 'lager') {
@@ -9410,6 +9491,8 @@ function neuerFeldzug(stufe) {
   projektile.length = 0;
   steckPfeile.length = 0;
   state.route = baueRoute();
+  // Die Burg dieses Feldzugs. Sie wird einmal gezogen und bleibt bis zum Ende.
+  legeAnlageAn();
   state.maechte = {};
   state.ausloeser = [];
   state.gefallene = 0;
@@ -9777,6 +9860,21 @@ function rastSicht(meldung) {
           state.rastGenutzt = true;
           klang('sieg');
           zeigeStation(rastSicht('Die Burg steht wieder fester. +' + g + ' LP.'));
+        },
+      },
+      {
+        /*
+         * Seit die Anlage ueber den Feldzug stehen bleibt, ist das hier keine
+         * Kleinigkeit mehr: ein angeschlagener Turm nimmt seine Schrammen mit
+         * bis zum Belagerungsmeister.
+         */
+        text: 'Türme ausbessern', hinweis: 'alle auf volle LP',
+        gesperrt: fertig || !state.towers.some(t => t.hp < t.maxHp),
+        aktion: () => {
+          const g = flickeAlleTuerme();
+          state.rastGenutzt = true;
+          klang('bau');
+          zeigeStation(rastSicht('Die Zimmerleute waren die Nacht über wach. +' + g + ' LP auf den Türmen.'));
         },
       },
       {

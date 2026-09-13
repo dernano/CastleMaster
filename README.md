@@ -1,9 +1,10 @@
 # Castle Master
 
 Ein rundenbasiertes Deckbuilding-Spiel im Browser, im Aufbau an Slay the Spire
-angelehnt. Du reitest eine Route aus siebzehn Stationen entlang der Grenze. An
-jeder Kampfstation errichtest du Türme auf einem Raster, besetzt sie mit
-Einheiten und hältst damit ein Aufgebot von Angreifern von deiner Burg fern.
+angelehnt. Du reitest eine Route aus elf Stationen entlang der Grenze. An
+jeder Kampfstation baust du an **derselben Burg** weiter — Türme auf den Wall,
+Männer auf die Türme — und hältst damit ein Aufgebot von Angreifern fern. Was
+du baust, steht auch an der nächsten Station; was fällt, fehlt dort.
 Dazwischen liegen Marketender, Lager und Begegnungen. Am Ende der Route wartet
 der Belagerungsmeister.
 
@@ -34,7 +35,7 @@ Weg es weitergeht, wie in Slay the Spire.
 | Marketender | ⚖ | Fünf Karten zum Kauf, dazu Streichen und Schärfen. |
 | Lager | ⌂ | Eine Nacht Ruhe: Mauern flicken, schärfen oder ausmisten. |
 | Begegnung | ? | Ein Ereignis mit zwei bis drei Entscheidungen. |
-| Belagerungsmeister | ♛ | Station 17, der Endgegner. |
+| Belagerungsmeister | ♛ | Die letzte Station, der Endgegner. |
 
 Mindestens zwei Marketender liegen auf jedem Feldzug, Station 16 ist immer ein
 Lager, und die ersten beiden Stationen sind mild.
@@ -47,8 +48,14 @@ bestandene Feldzüge und die beste Station bleiben gespeichert.
 
 ### Was mitreitet und was nicht
 
-**Türme bleiben nie stehen.** An jeder Station baust du von vorn. Die
-eigentliche Fortschrittsachse ist damit das Deck, nicht das Feld.
+**Die Anlage reitet mit.** Es ist über den ganzen Feldzug dieselbe Burg: Wall,
+Torhaus und jeder Turm, den du gebaut hast. Zwischen zwei Stationen werden
+Breschen geschlossen und die Türme teilweise ausgebessert; ein gefallener Turm
+bleibt gefallen. Neben dem Deck ist damit auch das Feld eine
+Fortschrittsachse — siehe „Die Burg · Sie bleibt stehen".
+
+**Die Besatzung nicht.** Männer gehören zum Kampf, nicht zum Bauwerk: an jeder
+Station besetzt du deine Türme neu.
 
 **Die Burg reitet mit.** Ihre 50 Lebenspunkte müssen den ganzen Feldzug tragen
 und heilen nicht von selbst. Geheilt wird nur im Lager oder durch eine
@@ -138,15 +145,16 @@ damit man eine Reihe durchklicken kann, ohne jedes Mal neu zu greifen.
 ### Die Frist
 
 Lange fehlte dem Spiel jeder Druck. Die Burg nahm fast nie Schaden: Türme
-fingen alles ab, und weil an jeder Station kostenlos neu gebaut wird, kostete
-ein verlorener Turm nichts. Man konnte beliebig lange bauen, bis das Aufgebot
-irgendwann zerschossen war. Ein Kampf dauerte im Schnitt zehn Züge, und ein
+fingen alles ab, und weil damals an jeder Station kostenlos neu gebaut wurde,
+kostete ein verlorener Turm nichts (heute steht die Anlage den ganzen Feldzug,
+und ein gefallener Turm bleibt gefallen). Man konnte beliebig lange bauen, bis
+das Aufgebot irgendwann zerschossen war. Ein Kampf dauerte im Schnitt zehn Züge, und ein
 Bot gewann sechzehn von sechzehn Läufen. Wo nichts schiefgehen kann, gibt es
 auch nichts zu entscheiden.
 
 Jede Kampfstation hat deshalb eine **Frist**:
 
-    Frist = 7 + Runde / 4        Züge
+    Frist = 9 + Härtestufe / 4        Züge
     Vorhut  + 1
     Meister + 3
 
@@ -340,7 +348,7 @@ und zeichnete deren Randkanten. Das hatte drei Mängel — sie war Kulisse
 (`blockiert` kannte nur Burg und Türme, jeder Belagerer lief hindurch), ohne
 Turm gab es sie gar nicht, und der erste Zug hatte nichts zu entscheiden.
 
-Jetzt steht an jeder Station eine **fertige Anlage**: ein Riegel vom oberen zum
+Jetzt steht von Anfang an eine **fertige Anlage**: ein Riegel vom oberen zum
 unteren Kartenrand, dazu zwei Flanken und eine Rückwand, die den Hof mit der
 Burg umschließen. Der Riegel hängt nicht an der Burg, sondern kommt seitlich
 herein und schließt ab. Vier Grundformen, dazu eine gewürfelte Grundspalte:
@@ -1877,6 +1885,50 @@ hinteren Ende. Im Bergfried brennt ein Fenster, das leicht flackert. Auf dem
 Dach weht das Banner; darunter steht der Lebensbalken, sobald die Burg getroffen
 wurde.
 
+### Sie bleibt stehen
+
+Lange war ein Feldzug eine Reihe von Anfängen: an jeder Station ein anderer
+Wall auf leerem Feld, und die Türme der letzten Station waren weg. Nichts, was
+man baute, überlebte den Ritt. Genau das stand hier als erster Punkt unter „Was
+noch fehlt" — ein Lauf fühlte sich nicht an, als würde er zu etwas.
+
+Jetzt ist es **dieselbe Burg**. Die Anlage wird einmal je Feldzug gezogen
+(`legeAnlageAn`) und bleibt: Wall, Form, Torhaus und jeder Turm, den du gebaut
+hast. Station 1 hat nur das Torhaus; wer an jeder Station einen Turm setzt,
+steht am Ende hinter einer gewachsenen Anlage.
+
+**Was zwischen zwei Stationen passiert** (`richteAnlageHer`):
+
+| | |
+| --- | --- |
+| Breschen im Wall | werden geschlossen, Risse verputzt |
+| Türme | bekommen 40 % ihrer Lebenspunkte zurück |
+| Ein gefallener Turm | bleibt gefallen |
+| Die Besatzung | zieht ab |
+
+Die drei Zeilen sind je eine Entscheidung, keine Bequemlichkeit:
+
+**Der Wall wird ganz hergestellt**, weil eine bleibende Bresche das Ende jeder
+Verteidigung wäre. Das Tor ist der Engpass, auf den das ganze Spiel gebaut ist;
+ein Loch daneben macht es für den Rest des Feldzugs zur Zierde.
+
+**Türme nur teilweise**, damit eine teuer gehaltene Station dem Bauwerk
+anzusehen ist. Wer einen Turm verliert, verliert ihn wirklich — das ist der
+Preis, der das Bauen zu einer Entscheidung macht. Im Lager gibt es dafür
+**„Türme ausbessern"**: eine Nacht, und alles steht wieder voll.
+
+**Die Besatzung zieht ab**, und das ist die wichtigste der drei. Männer gehören
+zum Kampf, nicht zum Bauwerk — und technisch hängt daran die Hand: jede Einheit
+im Feld bringt ihre fixierte Befehlskarte mit. Bei bleibender Besatzung wäre
+aus fünf Karten plus einer je Einheit nach ein paar Stationen ein Blatt von
+zwanzig geworden. So bleibt jede Station die Frage, wen du wohin stellst, und
+die Einheitenkarten bleiben den ganzen Feldzug über nützlich statt irgendwann
+tote Blätter zu sein.
+
+Ein Nebeneffekt, der gefällt: die **Krone der Belagerung** gibt ihre Plätze den
+Gebäuden, die gerade stehen — und die stehen jetzt bis zum Ende. Aus einer
+Wirkung für eine Station ist ein dauerhafter Ausbau geworden.
+
 ## Angreifen
 
 Türme schießen nicht von selbst:
@@ -1908,7 +1960,7 @@ dass er in diesem Zug schon geschossen hat. `Esc` hebt jede Auswahl auf.
 | Armbrustschütze | 6 | 2 | 2 | 4 | 2 |
 | Ritter | 14 | 3 | 3 | 1 | 3 |
 | Ramme | 20 | 5 | 2 | 1 | 5 |
-| Belagerungsmeister | 65 | 8 | 2 | 2 | nur Station 17 |
+| Belagerungsmeister | 65 | 8 | 2 | 2 | nur die letzte Station |
 
 Jeder Gegner hat eine eigene Angriffsreichweite. Ein Späher muss bis auf ein
 Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern und
@@ -2149,8 +2201,9 @@ Fixiert kostet den Feldzug noch drei Stationen statt neun, und der Preis ist
 jetzt **Tatendrang statt Glück**: nicht *ob ich die Karte ziehe*, sondern *ob
 ich mir den Schuss diese Runde leiste*. Der Rest zeigt sich an der Sturmquote,
 die von rund einem Viertel auf 46 Prozent steigt: die Kämpfe werden nicht mehr
-rechtzeitig fertig. Das ist die Stelle, an der die Frist nachziehen müsste —
-genau wie beim Umbau auf das kleine Deck.
+rechtzeitig fertig. Das sah lange nach der Stelle aus, an der die Frist
+nachziehen müsste — genau wie beim Umbau auf das kleine Deck. Gemessen ist sie
+es nicht, siehe „Die Frist ist nicht der Engpass".
 
 ### Sonderzug
 
@@ -2189,6 +2242,53 @@ der Stationsnummer wächst. Teure Gegnertypen schalten sich erst später frei.
 Kein Typ stellt mehr als einen Teil des Aufgebots, damit späte Stationen nicht
 nur aus Rammen bestehen. Höchstens acht Gegner stehen gleichzeitig auf dem Feld,
 der Rest wartet im Lager. Spätere Stationen schicken zähere und stärkere Gegner.
+
+### Elf Stationen statt siebzehn
+
+Ein Feldzug war zu lang. Jetzt sind es **elf** Stationen — und die Kurve wurde
+dabei nicht flacher, sondern steiler. `haerteStufe` rechnet die Station auf die
+alte Skala von siebzehn um:
+
+```js
+const haerteStufe = (runde) =>
+  1 + (runde - 1) * (HAERTE_SKALA - 1) / (STATIONEN - 1);
+```
+
+Station 11 ist damit so schwer, wie Station 17 es war; Station 6 entspricht der
+alten 9. Alles, was mit der Station wuchs, rechnet jetzt damit: Budget,
+Lebenspunkte, Wucht, Nachschub je Zug, Tatendrang, Frist, und ab wann ein
+Gegnertyp überhaupt auftaucht. Auch die Vorhut rückt mit: sie kommt nach dem
+ersten Drittel der Route, auf der alten Länge war das Station 6, auf der neuen
+Station 4.
+
+Ohne diese Umrechnung wäre aus dem Kürzen ein Verharmlosen geworden — der
+Belagerungsmeister hätte ein Aufgebot der alten Station 11 mitgebracht, gut ein
+Drittel schwächer als vorgesehen.
+
+Gemessen über sechzehn Bot-Feldzüge mit bleibender Anlage: der Bot kommt im
+Schnitt bis **Station 8,5 von 11**, steht in gut einem Drittel der Läufe vor
+dem Belagerungsmeister und gewinnt **3 von 16**. Vorher waren es 10,1 von 17
+ohne einen einzigen Sieg — relativ also deutlich weiter, und das Ende ist jetzt
+das, woran ein Lauf scheitert, statt eine Wand irgendwo in der Mitte.
+
+Die Streuung ist dabei groß genug, dass acht Läufe nichts beweisen: zwei
+Stichproben derselben Fassung ergaben 0/8 und 3/8. Über beide zusammen liegt
+die Sturmquote bei 52 Prozent.
+
+#### Die Frist ist nicht der Engpass
+
+Die Sturmquote liegt seit Langem bei gut der Hälfte aller Kämpfe, und die
+naheliegende Antwort war immer: mehr Züge. Gemessen, acht Feldzüge je Fassung:
+
+| Frist | Stürme | Station im Schnitt |
+| --- | --- | --- |
+| 9 + Stufe/4 | 52 % (16 Läufe) | 8,5 |
+| **10** + Stufe/4 | 57 % (8 Läufe) | 7,9 |
+
+Ein Zug mehr ändert nichts — er bringt nur einen weiteren Schwung Nachschub aus
+dem Lager mit (`einsatzProZug`). Wer länger hält, hält länger gegen mehr. Die
+Frist bleibt also, wo sie ist; wenn die Sturmquote sinken soll, muss es am
+Nachschub oder am Feuer liegen, nicht an der Uhr.
 
 ### Der Anfang war zu billig
 
@@ -2248,14 +2348,13 @@ Vorhut, was zur Absicht passt: Sie ist die Prüfung des Feldzugs.
 
 ## Was noch fehlt
 
-- **Nichts wächst über den Feldzug hinweg.** Türme fallen an jeder Station weg,
-  Mächte gelten nur für eine Station. Das Einzige, was mitwächst, ist das Deck.
-  Ein Lauf fühlt sich deshalb nicht an, als würde er zu etwas werden.
 - **Kein Fortschritt zwischen den Läufen.** Keine Freischaltungen, alle 75
   Karten ab Lauf eins. Es gibt keinen Grund, warum Lauf 12 sich anders anfühlen
   sollte als Lauf 2.
-- **Nur ein Endgegner.** Station 17 ist immer derselbe Kampf gegen denselben
-  Mann.
+- **Nur ein Endgegner.** Die letzte Station ist immer derselbe Kampf gegen
+  denselben Mann.
+- **Mächte gelten nur für eine Station.** Die Anlage bleibt jetzt stehen, die
+  Mächte nicht — ein Bruch, der noch auffällt.
 - **Wenig Ton.** Die neuen Kartenwirkungen klingen alle gleich.
 - **Keine eigenen Bilder.** Alles ist im Code gezeichnet. Eingespielte Grafiken
   und Klänge fehlen noch; dafür bräuchte es einen Lader, und im veröffentlichten
@@ -2273,7 +2372,8 @@ Alles steckt in `index.html`: Stil, Aufbau und Logik.
 Spiellogik: `CARD_POOL` für die Karten, `STARTER_DECK` für das Startdeck,
 `ENEMY_TYPES` für die Gegner, `buildRoster` für das Aufgebot einer Station,
 `deployFromLager` für den Nachschub aus dem Lager, `baueRoute` für die Karte
-des Feldzugs, `betreteKnoten` und `weiterAufDerRoute` für den Ablauf einer
+des Feldzugs, `legeAnlageAn` und `richteAnlageHer` für die Burg, die über den
+ganzen Feldzug stehen bleibt, `betreteKnoten` und `weiterAufDerRoute` für den Ablauf einer
 Station, `oeffneHaendler`, `oeffneRast` und `oeffneEreignis` für die Stationen
 ohne Kampf, `EREIGNISSE` für die Begegnungen, `schaerfeKarte` und
 `entferneKarte` fürs Deck, `zielArt`, `playCard` und `wirke` für das Ausspielen
