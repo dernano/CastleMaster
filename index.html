@@ -5412,8 +5412,29 @@ function zeichenReihenfolge(objekte) {
   const grad = new Array(n).fill(0);
   const liegtHinter = (a, b) => a.col + a.w <= b.col || a.row + a.h <= b.row;
 
+  /*
+   * Verglichen wird nur, was sich im Bild ueberhaupt ueberdeckt.
+   *
+   * Das war der Fehler, der alles andere verursacht hat. `liegtHinter` lautet
+   * fuer zwei 1x1-Feldern "a.col < b.col ODER a.row < b.row" - und das ist
+   * keine Ordnung, sondern zyklisch: (5,0) liegt vor (0,5), (0,5) vor (3,3),
+   * (3,3) wieder vor (5,0). Solange die Szene aus wenigen grossen Bauwerken
+   * bestand, fiel das nicht auf. Mit dem Wall kamen dreissig 1x1-Felder dazu,
+   * und seither enthielt der Graph in JEDEM Bild einen Zyklus. Die
+   * topologische Sortierung scheiterte also immer und fiel auf die grobe
+   * Notsortierung nach col+row zurueck - der Maleralgorithmus war faktisch
+   * ausser Kraft. Daher die Mauern, die durch Tuerme schienen.
+   *
+   * Zwei Objekte, die sich auf dem Schirm nicht beruehren, muessen gar nicht
+   * geordnet werden. Mit dieser Schranke verschwinden fast alle Kanten - und
+   * mit ihnen die Zyklen.
+   */
+  const kasten = (o) => o.rect || bauRect(o.col, o.row, o.w, o.h, o.hoch || 40);
+  const kaesten = objekte.map(kasten);
+
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
+      if (!ueberlappt(kaesten[i], kaesten[j])) continue;
       let erst;
       if (liegtHinter(objekte[i], objekte[j])) erst = i;
       else if (liegtHinter(objekte[j], objekte[i])) erst = j;
@@ -5554,7 +5575,7 @@ function draw() {
   for (const t of state.towers) {
     objekte.push({
       art: 'bau', col: t.col, row: t.row, w: t.w, h: t.h,
-      rect: bauRect(t.col, t.row, t.w, t.h, 62),
+      rect: bauRect(t.col, t.row, t.w, t.h, (MODELL_HOEHE[t.modell || 'wachturm'] || 40) + (t.imWall ? WALL_HOEHE : 0) + 34),
       zeichne: () => drawTower(t),
     });
   }
@@ -5570,11 +5591,11 @@ function draw() {
   }
   for (const m of state.wall.values()) {
     objekte.push({
-      art: 'mauer', col: m.col, row: m.row, w: 1, h: 1,
+      art: 'mauer', col: m.col, row: m.row, w: 1, h: 1, hoch: WALL_HOEHE + 14,
       zeichne: () => drawWallFeld(m),
     });
   }
-  for (const d of DEKO) objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, zeichne: () => drawDeko(d) });
+  for (const d of DEKO) objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, hoch: 26, zeichne: () => drawDeko(d) });
 
   const geordnet = zeichenReihenfolge(objekte);
   for (const o of geordnet) o.zeichne();

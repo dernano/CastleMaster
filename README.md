@@ -424,6 +424,48 @@ Stein steht der Turm durchgehend vom Boden auf.
 verbleibenden 0,05 je Seite waren genug: durch diesen Spalt schaute der Wall
 dahinter als dünner Streifen am Turmrand hervor.
 
+### Die Wurzel: der Maleralgorithmus war außer Kraft
+
+Alles bisher in diesem Abschnitt waren Symptome. Die Ursache lag in
+`zeichenReihenfolge`, und sie ist älter als der Wall.
+
+Die Relation, nach der zwei Objekte geordnet werden, lautet:
+
+```js
+const liegtHinter = (a, b) => a.col + a.w <= b.col || a.row + a.h <= b.row;
+```
+
+Für zwei 1×1-Felder heißt das schlicht *„a.col < b.col **oder** a.row < b.row"* —
+und das ist **keine Ordnung, sondern zyklisch**: (5,0) liegt vor (0,5), (0,5) vor
+(3,3), (3,3) wieder vor (5,0). Solange die Szene aus wenigen großen Bauwerken
+bestand, trat der Fall nicht auf. Mit dem Wall kamen dreißig 1×1-Felder dazu —
+und seither enthielt der Graph in **jedem** Bild einen Zyklus.
+
+Die topologische Sortierung scheiterte also immer und fiel auf ihren Notausgang
+zurück, eine grobe Sortierung nach `col + row`. Gemessen: **fünf von fünf
+Bildern**, auch auf dem Stand vor allen Reparaturversuchen. Der Maleralgorithmus,
+über den im Abschnitt *Bewegung und Darstellung* so viel steht, hat seit
+Einführung des Walls kein einziges Bild mehr geordnet.
+
+Der Fehler war nicht zu sehen, weil die Notsortierung für die meisten Paare
+dasselbe liefert. Er fiel nur dort auf, wo sie falsch liegt — an hohen, schmalen
+Dingen, die von niedrigen überdeckt werden.
+
+**Die Reparatur**: verglichen wird nur noch, was sich im Bild überhaupt
+überdeckt.
+
+```js
+if (!ueberlappt(kaesten[i], kaesten[j])) continue;
+```
+
+Zwei Objekte, die sich auf dem Schirm nicht berühren, müssen gar nicht geordnet
+werden. Damit verschwinden fast alle Kanten und mit ihnen die Zyklen: **null von
+fünf Bildern** im Notausgang. Die Bildzeit bleibt gleich (18,8 → 19,1 ms) — die
+Überlappungsprüfung kostet, spart aber mehr Kanten, als sie kostet.
+
+Damit die Kästen stimmen, bekommen Wallfelder und Deko eine Höhe mit, und das
+Rechteck eines Turms rechnet den Sockel im Wall mit ein.
+
 ### Wie man so etwas findet
 
 Drei Runden lang habe ich aus dem fertigen Bild heraus interpretiert und dabei
@@ -436,6 +478,13 @@ zweimal das Falsche repariert. Was schließlich funktioniert hat, war, die Ebene
 | Wall grün | Der Wall lugte neben dem schmaleren Schaft hervor |
 | Sockel blau | Der helle Streifen am Turmfuß war mein eigener Sockel, in Wallfarbe |
 | Turmkörper magenta | Ein dünner grüner Saum am Turmrand — die fehlenden 0,05 |
+| Sockel wie der Körper | Schichtfolge `C M G M`: Wall **zwischen** zwei Turmschichten |
+
+Die letzte Zeile war der Durchbruch. Grün zwischen zwei Magenta-Schichten kann
+keine Silhouette sein — da wird etwas Niedriges über etwas Hohes gemalt. Erst
+diese Schichtfolge hat auf `zeichenReihenfolge` gezeigt. Ausgezählt hat das kein
+Auge, sondern ein Skript: für jede Bildspalte im Turmumriss die Farbfolge von
+oben nach unten. **21 von 101 Spalten** hatten Wallfarbe mittendrin, danach 0.
 
 Jede Farbe hat genau einen Irrtum ausgeräumt, und keiner davon wäre durch
 Hinsehen allein zu klären gewesen. Die letzte Färbung — den Turm selbst — hat
