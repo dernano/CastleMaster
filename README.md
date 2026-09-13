@@ -1372,6 +1372,104 @@ Türme belegen zwei mal zwei Felder und werden frei platziert. Beim Setzen einer
 Gebäude-Karte zeigt eine Vorschau, ob die Stelle frei ist. Jeder Turm hat eigene
 Lebenspunkte und mindestens einen Platz für eine Einheit.
 
+## Die Bühne: Bildgröße, Auflösung, Bedienelemente
+
+Das Spiel war in einem Kasten von 960 mal 768 Punkten gemalt, und diese eine
+Zahl war drei Dinge zugleich: der Koordinatenraum, die Größe der Leinwand und
+die Größe auf dem Schirm. Auf einem großen Monitor blieb die Burg deshalb
+briefmarkengroß — der Kasten stand fest, und daneben war schwarz.
+
+Jetzt sind die drei auseinandergezogen:
+
+| | was es ist | wer es setzt |
+| --- | --- | --- |
+| **Bühne** (`SZENE_B × SZENE_H`) | der logische Raum, in dem gemalt wird | Fenster und „Kartengröße" |
+| **Auflösung** (`SKALA`) | Gerätepunkte je logischem Punkt | „Auflösung" |
+| **Bedienelemente** (`--bedien`) | Größe von Karten, Anzeigen, Knöpfen | „Bedienelemente" |
+
+`baueBuehne()` rechnet das bei jedem Start und bei jeder Fenstergrößenänderung
+einmal durch.
+
+**Warum die Bühne kleiner wird, wenn das Feld größer werden soll.** Das
+Spielfeld hat mit `TW`/`TH` eine feste Größe in logischen Punkten — 770 breit,
+465 hoch. Die Bühne wird auf den Bildschirm gestreckt. Also gilt: je kleiner
+die Bühne, desto größer steht das Feld darin. „Kartengröße: Riesig" macht die
+Bühne nicht größer, sondern kleiner.
+
+**Warum die Bedienelemente nicht daran hängen.** Sie sind HTML, keine Leinwand,
+und werden über `zoom` skaliert. Hingen sie an der Bühne, ließe sich am
+Verhältnis von Feld zu Hand nichts ändern: beide wüchsen gemeinsam, und
+„Kartengröße" wäre nur ein zweiter Regler für dieselbe Vergrößerung.
+
+**Die Bedingung, die alles zusammenhält.** Die Hand steht unten im Bild und
+nimmt einen Anteil davon ein, der nicht von der Bühne abhängt. Bleibt für das
+Feld weniger übrig, als es hoch ist, wächst die Bühne so weit, bis es wieder
+passt:
+
+```js
+const anteil = leisteHoehe / platzHoehe;            // Anteil der Hand am Bild
+const noetig = (FELD_HOCH + 36 - UEBERHANG) / (1 - anteil);
+SZENE_H = Math.round(Math.max(KARTEN_BUEHNE[einst.karte], noetig));
+```
+
+Darum bekommt „Riesig" auf einem flachen Fenster weniger, als der Name
+verspricht — und niemals so wenig, dass die Handkarten ins Feld ragen. Die
+Brüstung, auf der die Karten liegen, wird aus der gemessenen Höhe der Leiste
+abgeleitet statt geraten; damit sie dabei nicht bei jedem Zug springt, hat die
+Hand eine feste Mindesthöhe, auch wenn keine Karte darin liegt.
+
+**Das Seitenverhältnis folgt dem Fenster**, zwischen 1,15 und 2,25 — sonst
+stünde neben dem Bild ein schwarzer Balken. Wird das Fenster hochkant gehalten,
+wächst statt der Breite die Höhe der Bühne: größer wird das Bild dadurch nicht,
+aber es nutzt, was da ist.
+
+**Das Land muss mitwachsen.** Es ist ein Parallelogramm mit schrägen Kanten;
+seine linke und rechte Spitze über den Bildrand zu schieben genügt nicht, sonst
+steht in den Ecken der nackte Hintergrund. `RAND` wird darum aus allen vier
+Kanten gegen die ihnen nächste Bildecke gerechnet. Auf einem Bild von 1920 mal
+1080 sind das 19 Felder Zugabe statt der früheren 5.
+
+### Was die Auflösung wirklich ändert
+
+`SKALA` ist der Faktor zwischen logischem Punkt und Gerätepunkt. Gesetzt wird er
+einmal als Transformation auf dem Zeichenkontext:
+
+```js
+ctx.setTransform(SKALA, 0, 0, SKALA, 0, 0);
+```
+
+Danach rechnet der ganze Rest des Spiels weiter in logischen Punkten und merkt
+nichts davon. Die vorgemalten Nebenleinwände — Boden, Himmel, Randabfall und
+jedes zwischengespeicherte Bauwerk — bekommen dieselbe Transformation, sonst
+wären sie die einzigen, die grob bleiben. Ihr Vorrat wird beim Wechsel der
+Auflösung geleert.
+
+Bei „Automatisch" trifft ein logischer Punkt genau einen Bildschirmpunkt. Das
+kostet: auf 1920 mal 1080 sind es in der Prüfumgebung 25,4 ms je Bild gegen
+18,0 ms bei fester Skala 1. Eine Obergrenze von gut zwei Millionen Punkten
+verhindert, dass ein sehr breites Fenster das Spiel zum Stehen bringt.
+
+Die Pixelfiguren verlieren dabei nichts: sie sind aus Rechtecken gebaut, keine
+eingelesenen Bilder. Sie werden schärfer, nicht weicher.
+
+### Das Menü
+
+Das Schieberzeichen oben rechts öffnet die Tafel. Sie wird aus einer Liste
+gebaut (`EINST_TAFEL`), nicht von Hand geschrieben — eine neue Einstellung ist
+eine Zeile dort und ein Vorgabewert in `EINST_STD`, sonst nichts. Gespeichert
+wird unter `cm-einst` im Browser.
+
+| Gruppe | Einstellung |
+| --- | --- |
+| Bild | Kartengröße, Auflösung, Bedienelemente, Kantenglättung |
+| Grafik | Himmel und Wetter, Randabfall und Raster, Röntgenblick, Bewegung |
+| Ton | Klänge, Musik |
+
+„Bewegung" stand vorher als `const wenigerBewegung` fest, allein aus
+`prefers-reduced-motion`. Die Systemeinstellung bleibt die Vorgabe, ist aber
+jetzt überschreibbar. Unten in der Tafel steht, was gerade gilt: Bühne,
+Leinwand und um welchen Faktor das Feld größer ist als im alten Kasten.
+
 ## Karten
 
 75 Karten, alle im Lauf kaufbar. Es gibt keinen gesperrten Teil des Stapels und
@@ -1625,8 +1723,10 @@ Ringmauer, `endTurn` und `nimmBelohnung` für den Ablauf, `enemyPlan` für die A
 `resolveEnemyTurn` für den Gegnerzug sowie `towerReach` und `towerDamageAt` für
 Reichweite und Salve eines Turms.
 
-Darstellung: `isoX` und `isoY` rechnen aufs Raster um, `cellFromPoint` ist die
-Umkehrung für Klicks, `zeichenReihenfolge` löst die Verdeckung topologisch auf,
+Darstellung: `baueBuehne` rechnet Fenster und Einstellungen in Bühne, Auflösung
+und Bedienzoom um, `buehnenBild` legt Nebenleinwände in derselben Auflösung an,
+`EINST_TAFEL` und `renderEinst` bauen das Einstellungsmenü, `isoX` und `isoY`
+rechnen aufs Raster um, `cellFromPoint` ist die Umkehrung für Klicks, `zeichenReihenfolge` löst die Verdeckung topologisch auf,
 `drawBlock` und `drawMerlons` bauen Mauerwerk, `drawSprite` malt die
 Pixelfiguren, `drawBadge` die Plaketten und `paintCardArt` die Bilder auf den
 Karten.

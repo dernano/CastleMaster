@@ -93,8 +93,9 @@
   /* ---------- Spielfeld mit aufgesetzter Anzeige ---------- */
   #board {
     position: relative;
-    width: 100%;
-    max-width: 960px;
+    /* Die Breite setzt baueBuehne(); hier steht nur, was ohne Skript gilt. */
+    width: 960px;
+    max-width: 100%;
     border: 3px solid #4a3a24;
     border-radius: 8px;
     overflow: hidden;
@@ -108,6 +109,16 @@
     height: auto;
     image-rendering: pixelated;
     border-radius: 4px;
+  }
+
+  /*
+   * Alles, was HTML ist, sitzt in einer eigenen Groesse: die Leinwand waechst
+   * mit dem Fenster, die Karten und Anzeigen nur so weit, wie "Bedienelemente"
+   * es sagt. Nur so kann das Feld mehr vom Bild bekommen.
+   */
+  #hud-row, #lines, #tray,
+  #hilfe, #einst, #reward, #route, #werkstatt, #schluss {
+    zoom: var(--bedien, 1);
   }
 
   #hud-row {
@@ -228,7 +239,7 @@
 
   /* Meldungen schweben ueber der Bruestung, ohne eigenen Kasten */
   #lines {
-    position: absolute; left: 0; right: 0; bottom: 31.5%;
+    position: absolute; left: 0; right: 0; bottom: var(--zeilen-unten, 31.5%);
     text-align: center; pointer-events: none; z-index: 3;
     text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(0,0,0,0.9);
   }
@@ -267,7 +278,11 @@
    * Eine Ablegeleiste aus Holz unter der Hand. Ohne sie schweben die Karten
    * ueber dem Feld wie Fenster auf einer Netzseite.
    */
-  #hand-wrap { position: relative; padding: 0 4px; overflow: visible; }
+  /*
+   * Feste Hoehe, auch wenn keine Karte auf der Hand liegt: sonst haengt die
+   * Bruestung an der Zahl der Karten und das Bild rueckt bei jedem Zug.
+   */
+  #hand-wrap { position: relative; padding: 0 4px; overflow: visible; min-height: 236px; }
   #hand-wrap::before {
     content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 34px;
     z-index: 0; border-radius: 4px;
@@ -712,6 +727,54 @@
   .hilfe-box li { margin-bottom: 3px; }
   .hilfe-box .farben { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 12px; }
 
+  /* ---------- Einstellungen ---------- */
+  #einst {
+    /* ueber der Kopfzeile: eine Tafel, die halb verdeckt wird, ist keine */
+    position: absolute; inset: 0; z-index: 9;
+    display: grid; place-items: center;
+    background: rgba(8, 6, 5, 0.88);
+    padding: 12px;
+  }
+  .einst-box {
+    padding: 14px 18px; width: min(560px, 100%);
+    max-height: 100%; display: flex; flex-direction: column; min-height: 0;
+  }
+  .einst-box h2 { margin: 0 0 8px; font-family: var(--pixel); font-size: 20px; color: var(--gold);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.6); flex: none; }
+  /* min-height:0, sonst schiebt der Inhalt den Kasten aus dem Bild statt zu rollen */
+  #einst-liste { overflow-y: auto; flex: 1 1 auto; min-height: 0; margin-right: -8px; padding-right: 8px; }
+  .einst-gruppe {
+    font-family: var(--pixel); font-size: 12px; letter-spacing: 1.5px; color: var(--frame-hi);
+    text-transform: uppercase; margin: 10px 0 2px; padding-bottom: 2px;
+    border-bottom: 1px solid #3a2e1e;
+  }
+  .einst-gruppe:first-child { margin-top: 0; }
+  .einst-zeile {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px; align-items: center; padding: 6px 0;
+  }
+  .einst-zeile + .einst-zeile { border-top: 1px solid rgba(255, 235, 190, 0.05); }
+  .einst-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .einst-hinweis { font-size: 11px; color: var(--muted); line-height: 1.35; }
+  .einst-wahl { grid-row: 1 / span 2; grid-column: 2; display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; }
+  .einst-wahl button {
+    font-family: var(--anzeige); font-size: 11.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer;
+    color: var(--parchment-dark);
+    background: linear-gradient(180deg, #322920, #221b14);
+    border: 1px solid #4e3d26;
+  }
+  .einst-wahl button:hover { color: var(--text); border-color: var(--frame); }
+  .einst-wahl button.an {
+    color: #241a0c; border-color: #e6c46f;
+    background: linear-gradient(180deg, #f0cd7a, #c79a37);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  #einst-lage {
+    font-size: 10.5px; color: var(--muted); margin: 8px 0; flex: none;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ---------- Seltenheit: Rahmen und Band tragen die Farbe ---------- */
   .card { border-color: var(--sel-rand, #37281a); }
   .card-badge { background: linear-gradient(180deg, var(--sel-rand), var(--sel-band)); }
@@ -1053,6 +1116,7 @@
         <li><b>Türme:</b> Bleiben nie stehen. An jeder Station baust du von vorn.</li>
         <li><b>Burg:</b> Ihre Lebenspunkte reitest du mit. Geheilt wird nur im Lager oder durch Begegnungen.</li>
         <li><b>Sold:</b> Nach jedem Kampf, mehr bei einer Vorhut. Beim Marketender kaufst, streichst und schärfst du Karten.</li>
+        <li><b>Einstellungen:</b> Das Schieberzeichen oben rechts. Dort stellst du ein, wie viel vom Bild das Schlachtfeld bekommt, wie fein das Spiel malt, wie groß Karten und Anzeigen sind — und was an Himmel, Rand und Bewegung gezeichnet wird. Das Bild wächst mit dem Fenster; die Einstellungen bleiben im Browser.</li>
         <li><kbd>Esc</kbd> hebt jede Auswahl auf.</li>
       </ul>
       <p class="farben" id="hilfe-farben">
@@ -1063,6 +1127,15 @@
       </p>
       <p class="farben">Rahmen und Fußband zeigen die Seltenheit: grau, blau, golden.</p>
       <button type="button" class="ghost-btn" id="hilfe-zu">Weiter spielen</button>
+    </div>
+  </div>
+
+  <div id="einst" class="hidden">
+    <div class="einst-box panel">
+      <h2>Einstellungen</h2>
+      <div id="einst-liste"></div>
+      <p id="einst-lage"></p>
+      <button type="button" class="ghost-btn" id="einst-zu">Weiter spielen</button>
     </div>
   </div>
 
@@ -1174,6 +1247,7 @@
     <button class="icon-btn" id="sound-btn" type="button" title="Ton an oder aus"><i class="ic" data-ikone="horn"></i></button>
     <button class="icon-btn hidden" id="musik-btn" type="button" title="Musik an oder aus"><i class="ic" data-ikone="note"></i></button>
     <button class="icon-btn" id="werk-btn" type="button" title="Figuren zeichnen"><i class="ic" data-ikone="pinsel"></i></button>
+    <button class="icon-btn" id="einst-btn" type="button" title="Einstellungen"><i class="ic" data-ikone="regler"></i></button>
     <button class="icon-btn" id="help-btn" type="button" title="Steuerung"><i class="ic" data-ikone="rolle"></i></button>
   </div>
   </div>
@@ -1919,12 +1993,201 @@ function anyTowerWithUnit() { return state.towers.some(t => t.slots.some(s => s)
 // ============================================================
 const canvas = document.getElementById('field');
 const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
 
 const TW = 44, TH = 22;           // Kachelbreite und -hoehe der Raute
-const ORIGIN_X = 418, ORIGIN_Y = 152;
 const HORIZONT = 64;              // Bildhoehe, auf der Land und Himmel sich treffen
-const RAND = 5;                   // Wie weit das Land ueber das Spielfeld hinaus laeuft
+let ORIGIN_X = 418, ORIGIN_Y = 152;
+let RAND = 5;                     // Wie weit das Land ueber das Spielfeld hinaus laeuft
+
+// ============================================================
+//  Die Buehne: Bildgroesse, Aufloesung, Bedienelemente
+// ============================================================
+/*
+ * Frueher war alles eine Zahl: 960 mal 768. Das war der Koordinatenraum, die
+ * Leinwandgroesse und die Groesse auf dem Schirm in einem. Auf einem grossen
+ * Monitor blieb die Burg damit briefmarkengross, denn der Kasten war fest.
+ *
+ * Jetzt sind drei Dinge auseinandergezogen:
+ *
+ *   BUEHNE (SZENE_B x SZENE_H) - der logische Raum, in dem gemalt wird. Sie
+ *     nimmt das Seitenverhaeltnis des Fensters an, damit nichts schwarz
+ *     danebenliegt. Das Spielfeld hat in diesem Raum eine feste Groesse
+ *     (TW/TH), also gilt: je kleiner die Buehne, desto groesser das Feld.
+ *
+ *   AUFLOESUNG (SKALA) - Geraetepixel je logischem Punkt. Bei 1 wird das Bild
+ *     vom Browser hochgezogen und bleibt grobpixelig; bei nativer Skala malt
+ *     das Spiel in jeden Bildschirmpunkt selbst.
+ *
+ *   BEDIENELEMENTE (--bedien) - Karten, Anzeigen und Knoepfe sind HTML und
+ *     werden ueber zoom skaliert. Sie haengen NICHT an der Buehne: nur so
+ *     kann das Feld groesser werden, ohne dass die Hand mitwaechst.
+ *
+ * Der Zusammenhang, der alles zusammenhaelt: die Hand steht unten im Bild und
+ * braucht ihren Platz. Bleibt fuer das Feld weniger uebrig, als es hoch ist,
+ * wird die Buehne so weit vergroessert, bis es wieder passt.
+ */
+let SZENE_B = 960, SZENE_H = 768;   // logische Bildgroesse
+let SKALA = 1;                      // Geraetepixel je logischem Punkt
+
+/*
+ * So viel Hoehe braucht das Spielfeld in logischen Punkten: von der Spitze der
+ * Burgfahne (72 ueber dem Ursprung) bis zur vorderen Kante der vordersten
+ * Scholle (393 darunter). UEBERHANG ist, wie weit die Handkarten oben ueber
+ * die Bruestung ragen duerfen - sie liegen darauf, sie stehen nicht davor.
+ */
+const FELD_HOCH = 465, FELD_UEBER = 72, UEBERHANG = 48;
+let BRUESTUNG_Y = 572;              // Oberkante der Mauer, auf der die Karten liegen
+
+const EINST_SPEICHER = 'cm-einst';
+const EINST_STD = {
+  karte: 'gross',        // klein | normal | gross | riesig
+  aufloesung: 'auto',    // auto | hoch | normal | niedrig
+  glaetten: false,       // Kantenglaettung beim Hochziehen
+  bedienung: 'auto',     // auto | 90 | 100 | 115 | 130
+  himmel: true,          // Wolken, Voegel, Flusen, Rauch
+  vignette: true,        // Randabfall und Rasterzeilen
+  bewegung: 'auto',      // auto | voll | wenig
+  roentgen: true,        // Verdeckte Gegner blass darueberlegen
+};
+let einst = { ...EINST_STD };
+try {
+  const gelesen = JSON.parse(localStorage.getItem(EINST_SPEICHER));
+  if (gelesen) for (const k in EINST_STD) if (k in gelesen) einst[k] = gelesen[k];
+} catch (e) { /* ohne Speicher eben die Vorgaben */ }
+function einstSichern() {
+  try { localStorage.setItem(EINST_SPEICHER, JSON.stringify(einst)); } catch (e) { /* egal */ }
+}
+
+const BEWEGUNG_SCHEU = !!(window.matchMedia
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+let wenigerBewegung = einst.bewegung === 'auto' ? BEWEGUNG_SCHEU : einst.bewegung === 'wenig';
+
+// Wunschhoehe der Buehne je Stufe. Kleiner heisst: das Feld fuellt mehr davon.
+const KARTEN_BUEHNE = { klein: 860, normal: 768, gross: 700, riesig: 640 };
+const AUFLOESUNG_FAKTOR = { hoch: 2, normal: 1, niedrig: 0.75 };
+// Mehr Punkte kosten Rechenzeit, und das Spiel malt jedes Bild neu. Die Grenze
+// haelt die Leinwand unter gut zwei Millionen Punkten.
+const PUNKTE_GRENZE = 2.2e6;
+
+/**
+ * Rechnet Fenstergroesse und Einstellungen in Buehne, Aufloesung und
+ * Bedienzoom um - und setzt das Ergebnis auf Leinwand und Seite.
+ */
+function baueBuehne() {
+  const brett = document.getElementById('board');
+  const platzB = Math.max(320, window.innerWidth - 24);
+  const platzH = Math.max(320, window.innerHeight - 28);
+
+  // Die Bedienelemente zuerst: ihre Hoehe bestimmt, was fuer das Feld bleibt.
+  const wunsch = einst.bedienung === 'auto' ? 1 : Number(einst.bedienung) / 100;
+  // Automatisch heisst: mit dem Fenster wachsen, aber nach beiden Seiten
+  // gemessen. Nur nach der Hoehe zu gehen schiebt die Kopfzeile in einem
+  // schmalen Fenster in die zweite Reihe.
+  let bedien = einst.bedienung === 'auto'
+    ? Math.max(0.8, Math.min(1.55, Math.min(platzH / 768, platzB / 980)))
+    : wunsch;
+  document.documentElement.style.setProperty('--bedien', bedien.toFixed(3));
+
+  // Die natuerliche Hoehe der Leiste einmal messen statt zu schaetzen: sie
+  // haengt an der Kartengroesse, und die steht im Stilblatt.
+  const leiste = document.getElementById('tray');
+  const leisteHoch = Math.max(80, leiste.getBoundingClientRect().height);
+  // Mehr als zwei Fuenftel des Bildes darf die Hand nie belegen.
+  if (leisteHoch > platzH * 0.4) {
+    bedien *= (platzH * 0.4) / leisteHoch;
+    document.documentElement.style.setProperty('--bedien', bedien.toFixed(3));
+  }
+  const leisteJetzt = Math.max(80, leiste.getBoundingClientRect().height);
+
+  // Buehnenhoehe: der Wunsch, aber mindestens so viel, dass das Feld ueber der
+  // Hand noch Platz hat. leisteJetzt/platzH ist der Anteil, den die Hand vom
+  // Bild nimmt - er ist unabhaengig von der Buehne, weil die Hand HTML ist.
+  const anteil = Math.min(0.55, leisteJetzt / platzH);
+  const noetig = (FELD_HOCH + 36 - UEBERHANG) / (1 - anteil);
+  SZENE_H = Math.round(Math.max(KARTEN_BUEHNE[einst.karte] || 768, noetig));
+
+  /*
+   * Breite nach dem Seitenverhaeltnis des Fensters, damit nichts schwarz
+   * danebenliegt. Es bleibt zwischen 1,15 und 2,25: schmaler bekaeme das Feld
+   * keinen Platz mehr, breiter verlaeuft es sich in der Landschaft.
+   *
+   * Passt die Buehne dann nicht mehr in die Breite - ein hochkant gehaltenes
+   * Fenster -, waechst statt ihrer die Hoehe. Das Bild wird dadurch nicht
+   * groesser, aber es nutzt wenigstens, was da ist.
+   */
+  const seite = Math.max(1.15, Math.min(2.25, platzB / platzH));
+  SZENE_B = Math.round(Math.max(940, SZENE_H * seite));
+  SZENE_H = Math.round(SZENE_B / seite);
+
+  // Groesse auf dem Schirm: so gross wie moeglich, ohne das Verhaeltnis zu
+  // verlassen.
+  const brettB = Math.min(platzB, platzH * SZENE_B / SZENE_H);
+  brett.style.width = Math.round(brettB) + 'px';
+
+  // Aufloesung. "Automatisch" heisst: genau ein Geraetepunkt je Bildpunkt.
+  const nativ = (window.devicePixelRatio || 1) * brettB / SZENE_B;
+  let skala = einst.aufloesung === 'auto' ? nativ : AUFLOESUNG_FAKTOR[einst.aufloesung] || 1;
+  skala = Math.max(0.6, Math.min(2.5, skala));
+  const punkte = SZENE_B * SZENE_H * skala * skala;
+  if (punkte > PUNKTE_GRENZE) skala *= Math.sqrt(PUNKTE_GRENZE / punkte);
+  const alteSkala = SKALA;
+  SKALA = Math.round(skala * 100) / 100;
+
+  canvas.width = Math.round(SZENE_B * SKALA);
+  canvas.height = Math.round(SZENE_H * SKALA);
+  canvas.style.aspectRatio = SZENE_B + ' / ' + SZENE_H;
+
+  // Die Bruestung liegt genau auf der Oberkante der Hand.
+  BRUESTUNG_Y = Math.round(SZENE_H - leisteJetzt * (SZENE_B / brettB) + UEBERHANG);
+  BRUESTUNG_Y = Math.max(FELD_HOCH + 30, Math.min(SZENE_H - 40, BRUESTUNG_Y));
+  document.documentElement.style.setProperty(
+    '--zeilen-unten', ((SZENE_H - BRUESTUNG_Y + 16) / SZENE_H * 100).toFixed(2) + '%');
+
+  // Das Feld mittig in den Raum zwischen Himmel und Bruestung
+  ORIGIN_X = Math.round(SZENE_B / 2 - ((COLS - 1) - (ROWS - 1)) * TW / 4);
+  ORIGIN_Y = Math.round(10 + (BRUESTUNG_Y - 36 - FELD_HOCH) / 2 + FELD_UEBER);
+
+  /*
+   * So weit muss das Land ueber das Spielfeld hinauslaufen, damit in keiner
+   * Bildecke der nackte Hintergrund steht. Das Land ist ein Parallelogramm,
+   * seine Kanten laufen schraeg - deshalb genuegt es nicht, die linke und die
+   * rechte Spitze ueber den Bildrand zu schieben. Gerechnet wird darum jede
+   * der vier Kanten gegen die Ecke, die ihr am naechsten kommt.
+   */
+  const oben = HORIZONT, unten = BRUESTUNG_Y + 12;
+  const links = ORIGIN_X / TW, rechts = (SZENE_B - ORIGIN_X) / TW;
+  RAND = Math.max(5,
+    Math.ceil(links + (ORIGIN_Y - oben) / TH),
+    Math.ceil(rechts + (ORIGIN_Y - oben) / TH),
+    Math.ceil(links + (unten - ORIGIN_Y) / TH - ROWS),
+    Math.ceil(rechts + (unten - ORIGIN_Y) / TH - COLS));
+
+  buehneAnwenden();
+  if (SKALA !== alteSkala) {
+    // Die vorgemalten Bauwerke haengen an der Aufloesung und muessen neu.
+    if (typeof blockBilder !== 'undefined') blockBilder.clear();
+    if (typeof modellBilder !== 'undefined') modellBilder.clear();
+  }
+  bodenBild = null; himmelBild = null; vignetteBild = null;
+}
+
+/** Setzt Transformation und Glaettung - noetig nach jedem Groessenwechsel. */
+function buehneAnwenden() {
+  ctx.setTransform(SKALA, 0, 0, SKALA, 0, 0);
+  ctx.imageSmoothingEnabled = einst.glaetten;
+  canvas.style.imageRendering = einst.glaetten ? 'auto' : 'pixelated';
+}
+
+/** Legt eine Nebenleinwand in logischer Groesse an, aber mit voller Aufloesung. */
+function buehnenBild(breite, hoehe) {
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(breite * SKALA));
+  cv.height = Math.max(1, Math.round(hoehe * SKALA));
+  const g = cv.getContext('2d');
+  g.setTransform(SKALA, 0, 0, SKALA, 0, 0);
+  g.imageSmoothingEnabled = einst.glaetten;
+  return { cv, g };
+}
 
 const imFeld = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
 // Wasser liegt an den beiden hinteren Kanten, Sand an den vorderen.
@@ -2091,8 +2354,7 @@ const projektile = [];
 const zahlen = [];
 const leichen = [];
 
-const wenigerBewegung = window.matchMedia
-  && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// wenigerBewegung steht oben bei den Einstellungen: es ist eine davon.
 
 // Der Gegnerzug laeuft im Takt ab, einer nach dem anderen. Wer wenig Bewegung
 // will, bekommt ihn weiterhin in einem Rutsch; Tests schalten ihn ebenso ab.
@@ -2140,7 +2402,7 @@ function baueWolkenbild() {
 }
 
 function drawWolken() {
-  if (wenigerBewegung) return;
+  if (wenigerBewegung || !einst.himmel) return;
   if (!wolkenBild) baueWolkenbild();
   for (const w of wolken) {
     ctx.drawImage(wolkenBild, w.x - w.rx, w.y - w.ry, w.rx * 2, w.ry * 2);
@@ -2148,7 +2410,7 @@ function drawWolken() {
 }
 
 function drawFlusen() {
-  if (wenigerBewegung) return;
+  if (wenigerBewegung || !einst.himmel) return;
   ctx.fillStyle = 'rgba(255,238,200,0.30)';
   for (const f of flusen) ctx.fillRect(Math.round(f.x), Math.round(f.y), f.gr, f.gr);
 }
@@ -2180,8 +2442,8 @@ function drawBanner_Runde() {
   const bT = ctx.measureText(banner.titel).width;
   ctx.font = '700 14px "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
   const bU = ctx.measureText(banner.unter || '').width;
-  const w = Math.min(canvas.width - 80, Math.max(260, Math.max(bT, bU) + 96));
-  const mx = canvas.width / 2;
+  const w = Math.min(SZENE_B - 80, Math.max(260, Math.max(bT, bU) + 96));
+  const mx = SZENE_B / 2;
   const oben = 196 + versatz, hoch = 96, zipfel = 22;
   const l = mx - w / 2, r = mx + w / 2;
 
@@ -2264,7 +2526,7 @@ const voegel = Array.from({ length: 5 }, (_, i) => ({
 }));
 
 function drawVoegel() {
-  if (wenigerBewegung) return;
+  if (wenigerBewegung || !einst.himmel) return;
   ctx.strokeStyle = 'rgba(30,24,16,0.45)';
   ctx.lineWidth = 1.5;
   for (const v of voegel) {
@@ -3173,17 +3435,19 @@ function modellBild(name, stufe) {
   const bauer = MODELLE[name] || MODELLE.wachturm;
   const mass = MODELL_MASS[name] || { w: 2, d: 2, hoch: 130 };
   const rand = 26;
-  const cv = document.createElement('canvas');
-  cv.width = Math.ceil((mass.w + mass.d) * TW / 2) + rand * 2;
-  cv.height = Math.ceil(mass.hoch + (mass.w + mass.d) * TH / 2) + rand;
-  const g = cv.getContext('2d');
+  // In logischen Punkten gemessen, in Geraetepunkten gemalt: bei hoher
+  // Aufloesung steht dasselbe Bauwerk feiner auf der Leinwand.
+  const breite = Math.ceil((mass.w + mass.d) * TW / 2) + rand * 2;
+  const hoehe = Math.ceil(mass.hoch + (mass.w + mass.d) * TH / 2) + rand;
+  const flaeche = buehnenBild(breite, hoehe);
+  const g = flaeche.g;
   // Der Ursprung des Modellraums liegt in der hinteren Ecke der Grundflaeche
   const ankerX = mass.d * TW / 2 + rand;
   const ankerY = mass.hoch + rand / 2;
   g.translate(ankerX, ankerY);
   bauer(g, stufe / 10);
 
-  bild = { cv, ankerX, ankerY };
+  bild = { cv: flaeche.cv, ankerX, ankerY, breite, hoehe };
   while (modellBilder.size >= MODELL_VORRAT) modellBilder.delete(modellBilder.keys().next().value);
   modellBilder.set(schluessel, bild);
   return bild;
@@ -3195,7 +3459,8 @@ function zeichneModell(name, col, row, wachstum, sockel = 0) {
   const bild = modellBild(name, stufe);
   ctx.drawImage(bild.cv,
     Math.round(isoX(col, row) - bild.ankerX),
-    Math.round(isoY(col, row) - bild.ankerY - sockel));
+    Math.round(isoY(col, row) - bild.ankerY - sockel),
+    bild.breite, bild.hoehe);
 }
 
 // ---------- Mauerwerk ----------
@@ -3309,10 +3574,10 @@ function baueBlockBild(w, h, H, col3, kennung) {
   const rand = 2;
   const ankerX = h * TW / 2 + rand;
   const ankerY = H + rand;
-  const cv = document.createElement('canvas');
-  cv.width = Math.ceil((w + h) * TW / 2) + rand * 2;
-  cv.height = Math.ceil(H + (w + h) * TH / 2) + rand * 2;
-  const g = cv.getContext('2d');
+  const breite = Math.ceil((w + h) * TW / 2) + rand * 2;
+  const hoehe = Math.ceil(H + (w + h) * TH / 2) + rand * 2;
+  const tafel = buehnenBild(breite, hoehe);
+  const g = tafel.g;
   g.translate(ankerX, ankerY);
 
   const A = [0, -H];
@@ -3370,7 +3635,7 @@ function baueBlockBild(w, h, H, col3, kennung) {
   g.beginPath(); g.moveTo(B[0], B[1]); g.lineTo(C[0], C[1]); g.stroke();
   g.beginPath(); g.moveTo(D[0], D[1]); g.lineTo(C[0], C[1]); g.stroke();
 
-  return { cv, ankerX, ankerY };
+  return { cv: tafel.cv, ankerX, ankerY, breite, hoehe };
 }
 
 function drawBlock(col, row, w, h, height, col3, base = 0) {
@@ -3389,7 +3654,8 @@ function drawBlock(col, row, w, h, height, col3, base = 0) {
   }
   ctx.drawImage(bild.cv,
     Math.round(isoX(col, row) - bild.ankerX),
-    Math.round(isoY(col, row) - base - bild.ankerY));
+    Math.round(isoY(col, row) - base - bild.ankerY),
+    bild.breite, bild.hoehe);
 }
 
 /** Zinnenkranz entlang der Oberkante eines Quaders. */
@@ -4224,10 +4490,9 @@ function drawKante(g, c, r, dicke) {
 }
 
 function baueBoden() {
-  bodenBild = document.createElement('canvas');
-  bodenBild.width = canvas.width;
-  bodenBild.height = canvas.height;
-  const g = bodenBild.getContext('2d');
+  const flaeche = buehnenBild(SZENE_B, SZENE_H);
+  bodenBild = flaeche.cv;
+  const g = flaeche.g;
 
   const belegt = (c, r) => imFeld(c, r) || istWasser(c, r) ||
     (c >= -RAND && c < COLS + RAND && r >= -RAND && r < ROWS + RAND);
@@ -4451,11 +4716,10 @@ function drawWasser() {
 let himmelBild = null;
 
 function baueHimmel() {
-  himmelBild = document.createElement('canvas');
-  himmelBild.width = canvas.width;
-  himmelBild.height = canvas.height;
-  const g = himmelBild.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const flaeche = buehnenBild(SZENE_B, SZENE_H);
+  himmelBild = flaeche.cv;
+  const g = flaeche.g;
+  const W = SZENE_B, H = SZENE_H;
 
   // Himmel: kalt oben, staubig warm zum Horizont
   const luft = g.createLinearGradient(0, 0, 0, HORIZONT + 30);
@@ -4540,8 +4804,9 @@ function baueHimmel() {
 /** Rauchsaeulen am Horizont. Sie stehen fuer das Lager jenseits der Ebene. */
 const RAUCHSAEULEN = [0.13, 0.27, 0.41, 0.58, 0.69, 0.85];
 function drawFernerRauch() {
+  if (!einst.himmel) return;
   for (let i = 0; i < RAUCHSAEULEN.length; i++) {
-    const x = RAUCHSAEULEN[i] * canvas.width;
+    const x = RAUCHSAEULEN[i] * SZENE_B;
     const basis = HORIZONT + 10 + (i % 3) * 3;
     const hoehe = 34 + (i % 4) * 12;
     for (let j = 0; j < 9; j++) {
@@ -4951,6 +5216,7 @@ function drawEnemy(e, geist = false) {
 let rasterBild = null;
 /** Feine Rasterzeilen, damit es nach Bildschirm aussieht und nicht nach Seite. */
 function drawRaster() {
+  if (!einst.vignette) return;
   if (!rasterBild) {
     rasterBild = document.createElement('canvas');
     rasterBild.width = 4; rasterBild.height = 4;
@@ -4962,10 +5228,8 @@ function drawRaster() {
   }
   const m = ctx.createPattern(rasterBild, 'repeat');
   ctx.fillStyle = m;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, SZENE_B, SZENE_H);
 }
-
-const BRUESTUNG_Y = 572;   // Oberkante der Mauer, auf der die Karten liegen
 
 /**
  * Die Bruestung schliesst das Bild nach unten ab. Der Spieler schaut ueber
@@ -4981,11 +5245,11 @@ function drawBruestung() {
   tiefe.addColorStop(0.7, 'rgba(11,9,8,0.72)');
   tiefe.addColorStop(1, 'rgba(11,9,8,0.96)');
   ctx.fillStyle = tiefe;
-  ctx.fillRect(0, y0 - 96, canvas.width, 102);
+  ctx.fillRect(0, y0 - 96, SZENE_B, 102);
 
   // Zinnenkranz
   const zinneB = 46, luecke = 26, zinneH = 26;
-  for (let x = -20; x < canvas.width + 40; x += zinneB + luecke) {
+  for (let x = -20; x < SZENE_B + 40; x += zinneB + luecke) {
     ctx.fillStyle = '#8d7e60';
     ctx.fillRect(x, y0 - zinneH, zinneB, zinneH);
     ctx.fillStyle = '#c0b08a';
@@ -4997,57 +5261,57 @@ function drawBruestung() {
 
   // Mauerkoerper
   ctx.fillStyle = '#7d6f55';
-  ctx.fillRect(0, y0, canvas.width, canvas.height - y0);
+  ctx.fillRect(0, y0, SZENE_B, SZENE_H - y0);
   ctx.fillStyle = '#a89771';
-  ctx.fillRect(0, y0, canvas.width, 7);
+  ctx.fillRect(0, y0, SZENE_B, 7);
   ctx.fillStyle = '#c4b590';
-  ctx.fillRect(0, y0, canvas.width, 3);
+  ctx.fillRect(0, y0, SZENE_B, 3);
 
   // Fugen im Mauerwerk
   ctx.strokeStyle = 'rgba(30,22,12,0.22)';
   ctx.lineWidth = 1;
   for (let r = 0; r < 6; r++) {
     const y = y0 + 34 + r * 34;
-    if (y > canvas.height) break;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    if (y > SZENE_H) break;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(SZENE_B, y); ctx.stroke();
     const versatz = r % 2 ? 0 : 44;
-    for (let x = versatz; x < canvas.width; x += 88) {
+    for (let x = versatz; x < SZENE_B; x += 88) {
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 34); ctx.stroke();
     }
   }
 
   // Das Licht faellt von oben auf die Mauer, unten wird es dunkel
-  const schatten = ctx.createLinearGradient(0, y0, 0, canvas.height);
+  const schatten = ctx.createLinearGradient(0, y0, 0, SZENE_H);
   schatten.addColorStop(0, 'rgba(255,236,196,0.10)');
   schatten.addColorStop(0.35, 'rgba(0,0,0,0)');
   schatten.addColorStop(1, 'rgba(8,6,4,0.72)');
   ctx.fillStyle = schatten;
-  ctx.fillRect(0, y0, canvas.width, canvas.height - y0);
+  ctx.fillRect(0, y0, SZENE_B, SZENE_H - y0);
 }
 
 let vignetteBild = null;
 /** Weicher Randabfall, damit das Bild nicht hart im Schwarz endet. */
 function drawVignette() {
+  if (!einst.vignette) return;
   if (!vignetteBild) {
-    vignetteBild = document.createElement('canvas');
-    vignetteBild.width = canvas.width;
-    vignetteBild.height = canvas.height;
-    const g = vignetteBild.getContext('2d');
+    const flaeche = buehnenBild(SZENE_B, SZENE_H);
+    vignetteBild = flaeche.cv;
+    const g = flaeche.g;
     const v = g.createRadialGradient(
-      canvas.width * 0.46, canvas.height * 0.44, canvas.height * 0.20,
-      canvas.width * 0.46, canvas.height * 0.44, canvas.height * 0.86);
+      SZENE_B * 0.46, SZENE_H * 0.44, SZENE_H * 0.20,
+      SZENE_B * 0.46, SZENE_H * 0.44, SZENE_H * 0.86);
     v.addColorStop(0, 'rgba(0,0,0,0)');
     v.addColorStop(0.55, 'rgba(8,5,3,0.22)');
     v.addColorStop(1, 'rgba(6,4,3,0.74)');
     g.fillStyle = v;
-    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillRect(0, 0, SZENE_B, SZENE_H);
     // Ein zusaetzlicher Sockel unten: die Kartenhand sitzt im Dunkeln,
     // das Feld darueber im Licht.
-    const sockel = g.createLinearGradient(0, canvas.height * 0.62, 0, canvas.height);
+    const sockel = g.createLinearGradient(0, SZENE_H * 0.62, 0, SZENE_H);
     sockel.addColorStop(0, 'rgba(10,6,4,0)');
     sockel.addColorStop(1, 'rgba(10,6,4,0.45)');
     g.fillStyle = sockel;
-    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillRect(0, 0, SZENE_B, SZENE_H);
   }
   ctx.drawImage(vignetteBild, 0, 0);
 }
@@ -5554,16 +5818,16 @@ function updateAnimations(dt) {
   if (banner) { banner.t += dt; if (banner.t >= banner.dauer) banner = null; }
   for (const v of voegel) {
     v.x += v.tempo * dt;
-    if (v.x > canvas.width + 60) { v.x = -60; v.y = 55 + Math.random() * 80; }
+    if (v.x > SZENE_B + 60) { v.x = -60; v.y = 55 + Math.random() * 80; }
   }
   for (const w of wolken) {
     w.x += w.tempo * dt;
-    if (w.x - w.rx > canvas.width + 60) { w.x = -w.rx - 60; w.y = 70 + Math.random() * 300; }
+    if (w.x - w.rx > SZENE_B + 60) { w.x = -w.rx - 60; w.y = 70 + Math.random() * 300; }
   }
   for (const f of flusen) {
     f.x += f.vx * dt; f.y += f.vy * dt;
-    if (f.x > canvas.width + 5) { f.x = -5; f.y = Math.random() * canvas.height; }
-    if (f.y < -5) f.y = canvas.height + 5;
+    if (f.x > SZENE_B + 5) { f.x = -5; f.y = Math.random() * SZENE_H; }
+    if (f.y < -5) f.y = SZENE_H + 5;
     if (f.y > BRUESTUNG_Y - 40) f.y = -5;
   }
   for (let i = staubkoerner.length - 1; i >= 0; i--) {
@@ -5644,7 +5908,7 @@ function draw() {
   // Roentgenblick: Ein hoher Turm verdeckt alles, was dahinter steht. Das ist
   // zwar richtig gerechnet, im Spiel aber unbrauchbar. Wer verschwindet, wird
   // blass darueber gelegt und bleibt so sichtbar und anklickbar.
-  for (let i = 0; i < geordnet.length; i++) {
+  for (let i = 0; einst.roentgen && i < geordnet.length; i++) {
     const o = geordnet[i];
     if (o.art !== 'gegner') continue;
     for (let j = i + 1; j < geordnet.length; j++) {
@@ -5667,7 +5931,7 @@ function draw() {
   drawVignette();
   if (blitzSchirm > 0.01) {
     ctx.fillStyle = 'rgba(255,232,190,' + Math.min(0.5, blitzSchirm * 0.42).toFixed(3) + ')';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, SZENE_B, SZENE_H);
   }
   drawBanner_Runde();
 }
@@ -6417,6 +6681,20 @@ const IKONEN = {
   ],
 
   // Hilfe: eine Schriftrolle.
+  // Einstellungen: drei Schieber mit goldenem Griff.
+  regler: [
+    '...........',
+    '...G.......',
+    '.ssGssssss.',
+    '...G.......',
+    '.......G...',
+    '.ssssssGss.',
+    '.......G...',
+    '.....G.....',
+    '.ssssGssss.',
+    '.....G.....',
+    '...........',
+  ],
   rolle: [
     '..ddddddd..',
     '.dwwwwwwwd.',
@@ -6657,8 +6935,8 @@ function paintCardArt(cv, art, id) {
 function canvasPoint(evt) {
   const rect = canvas.getBoundingClientRect();
   return {
-    x: (evt.clientX - rect.left) * (canvas.width / rect.width),
-    y: (evt.clientY - rect.top) * (canvas.height / rect.height),
+    x: (evt.clientX - rect.left) * (SZENE_B / rect.width),
+    y: (evt.clientY - rect.top) * (SZENE_H / rect.height),
   };
 }
 
@@ -8455,7 +8733,7 @@ function zugAbschluss(lauf) {
 
 window.addEventListener('keydown', (evt) => {
   if (evt.key !== 'Escape') return;
-  for (const id of ['hilfe', 'werkstatt']) {
+  for (const id of ['einst', 'hilfe', 'werkstatt']) {
     const tafel = document.getElementById(id);
     if (!tafel.classList.contains('hidden')) { tafel.classList.add('hidden'); return; }
   }
@@ -8669,6 +8947,145 @@ document.getElementById('werk-einlesen').addEventListener('click', () => {
     feld.value = 'Das ging nicht: ' + e.message;
   }
 });
+
+// ============================================================
+//  Einstellungen
+// ============================================================
+/*
+ * Die Tafel wird aus dieser Liste gebaut, nicht von Hand geschrieben. Eine
+ * neue Einstellung ist damit eine Zeile hier und ein Vorgabewert in
+ * EINST_STD - und nirgends sonst etwas.
+ */
+const EINST_TAFEL = [
+  { gruppe: 'Bild' },
+  {
+    id: 'karte', name: 'Kartengröße',
+    hinweis: 'Wie viel vom Bild das Schlachtfeld bekommt. Groß heißt: die Hand rückt zusammen, das Feld wächst.',
+    wahl: [['klein', 'Klein'], ['normal', 'Normal'], ['gross', 'Groß'], ['riesig', 'Riesig']],
+  },
+  {
+    id: 'aufloesung', name: 'Auflösung',
+    hinweis: 'Punkte, die das Spiel wirklich malt. Automatisch trifft genau den Bildschirm; weniger ist gröber, läuft aber flüssiger.',
+    wahl: [['auto', 'Automatisch'], ['hoch', 'Hoch'], ['normal', 'Normal'], ['niedrig', 'Niedrig']],
+  },
+  {
+    id: 'bedienung', name: 'Bedienelemente',
+    hinweis: 'Größe von Handkarten, Anzeigen und Knöpfen — unabhängig vom Feld.',
+    wahl: [['auto', 'Automatisch'], ['90', '90 %'], ['100', '100 %'], ['115', '115 %'], ['130', '130 %']],
+  },
+  {
+    id: 'glaetten', name: 'Kantenglättung',
+    hinweis: 'Aus lässt die Pixel Pixel bleiben. An zieht das Bild weich hoch.',
+    wahl: [[false, 'Aus'], [true, 'An']],
+  },
+  { gruppe: 'Grafik' },
+  {
+    id: 'himmel', name: 'Himmel und Wetter',
+    hinweis: 'Wolkenschatten, Vögel, Flusen in der Luft und der Rauch am Horizont.',
+    wahl: [[true, 'An'], [false, 'Aus']],
+  },
+  {
+    id: 'vignette', name: 'Randabfall und Raster',
+    hinweis: 'Der dunkle Rand ums Bild und die feinen Zeilen darüber.',
+    wahl: [[true, 'An'], [false, 'Aus']],
+  },
+  {
+    id: 'roentgen', name: 'Röntgenblick',
+    hinweis: 'Gegner, die hinter einem Turm verschwinden, blass darüberlegen.',
+    wahl: [[true, 'An'], [false, 'Aus']],
+  },
+  {
+    id: 'bewegung', name: 'Bewegung',
+    hinweis: 'Wackeln, Blitze, Staub und Aufbauschwung. Reduziert stellt alles still.',
+    wahl: [['auto', 'Automatisch'], ['voll', 'Voll'], ['wenig', 'Reduziert']],
+  },
+  { gruppe: 'Ton' },
+  {
+    id: 'ton', name: 'Klänge',
+    hinweis: 'Schüsse, Karten, Treffer.',
+    wahl: [[true, 'An'], [false, 'Aus']],
+    lies: () => tonAn,
+    setze: () => document.getElementById('sound-btn').click(),
+  },
+  {
+    id: 'musik', name: 'Musik',
+    hinweis: 'Der Soundtrack im Hintergrund.',
+    wahl: [[true, 'An'], [false, 'Aus']],
+    lies: () => musikAn,
+    setze: () => document.getElementById('musik-btn').click(),
+  },
+];
+
+const einstListe = document.getElementById('einst-liste');
+
+/** Was eine Aenderung nach sich zieht. */
+function einstWirke(id) {
+  if (id === 'bewegung') {
+    wenigerBewegung = einst.bewegung === 'auto' ? BEWEGUNG_SCHEU : einst.bewegung === 'wenig';
+  }
+  if (id === 'karte' || id === 'aufloesung' || id === 'bedienung' || id === 'glaetten') baueBuehne();
+  else if (id === 'vignette') vignetteBild = null;
+}
+
+function renderEinst() {
+  if (document.getElementById('einst').classList.contains('hidden')) return;
+  einstListe.innerHTML = '';
+  for (const zeile of EINST_TAFEL) {
+    if (zeile.gruppe) {
+      const k = document.createElement('div');
+      k.className = 'einst-gruppe';
+      k.textContent = zeile.gruppe;
+      einstListe.appendChild(k);
+      continue;
+    }
+    const kasten = document.createElement('div');
+    kasten.className = 'einst-zeile';
+    const name = document.createElement('div');
+    name.className = 'einst-name';
+    name.textContent = zeile.name;
+    kasten.appendChild(name);
+    const h = document.createElement('div');
+    h.className = 'einst-hinweis';
+    h.textContent = zeile.hinweis || '';
+    kasten.appendChild(h);
+    const wahl = document.createElement('div');
+    wahl.className = 'einst-wahl';
+    const jetzt = zeile.lies ? zeile.lies() : einst[zeile.id];
+    for (const [wert, beschriftung] of zeile.wahl) {
+      const knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.textContent = beschriftung;
+      knopf.classList.toggle('an', wert === jetzt);
+      knopf.addEventListener('click', () => {
+        if (zeile.setze) {
+          if (wert !== (zeile.lies ? zeile.lies() : null)) zeile.setze(wert);
+        } else if (einst[zeile.id] !== wert) {
+          einst[zeile.id] = wert;
+          einstSichern();
+          einstWirke(zeile.id);
+          klang('karte');
+        }
+        renderEinst();
+      });
+      wahl.appendChild(knopf);
+    }
+    kasten.appendChild(wahl);
+    einstListe.appendChild(kasten);
+  }
+  const brett = document.getElementById('board').getBoundingClientRect();
+  document.getElementById('einst-lage').textContent =
+    'Bühne ' + SZENE_B + ' × ' + SZENE_H + ' Punkte · Leinwand ' +
+    canvas.width + ' × ' + canvas.height + ' · Feld ×' +
+    (brett.width / SZENE_B).toFixed(2).replace('.', ',') + ' gegenüber dem alten Kasten.';
+}
+
+const einstTafel = document.getElementById('einst');
+document.getElementById('einst-btn').addEventListener('click', () => {
+  einstTafel.classList.toggle('hidden');
+  renderEinst();
+  klang('karte');
+});
+document.getElementById('einst-zu').addEventListener('click', () => einstTafel.classList.add('hidden'));
 
 const hilfeTafel = document.getElementById('hilfe');
 document.getElementById('help-btn').addEventListener('click', () => {
@@ -9513,6 +9930,23 @@ for (const id in KARTEN_BILDER) kartenBild(id);
 setzeIkonen();
 for (const cv of document.querySelectorAll('#hilfe-farben canvas')) zeichneFarbe(cv, cv.dataset.farbe);
 state.rekord = ladeRekord();
+baueBuehne();
+
+/*
+ * Das Fenster darf sich aendern, waehrend gespielt wird - gedreht, geteilt,
+ * gezogen. Die Buehne wird dann neu gerechnet, aber erst zum naechsten Bild:
+ * ein Ziehen am Fensterrand loest sonst hundert Neuaufbauten aus.
+ */
+let buehneWartet = 0;
+window.addEventListener('resize', () => {
+  if (buehneWartet) return;
+  buehneWartet = requestAnimationFrame(() => {
+    buehneWartet = 0;
+    baueBuehne();
+    renderEinst();
+  });
+});
+
 neuerFeldzug(1);
 
 </script>
