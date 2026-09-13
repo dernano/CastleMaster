@@ -403,11 +403,15 @@ Drei Dinge gehören dazu:
   aus dem Bild heraus, damit er nicht in der Luft endete; jetzt treffen sich
   Riegel und Flanke in einer Ecke.
 
-  Die **Rückwand** steht außerhalb des Felds (Spalte −1 und −2) und ist bloß
-  Bild — aber **nicht hinter der Burg**. Die steht mit ihrer Westseite genau
-  in der Flucht der Wand und schließt dort selbst ab; eine Mauer dahinter wäre
-  eine zweite Wand vor derselben Wand. Auf diesen fünf Zeilen *ist* die Burg
-  die Rückwand.
+  **Hinten steht nichts.** Es gab dort eine Rückwand, zwei Spalten außerhalb
+  des Feldes, und sie war eine zweite Wand vor derselben Wand: die Burg steht
+  mit ihrer Westseite in derselben Flucht und schließt selbst ab. Von hinten
+  kommt ohnehin nie jemand — alles, was schlägt, geht zum Torhaus.
+
+  Die Anlage ist damit ein **U**: Riegel vorn, zwei Flanken zurück, hinten die
+  Burg. Das ist auch das ehrlichere Bild — verteidigt wird eine Seite. Und es
+  ist billiger: Mauerfelder sind das Teuerste am Bild, weil jedes einzeln
+  durch die Zeichenreihenfolge geht.
 
   Der Riegel bleibt so dicht wie vorher: 200 von 200 Layouts ohne Leck, 200
   von 200 symmetrisch.

@@ -1101,7 +1101,7 @@
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
-        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu die beiden Flanken und die Rückwand, die den Hof mit deiner Burg umschließen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinter der Burg steht keine Mauer — dort schließt die Burg selbst ab.</li>
+        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu zwei Flanken, die nach hinten laufen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinten steht keine Mauer: dort steht die Burg, und von hinten kommt niemand.</li>
         <li><b>Auch auf den Flanken:</b> Gebaut wird am Riegel <i>und</i> auf den seitlichen Mauern. Ein Turm nahe der Ecke flankiert den Anmarsch; einer tief hinten im Hof sieht nichts mehr.</li>
         <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, die <b>Durchfahrt geht hindurch</b>, hinter einer Gittertür. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1.</li>
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
@@ -2053,7 +2053,7 @@ let SKALA = 1;                      // Geraetepixel je logischem Punkt
  */
 const FELD_UEBER = 2 * TH + 41;
 const FELD_HOCH = FELD_UEBER + (COLS + ROWS - 2) * TH / 2 + 34;
-const FELD_LINKS = (ROWS + 4) * TW / 2;
+const FELD_LINKS = ROWS * TW / 2;
 const FELD_RECHTS = (COLS + 1) * TW / 2;
 const UEBERHANG = 48;
 let BRUESTUNG_Y = 572;              // Oberkante der Mauer, auf der die Karten liegen
@@ -3771,14 +3771,12 @@ function wallOderBau(c, r) {
 function baueWall(runde) {
   const wall = new Map();
   /*
-   * Felder ausserhalb des Spielfelds sind erlaubt - zwei Zeilen oben und
-   * unten, zwei Spalten links. Sie sind nie begehbar (`blockiert` und
-   * `feldKosten` pruefen vorher `imFeld`) und aendern am Spiel nichts - aber
-   * ohne sie endete der Wall mitten im gezeichneten Gelaende und sah aus, als
-   * schwebe er dort, statt abzuschliessen.
+   * Zwei Zeilen ober- und unterhalb des Spielfelds sind erlaubt. Sie sind nie
+   * begehbar (`blockiert` und `feldKosten` pruefen vorher `imFeld`) und
+   * aendern am Spiel nichts.
    */
   const setz = (c, r, extra) => {
-    if (c < -2 || c >= COLS || r < -2 || r > ROWS + 1) return;
+    if (c < 0 || c >= COLS || r < -2 || r > ROWS + 1) return;
     if (cellInsideRect(c, r, CASTLE)) return;
     wall.set(wkey(c, r), { col: c, row: r, hp: WALL_HP, maxHp: WALL_HP, wachsen: WALL_WACHSEN, ...(extra || {}) });
   };
@@ -3901,23 +3899,19 @@ function baueWall(runde) {
    */
   for (let d = 0; d < WALL_DICK; d++) {
     for (const r of [d, ROWS - 1 - d]) {
-      const bis = spalte[r] + WALL_DICK - 1;
-      for (let c = -2; c <= bis; c++) setz(c, r);
+      for (let c = 0; c <= spalte[r] + WALL_DICK - 1; c++) setz(c, r);
     }
   }
 
   /*
-   * Die Rueckwand schliesst den Hof nach hinten - aber nicht hinter der Burg.
-   * Die steht mit ihrer Westseite genau in der Flucht der Wand und schliesst
-   * dort selbst ab; eine Mauer dahinter waere eine zweite Wand vor derselben
-   * Wand. Die Burg IST auf diesen fuenf Zeilen die Rueckwand.
+   * Hinten steht nichts. Es gab dort eine Rueckwand, und sie war eine zweite
+   * Wand vor derselben Wand: die Burg steht mit ihrer Westseite in derselben
+   * Flucht und schliesst selbst ab. Von der Rueckseite kommt ohnehin nie
+   * jemand - alles, was schlaegt, geht zum Torhaus.
+   *
+   * Die Anlage ist damit ein U: Riegel vorn, zwei Flanken zurueck, hinten die
+   * Burg. Das ist auch das ehrlichere Bild - verteidigt wird eine Seite.
    */
-  for (let d = 0; d < WALL_DICK; d++) {
-    for (let r = 0; r < ROWS; r++) {
-      if (r >= CASTLE.row && r < CASTLE.row + CASTLE.h) continue;
-      setz(-1 - d, r);
-    }
-  }
 
   return { wall, torhaus, durchfahrt, form, tor: durchfahrt };
 }
