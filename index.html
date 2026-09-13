@@ -1101,7 +1101,7 @@
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
-        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung, die quer über die Karte abschließt. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich.</li>
+        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu Flanken und Rückwand, die den Hof mit deiner Burg umschließen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Gekämpft wird am Riegel — nur dort kannst du bauen.</li>
         <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, die <b>Durchfahrt geht hindurch</b>, hinter einer Gittertür. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1.</li>
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
@@ -2169,6 +2169,7 @@ function baueBuehne() {
     if (typeof modellBilder !== 'undefined') modellBilder.clear();
   }
   bodenBild = null; himmelBild = null; vignetteBild = null;
+  if (typeof DEKO !== 'undefined') baueDeko();
 }
 
 /** Setzt Transformation und Glaettung - noetig nach jedem Groessenwechsel. */
@@ -3748,13 +3749,14 @@ function wallOderBau(c, r) {
 function baueWall(runde) {
   const wall = new Map();
   /*
-   * Zeilen ausserhalb des Spielfelds sind erlaubt. Sie sind nie begehbar
-   * (`blockiert` und `feldKosten` pruefen vorher `imFeld`) und aendern am
-   * Spiel nichts - aber ohne sie endete der Wall mitten im gezeichneten
-   * Gelaende und sah aus, als schwebe er dort, statt abzuschliessen.
+   * Felder ausserhalb des Spielfelds sind erlaubt - zwei Zeilen oben und
+   * unten, zwei Spalten links. Sie sind nie begehbar (`blockiert` und
+   * `feldKosten` pruefen vorher `imFeld`) und aendern am Spiel nichts - aber
+   * ohne sie endete der Wall mitten im gezeichneten Gelaende und sah aus, als
+   * schwebe er dort, statt abzuschliessen.
    */
   const setz = (c, r, extra) => {
-    if (c < 0 || c >= COLS || r < -2 || r > ROWS + 1) return;
+    if (c < -2 || c >= COLS || r < -2 || r > ROWS + 1) return;
     if (cellInsideRect(c, r, CASTLE)) return;
     wall.set(wkey(c, r), { col: c, row: r, hp: WALL_HP, maxHp: WALL_HP, wachsen: WALL_WACHSEN, ...(extra || {}) });
   };
@@ -3864,9 +3866,31 @@ function baueWall(runde) {
     for (let r = torhaus.row; r < torhaus.row + torhaus.h; r++) wall.delete(wkey(c, r));
   }
 
-  // Der Wall laeuft oben und unten aus dem Bild heraus.
+  // Der Riegel laeuft oben und unten aus dem Spielfeld heraus.
   for (const r of [-2, -1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[0] + d, r);
   for (const r of [ROWS, ROWS + 1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[ROWS - 1] + d, r);
+
+  /*
+   * Flanken und Rueckwand. Ohne sie ist die Anlage eine Sperre quer durchs
+   * Bild: eine Mauer, die oben anfaengt und unten aufhoert, und dahinter
+   * liegt die Burg im Freien. Mit ihnen wird sie eine Umfassung - die Burg
+   * steht in einem Hof, und man sieht, was der Wall umschliesst.
+   *
+   * Sie liegen auf den Zeilen und Spalten AUSSERHALB des Spielfelds. Dort
+   * kaempft niemand, dorthin fuehrt kein Weg, und `isValidTowerPlacement`
+   * laesst kein Bauwerk zu. Am Spiel aendert sich also nichts: kein Feld geht
+   * verloren, kein Bauplatz kommt hinzu, der Riegel bleibt so dicht wie
+   * vorher. Es ist eine Sache des Bildes.
+   */
+  for (let d = 0; d < WALL_DICK; d++) {
+    // Flanken: von der Rueckwand bis an den Riegel heran
+    for (const r of [-2 + d, ROWS + 1 - d]) {
+      const bis = spalte[r < 0 ? 0 : ROWS - 1] + WALL_DICK - 1;
+      for (let c = -2; c <= bis; c++) setz(c, r);
+    }
+    // Rueckwand: schliesst den Hof nach hinten, ueber die ganze Hoehe
+    for (let r = -2; r <= ROWS + 1; r++) setz(-1 - d, r);
+  }
 
   return { wall, torhaus, durchfahrt, form, tor: durchfahrt };
 }
@@ -4349,7 +4373,14 @@ function drawFels(x, y, s) {
 
 // Randdeko einmalig festlegen, damit nichts springt.
 const DEKO = [];
-(function buildDeko() {
+/*
+ * Die Deko liegt auf dem Land ausserhalb des Spielfelds - und wie weit das
+ * reicht, haengt an der Bildgroesse. Sie wird darum mit der Buehne neu
+ * gesetzt, sonst endet der Bewuchs fuenf Felder hinter dem Feld und alles
+ * weiter draussen bleibt kahl.
+ */
+function baueDeko() {
+  DEKO.length = 0;
   for (let r = -RAND; r < ROWS + RAND; r++) {
     for (let c = -RAND; c < COLS + RAND; c++) {
       if (imFeld(c, r)) continue;
@@ -4364,7 +4395,8 @@ const DEKO = [];
       else if (n > 0.72) DEKO.push({ c, r, art: 'fels', s: 2 + Math.round(noise(c, r) * 3) });
     }
   }
-})();
+}
+baueDeko();
 
 // ---------- Anklickbare Flaechen, in Zeichenreihenfolge gesammelt ----------
 let pickables = [];
@@ -5896,7 +5928,11 @@ function draw() {
       zeichne: () => drawWallFeld(m),
     });
   }
-  for (const d of DEKO) objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, hoch: 26, zeichne: () => drawDeko(d) });
+  for (const d of DEKO) {
+    // Der Wall laeuft jetzt auch neben dem Feld. Wo er steht, waechst nichts.
+    if (state.wall.has(wkey(d.c, d.r))) continue;
+    objekte.push({ art: 'deko', col: d.c, row: d.r, w: 1, h: 1, hoch: 26, zeichne: () => drawDeko(d) });
+  }
 
   const geordnet = zeichenReihenfolge(objekte);
   for (const o of geordnet) o.zeichne();
@@ -5948,7 +5984,7 @@ function drawMinimap() {
   mctx.fillRect(0, 0, w, h);
   // Der Wall gehoert auf die Minikarte: er ist das Layout der Station.
   for (const m of state.wall.values()) {
-    if (m.row < 0 || m.row >= ROWS) continue;
+    if (m.row < 0 || m.row >= ROWS || m.col < 0 || m.col >= COLS) continue;
     mctx.fillStyle = m.hp < m.maxHp ? STOFF.wallriss.f.oben : STOFF.wallstein.f.oben;
     mctx.fillRect(m.col * sx, m.row * sy, sx, sy);
   }

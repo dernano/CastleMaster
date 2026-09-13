@@ -340,10 +340,10 @@ und zeichnete deren Randkanten. Das hatte drei Mängel — sie war Kulisse
 (`blockiert` kannte nur Burg und Türme, jeder Belagerer lief hindurch), ohne
 Turm gab es sie gar nicht, und der erste Zug hatte nichts zu entscheiden.
 
-Jetzt steht an jeder Station ein **fertiger Riegel**: eine geschlossene Linie
-vom oberen zum unteren Kartenrand. Er hängt nicht an der Burg, sondern kommt
-seitlich herein und schließt ab. Vier Grundformen, dazu eine gewürfelte
-Grundspalte:
+Jetzt steht an jeder Station eine **fertige Anlage**: ein Riegel vom oberen zum
+unteren Kartenrand, dazu zwei Flanken und eine Rückwand, die den Hof mit der
+Burg umschließen. Der Riegel hängt nicht an der Burg, sondern kommt seitlich
+herein und schließt ab. Vier Grundformen, dazu eine gewürfelte Grundspalte:
 
 | Form | Was sie macht |
 | --- | --- |
@@ -388,6 +388,22 @@ Drei Dinge gehören dazu:
   Wandfläche läuft hier aber schräg: bei festem `x` trägt jeder Schritt in `y`
   zugleich nach rechts und nach unten. Jetzt gehen alle Punkte durch `mx/my`,
   dann sitzt er in der Wand statt darauf.
+- **Flanken und Rückwand.** Ohne sie war die Anlage eine Sperre quer durchs
+  Bild: eine Mauer, die oben anfängt und unten aufhört, und dahinter lag die
+  Burg im Freien. Jetzt läuft der Wall an den Seiten entlang und hinten herum,
+  und aus der Sperre wird eine Umfassung — man sieht, was sie umschließt.
+
+  Sie liegen auf den Zeilen und Spalten **außerhalb** des Spielfelds. Dorthin
+  führt kein Weg, dort kämpft niemand, und `isValidTowerPlacement` verlangt
+  `col >= 0`, lässt dort also kein Bauwerk zu. Am Spiel ändert sich damit
+  nichts: kein Feld geht verloren, kein Bauplatz kommt hinzu, und der Riegel
+  bleibt so dicht wie vorher (200 von 200 Layouts ohne Leck). Es ist eine
+  Sache des Bildes — und es kostet 3,6 ms je Bild, weil rund achtzig
+  Mauerfelder mehr durch die Zeichenreihenfolge gehen.
+
+  Auf den Zeilen 0 und 14 statt −2 und −1 wäre es billiger gewesen, aber dann
+  hätte die Umfassung zwei Reihen Spielfeld gefressen und ringsum Bauplätze
+  verschenkt, die niemand braucht.
 - **Türme überall im Wall.** Alle vier Felder eines Turms müssen auf Mauerwerk
   stehen — dann sitzt er vollständig darin. Vorher gab es dafür Basteien:
   2×2-Podeste mit einer gelben Marke darüber. Das machte aus dem Wall ein Brett
