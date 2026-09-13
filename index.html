@@ -4658,25 +4658,24 @@ function drawTower(t) {
 
   drawBauSchatten(t.col, t.row, t.w, t.h, H * 0.8);
   /*
-   * Ein Turm im Wall bekommt einen Sockel aus Wallstein ueber seine ganze
-   * Grundflaeche. Ohne ihn stand er in einem Loch: die Mauerfelder darunter
-   * werden verdeckt, und weil die Modelle ringsum einen Rand lassen, klaffte
-   * zwischen Turm und anschliessendem Wall ein Streifen blanker Boden. Jetzt
-   * laeuft der Wall durch die Grundflaeche hindurch und der Turm waechst
-   * daraus hervor.
-   */
-  /*
-   * Ein Turm im Wall bekommt einen Sockel aus Wallstein ueber seine ganze
-   * Grundflaeche, damit unter ihm kein Loch klafft: die Mauerfelder darunter
-   * werden verdeckt gezeichnet.
+   * Ein Turm im Wall bekommt einen Sockel ueber seine ganze Grundflaeche.
+   * Ohne ihn stand er in einem Loch: die Mauerfelder darunter werden verdeckt
+   * gezeichnet, und weil die Modelle ringsum einen Rand lassen, klaffte
+   * zwischen Turm und anschliessendem Wall ein Streifen blanker Boden.
    *
-   * Ein Versuch, damit auch den Wall dahinter abzudecken - Sockel ueber die
-   * Grundflaeche hinaus und halbe Modellhoehe hoch - ging schief: er
-   * verschmolz mit dem Wall zu einem Klotz und nahm dem Turm die Silhouette.
-   * Das gehoert ins Modell, nicht in den Sockel; siehe MODELLE.wachturm.
+   * Er ist aus dem Stein des TURMS, nicht aus dem des Walls. In Wallfarbe lag
+   * ein sandsteinfarbenes Band am Turmfuss: oben stiess es gegen den grauen
+   * Turmkoerper, unten verschmolz es mit dem Wall - eine Fuge quer durch den
+   * Turm, an der es aussah, als schiene der Wall dahinter durch. Aus einem
+   * Stein steht der Turm durchgehend vom Boden auf.
+   *
+   * Ein Versuch, den Sockel ueber die Grundflaeche hinaus und halbe
+   * Modellhoehe hoch zu ziehen, ging schief: er verschmolz mit dem Wall zu
+   * einem Klotz und nahm dem Turm die Silhouette. Was das Modell zudecken
+   * soll, gehoert ins Modell; siehe MODELLE.wachturm.
    */
   const sockel = t.imWall ? Math.round(WALL_HOEHE * gewachsen) : 0;
-  if (t.imWall) drawBlock(t.col, t.row, t.w, t.h, WALL_HOEHE * gewachsen, WALL);
+  if (t.imWall) drawBlock(t.col, t.row, t.w, t.h, WALL_HOEHE * gewachsen, STOFF.stein.f);
   /*
    * Das Modell sitzt AUF dem Sockel, nicht darin. Ohne die Anhebung steckte
    * der Steinkoerper des Wachturms (30 hoch) fast vollstaendig im Sockel (27),

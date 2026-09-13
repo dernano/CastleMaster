@@ -414,6 +414,16 @@ etwas erhöhtes Stück Wall. Jetzt sind es `WALL_HOEHE + 11`.
 die zweite Ursache dort behoben, wo sie sitzt — im Modell, nicht in einem
 Hilfsklotz davor.
 
+**Der Sockel unter dem Turm ist aus dem Stein des Turms**, nicht aus dem des
+Walls. In Wallfarbe lag ein sandsteinfarbenes Band am Turmfuß: oben stieß es
+gegen den grauen Turmkörper, unten verschmolz es mit dem Wall — eine Fuge quer
+durch den Turm, an der es aussah, als schiene der Wall dahinter durch. Aus einem
+Stein steht der Turm durchgehend vom Boden auf.
+
+Gefunden habe ich das erst mit einem **dreifarbigen Testbild**: Wall grün,
+Sockel blau, Modell unverändert. Bis dahin hatte ich den hellen Streifen für
+durchscheinenden Wall gehalten — er war mein eigener Sockel.
+
 Zwei Umwege dorthin, beide wieder ausgebaut, weil sie es **schlimmer** machten:
 
 - Ein Sockel, der über die Grundfläche hinausragte und bis zur halben
