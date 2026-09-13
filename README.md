@@ -260,6 +260,49 @@ Ware). Wer gezielt Gebäudekarten kauft, für die die Grenze nicht gilt, fährt
 besser — und genau dahin schiebt die Regel das Spiel: der Wachturm ist der
 Notnagel am Anfang, nicht die Maschine für den ganzen Feldzug.
 
+## Ein Gestein
+
+Bis hierher standen mehrere Steine nebeneinander: ein grauer Burgstein
+(`#b6ab90`) für Burg und Türme, ein sandfarbener Wallstein (`#a4936d`) für Wall
+und Torhaus, ein hellerer für Zinnen und Gesimse, ein vierter für
+Bruchmauerwerk. Nebeneinander im selben Bild sah das aus wie drei verschiedene
+Spiele — und es war der Grund, warum sich einzelne Teile nie ganz zusammenfügen
+wollten, egal wie sauber die Geometrie saß.
+
+Jetzt gibt es **einen** Grundton, und alle Sorten rechnen daraus:
+
+```js
+const FELS = '#a4936d';
+const felsHeller  = (a) => mischen(FELS, '#fff6e2', a);
+const felsDunkler = (a) => mischen(FELS, '#241a0c', a);
+```
+
+| Sorte | Herkunft | Wofür |
+| --- | --- | --- |
+| `stein` | `FELS` | Türme, Burg, Mauerwerk |
+| `steinHell` | `felsHeller(0.22)` | Zinnen, Gesimse, Wehrplatten |
+| `putz` | `felsHeller(0.44)` | geschlämmte Wand |
+| `bruch` | `felsDunkler(0.08)` | Bruchmauerwerk |
+| `wallstein` | `FELS` | der Wall |
+| `wallriss` | `felsDunkler(0.24)` | angeschlagener Wall |
+
+Was die Sorten noch unterscheidet, ist **Helligkeit und Textur** — also dasselbe
+Gestein im Licht, im Schatten und als Bruch. Auseinanderlaufen können sie nicht
+mehr, weil es nur noch eine Quelle gibt.
+
+Mitgezogen sind drei Stellen, die ihre Steinfarbe von Hand gesetzt hatten: die
+Zinnen der gleichnamigen Karte, der Wall auf der Minikarte und der Steinstaub
+(`STEINSTAUB`), der beim Bauen und beim Bersten aufsteigt.
+
+**Nicht** mitgezogen sind die Kartenmotive. Die Karten sind Tuschezeichnungen
+auf Papier im doppeldeutschen Blatt, nicht die Welt — sie haben bewusst ihre
+eigene Farbsprache (`BLATT`). Ebenso wenig Dächer und Holz: Ziegel, Schiefer,
+Bretter und Stämme sind kein Gestein.
+
+Nebenbei fielen vier Paletten weg, die nur noch als Definition herumlagen und
+nirgends mehr benutzt wurden — `STEIN`, `STEIN_HELL`, `BURG` und `HOLZ`, Reste
+aus der Zeit, als Mauerwerk direkt mit `drawBlock` gemalt wurde.
+
 ## Musik
 
 Der Soundtrack liegt als Datei neben dem Spiel, unter `musik/`. Standardname

@@ -2396,32 +2396,44 @@ function flaechen(grund) {
   };
 }
 
+/*
+ * ============================================================
+ *  Ein Gestein fuer das ganze Spiel
+ * ============================================================
+ * Vorher standen zwei Steine nebeneinander: ein grauer Burgstein (#b6ab90)
+ * fuer Burg und Tuerme und ein sandfarbener Wallstein (#a4936d) fuer Wall und
+ * Torhaus. Dazu ein dritter, hellerer fuer Zinnen und Gesimse und ein vierter
+ * fuer Bruchmauerwerk. In einem Bild nebeneinander sah das aus wie drei
+ * verschiedene Spiele.
+ *
+ * Jetzt gibt es genau einen Grundton. Was die Sorten noch unterscheidet, ist
+ * Helligkeit und Textur - also dasselbe Gestein im Licht, im Schatten und als
+ * Bruch. Auseinanderlaufen koennen sie nicht mehr, weil alle aus FELS
+ * gerechnet werden.
+ */
+const FELS = '#a4936d';
+const felsHeller = (anteil) => mischen(FELS, '#fff6e2', anteil);
+const felsDunkler = (anteil) => mischen(FELS, '#241a0c', anteil);
+// Der Staub, der aufsteigt, wenn Stein bricht oder gesetzt wird.
+const STEINSTAUB = felsHeller(0.4);
+
 const STOFF = {
-  stein:     { grund: '#b6ab90', textur: 'quader' },
-  steinHell: { grund: '#d8cfb2', textur: 'quader' },
-  bruch:     { grund: '#a3977d', textur: 'bruch' },
-  putz:      { grund: '#e0d6ba', textur: 'putz' },
+  // ---- Gestein: alles aus FELS ----
+  stein:      { grund: FELS, textur: 'quader' },
+  steinHell:  { grund: felsHeller(0.22), textur: 'quader' },   // Zinnen, Gesimse
+  putz:       { grund: felsHeller(0.44), textur: 'putz' },     // geschlaemmte Wand
+  bruch:      { grund: felsDunkler(0.08), textur: 'bruch' },
+  wallstein:  { grund: FELS, textur: 'quader' },
+  wallstein2: { grund: felsHeller(0.22), textur: 'quader' },
+  wallriss:   { grund: felsDunkler(0.24), textur: 'bruch' },   // angeschlagen
+
+  // ---- Kein Gestein: Holz, Erde, Daecher ----
   holz:      { grund: '#9c6d3e', textur: 'brett' },
   stamm:     { grund: '#8a5f33', textur: 'stamm' },
   erde:      { grund: '#7d6140', textur: 'erde' },
   ziegel:    { grund: '#b4462e', textur: 'ziegel' },
   schiefer:  { grund: '#4e5f72', textur: 'ziegel' },
   stroh:     { grund: '#c6a052', textur: 'stroh' },
-  /*
-   * Der Sandstein des Walls - und zwar die einzige Quelle dafuer. Der Wall
-   * hatte seine drei Flaechenfarben von Hand gesetzt (#bfb08c/#5f5442/#8b7d5f),
-   * die Modelle bekamen ihre aus `flaechen()` gerechnet. Die Seitenflaechen
-   * lagen damit weit auseinander - rechts #8b7d5f gegen #c6b795 - und das
-   * Torhaus sah neben dem Wall aus wie aus einem anderen Spiel. Jetzt zieht
-   * `WALL` seine Farben aus genau diesem Stoff, damit beide gar nicht
-   * auseinanderlaufen koennen.
-   *
-   * Der Grundton ist so gewaehlt, dass die Deckflaeche wieder auf dem alten
-   * Wallton #bfb08c landet: flaechen() hellt sie um 0.3 zum Licht auf.
-   */
-  wallstein:  { grund: '#a4936d', textur: 'quader' },
-  wallstein2: { grund: '#bcaa83', textur: 'quader' },   // Wehrplatte, eine Spur heller
-  wallriss:   { grund: '#8a7c5e', textur: 'bruch' },    // angeschlagenes Mauerwerk
 };
 for (const k in STOFF) STOFF[k].f = flaechen(STOFF[k].grund);
 
@@ -3668,13 +3680,13 @@ function wegFeld(ziel, mauerKosten) {
 function schadeWall(m, schaden) {
   m.hp -= schaden;
   m.riss = 1;
-  staub(m.col + 0.5, m.row + 0.5, 7, '#cbbc98');
+  staub(m.col + 0.5, m.row + 0.5, 7, STEINSTAUB);
   ruetteln(4);
   klang('treffer');
   if (m.hp <= 0) {
     state.wall.delete(wkey(m.col, m.row));
     weltStand++;
-    staub(m.col + 0.5, m.row + 0.5, 16, '#cbbc98');
+    staub(m.col + 0.5, m.row + 0.5, 16, STEINSTAUB);
     schirmBlitz(0.35);
     klang('fall');
     return true;
@@ -3731,10 +3743,12 @@ function drawTor(t) {
   drawBlock(t.col + 0.1, t.row + 0.1, 0.8, 0.8, 2, { oben: '#8a7048', links: '#4a3a22', rechts: '#6b5535' });
 }
 
-const STEIN = { oben: '#cbbc98', links: '#6e6149', rechts: '#9a8a68' };
-const STEIN_HELL = { oben: '#e4d7b4', links: '#8a7a5c', rechts: '#b9a781' };
-const BURG = { oben: '#c2b391', links: '#645845', rechts: '#8e7f60' };
-const HOLZ = { oben: '#8a6238', links: '#4e361d', rechts: '#6b4a2a' };
+/*
+ * Die von Hand gesetzten Paletten STEIN, STEIN_HELL, BURG und HOLZ standen
+ * hier noch, wurden aber nirgends mehr benutzt - Reste aus der Zeit, als
+ * Mauerwerk direkt mit drawBlock gemalt wurde. Was drawBlock heute braucht,
+ * holt es sich aus STOFF (siehe WALL).
+ */
 
 // ---------- Pixelfiguren ----------
 // Jede Farbe zweimal: klein im Schatten, gross im Licht. Damit bekommen auch
@@ -4592,9 +4606,9 @@ function drawZinnen(x, y, zinnen) {
   for (let i = 0; i < steine; i++) {
     ctx.fillStyle = 'rgba(10,8,6,0.7)';
     ctx.fillRect(sx - 1, y - 1, b + 2, 7);
-    ctx.fillStyle = '#8d8274';
+    ctx.fillStyle = STOFF.stein.f.rechts;
     ctx.fillRect(sx, y, b, 5);
-    ctx.fillStyle = '#c8bda8';          // die belichtete Oberkante
+    ctx.fillStyle = STOFF.steinHell.f.oben;   // die belichtete Oberkante
     ctx.fillRect(sx, y, b, 1.5);
     sx += b + luecke;
   }
@@ -5473,7 +5487,7 @@ function updateAnimations(dt) {
       t.bauZeit = Math.min(BAU_DAUER, t.bauZeit + dt);
       // Beim Aufsetzen staubt es noch einmal
       if (vorher < BAU_DAUER * 0.62 && t.bauZeit >= BAU_DAUER * 0.62) {
-        staub(t.col + 1, t.row + 1, 10, '#cbbc98');
+        staub(t.col + 1, t.row + 1, 10, STEINSTAUB);
       }
     }
     t.rueckstoss = Math.max(0, (t.rueckstoss || 0) - dt * 6);
@@ -5648,7 +5662,7 @@ function drawMinimap() {
   // Der Wall gehoert auf die Minikarte: er ist das Layout der Station.
   for (const m of state.wall.values()) {
     if (m.row < 0 || m.row >= ROWS) continue;
-    mctx.fillStyle = m.hp < m.maxHp ? '#8a7248' : '#bfb08c';
+    mctx.fillStyle = m.hp < m.maxHp ? STOFF.wallriss.f.oben : STOFF.wallstein.f.oben;
     mctx.fillRect(m.col * sx, m.row * sy, sx, sy);
   }
   mctx.fillStyle = '#2f5fa8';
@@ -6995,7 +7009,7 @@ function wirke(card, ziel) {
    */
   if (w.zinnen && ziel && ziel.turm) {
     ziel.turm.zinnen = (ziel.turm.zinnen || 0) + w.zinnen;
-    staub(ziel.turm.col + 1, ziel.turm.row + 1, 8, '#cbbc98');
+    staub(ziel.turm.col + 1, ziel.turm.row + 1, 8, STEINSTAUB);
     klang('bau');
     teile.push(ziel.turm.name + ': Zinnen auf ' + ziel.turm.zinnen);
   }
@@ -7495,14 +7509,14 @@ function handleGegner(e) {
     const durch = e.dmg - aufZinnen;
     turm.hp -= durch;
     const mx = turm.col + turm.w / 2, my = turm.row + turm.h / 2;
-    if (aufZinnen) zeigeZahl(mx, my - 0.6, '-' + aufZinnen, '#cbbc98');
+    if (aufZinnen) zeigeZahl(mx, my - 0.6, '-' + aufZinnen, STEINSTAUB);
     if (durch) zeigeZahl(mx, my, '-' + durch, '#ff8b6b');
     // Dornen: Wer sich am Mauerwerk vergreift, zahlt dafuer.
     let dornenMeldung = '';
     if (state.maechte.dornen) {
       if (treffeGegner(e, state.maechte.dornen, 'Dornen')) dornenMeldung = ', und verblutet an den Dornen';
     }
-    staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, '#cbbc98');
+    staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 6, STEINSTAUB);
     ruetteln(3);
     klang('treffer');
     if (turm.hp <= 0) {
@@ -7517,7 +7531,7 @@ function handleGegner(e) {
       }
       weltStand++;
       if (state.selectedTower === turm.id) state.selectedTower = null;
-      staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, '#cbbc98');
+      staub(turm.col + turm.w / 2, turm.row + turm.h / 2, 22, STEINSTAUB);
       ruetteln(8);
       schirmBlitz(0.6);
       klang('fall');
