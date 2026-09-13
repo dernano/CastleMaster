@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Ausschnitte in Anteilen der Bildkante. Weggeschnitten wird nur, was AUSSERHALB der gedruckten Rahmenlinie liegt - der ausgefranste Rand der Vorlage. Der Rahmen selbst muss ganz bleiben: er schliesst die Karte ab, wie bei einem doppeldeutschen Blatt. Das Seitenverhaeltnis des Ausschnitts bleibt erhalten, die Karte laesst dafuer oben und unten einen Hauch Papier stehen.",
+  "_hinweis": "Ausschnitte in Anteilen der Bildkante. Weggeschnitten wird nur, was AUSSERHALB der gedruckten Rahmenlinie liegt - der ausgefranste oder dunkle Rand der Vorlage, der nicht zur Karte gehoert. Der Rahmen selbst muss ganz bleiben: er schliesst die Karte ab, wie bei einem doppeldeutschen Blatt. Das Blatt behaelt sein Seitenverhaeltnis und fuellt die Karte von Kante zu Kante; was uebrig bleibt, bleibt unten und traegt die Werte.",
   "waldlaeufer": {
     "x": 0.035,
     "y": 0.021,
@@ -7,10 +7,10 @@
     "h": 0.956
   },
   "wachturm": {
-    "x": 0.006,
-    "y": 0.004,
-    "w": 0.988,
-    "h": 0.992
+    "x": 0.0166,
+    "y": 0.0072,
+    "w": 0.9658,
+    "h": 0.9811
   },
   "zinnen": {
     "x": 0.006,

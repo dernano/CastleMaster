@@ -1316,6 +1316,43 @@ die untere Randzier zu; jetzt stehen sie darunter auf eigenem Grund. Ein Blatt,
 das komplett ist, und Werte, die nichts verdecken — beides aus derselben
 Änderung.
 
+#### Und dann war da noch ein weißes Band
+
+Nach alldem lag seitlich immer noch heller Rand neben dem Blatt. Denn der
+Zuschnitt war nur die halbe Strecke: das Bild wird nicht direkt angezeigt,
+sondern auf eine **Leinwand** gemalt (`paintCardArt`) — und die hatte das
+Seitenverhältnis der *Karte*, 132:228. Ein Blatt im Verhältnis 2:3 wurde also
+deckend hineingemalt (`deckendZeichnen`, `Math.max`) und seitlich beschnitten;
+danach stand diese zu schmale Leinwand mit `object-fit: contain` im breiteren
+Kasten, und links und rechts blieb Papier. Das weiße Band war keine
+Randgestaltung, sondern eine Lücke — und zugleich der dritte Schnitt durch
+denselben Streifen.
+
+Jetzt bekommt die Leinwand das Verhältnis **des Blattes**
+(`BILDFELD.karteBreite / blattVerh`), das Bild wird genau hineingemalt statt
+deckend, und im Kasten liegt es als `height: auto` — Breite füllt, Höhe folgt.
+Die Werteleiste nimmt umgekehrt, was übrig bleibt (`flex: 1 1 auto`), und das
+Blatt schrumpft dabei nicht (`flex: 0 0 auto`): sonst quetscht die Leiste es
+zusammen, und weil der Kasten seinen Überstand abschneidet, fehlte unten wieder
+ein Streifen.
+
+Gemessen, Karte 132 × 228 Punkte:
+
+| | Kasten | Verhältnis |
+| --- | --- | --- |
+| Wachturm | 129 × 196 | 0,657 = das Blatt |
+| Waldläufer | 129 × 199 | 0,646 = das Blatt |
+| Zinnen | 129 × 194 | 0,665 = das Blatt |
+
+Die 3 Punkte Unterschied zur Kartenbreite sind der Rand der Karte selbst. Kein
+Band mehr.
+
+Dazu ein vierter Schnitt, der keiner war: Wachturm und Zinnen bringen einen
+**dunklen Rand um das Blatt** mit — die Fläche, auf der das Blatt liegt. Beim
+Wachturm war das ein schwarzes Band von siebzehn Bildpunkten; sein Zuschnitt
+setzt jetzt direkt davor an. Was die Karte zeigt, ist die Karte, nicht der
+Tisch darunter.
+
 Was dabei auffiel: eine Bildkarte hat keinen Platz für einen Spruch, aber sehr
 wohl für ein **Schlagwort**. Der Wachturm ist eine Sonderzug-Karte, und das
 Band sitzt jetzt zwischen Bild und Werten statt im verdrängten Spruchfeld.
