@@ -1795,10 +1795,32 @@ Fällt die Einheit — oder ihr Turm —, geht ihre Karte mit
 (`nimmAngriffskartenZurueck`). Gekauft oder gefunden wird sie nie: `ziehKarten`
 überspringt alles mit `nichtImHandel`.
 
-Gezogen wird sie mit einer Animation — ein Abbild der Karte löst sich aus der
-Hand, fährt zur Figur und verschwindet dort (`fliegeKarteZu`). Geflogen wird
-mit einem Klon im Dokument, nicht mit der Karte selbst; die ist im nächsten
-Bild ohnehin neu gezeichnet.
+#### Karten ziehen
+
+Anklicken und dann das Ziel anklicken ging immer. Was fehlte, war das
+Naheliegende: die Karte greifen und auf die Figur ziehen. Gerade die
+Befehlskarte verlangt danach — man legt einem Mann einen Befehl hin, man klickt
+ihn nicht an.
+
+Gezogen wird mit einem Abbild im Dokument, das dem Zeiger folgt; die Karte
+selbst bleibt liegen, nur blass, damit die Hand nicht umspringt. Unter dem
+Zeiger läuft die gewöhnliche Vorschau des Bretts mit, denn die gezogene Karte
+ist dieselbe `state.pendingCard` wie beim Klicken — es ist derselbe Weg, nur
+eine andere Geste. Dafür wanderte der Klickhandler des Bretts in `brettKlick`,
+das Klick und Loslassen gemeinsam benutzen.
+
+Drei Kleinigkeiten, die beim Bauen auffielen:
+
+- Der Zug beginnt erst nach sechs Punkten Weg. Sonst verschluckt jeder
+  Klick-mit-Zittern die Auswahl, und man müsste zweimal tippen.
+- Nach dem Ziehen kommt noch ein `click` hinterher. Der ist keiner und wird
+  verworfen (`ziehenGelaufen`), sonst spielte sich die Karte doppelt.
+- `user-select: none` auf der Karte. Ohne das markiert der Zeiger beim Ziehen
+  den Kartentext blau, und die halbe Hand steht unter einer Auswahl.
+
+Wird eine Karte geklickt statt gezogen, fliegt ein Abbild von selbst zur Figur
+(`fliegeKarteZu`) — dieselbe Bewegung, nur ohne Hand. Nach einem Zug bleibt sie
+aus: die Karte ist ja schon dort.
 
 #### Warum nicht ins Deck
 

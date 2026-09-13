@@ -306,6 +306,13 @@
   #hand .card-slot:nth-child(5) { z-index: 5; }
   #hand .card-slot:nth-child(6) { z-index: 6; }
   #hand .card-slot:hover { z-index: 20; }
+  /* Die gezogene Karte bleibt als blasser Platzhalter liegen. */
+  #hand .card-slot.zieht > .card { opacity: 0.22; filter: grayscale(0.5); }
+  /*
+   * Ohne das markiert der Zeiger beim Ziehen den Kartentext blau, und die
+   * halbe Hand steht unter einer Auswahl.
+   */
+  .card-slot { touch-action: none; -webkit-user-select: none; user-select: none; }
 
   /* Leichte Faecherung: aussen staerker geneigt als in der Mitte */
   #hand .card-slot:nth-child(1) > .card { transform-origin: bottom center; }
@@ -635,7 +642,9 @@
   .card-sonderzug.mitbringsel {
     color: #f3e6c8; border-color: #4a3a22;
     background: linear-gradient(180deg, #6b5334, #3b2c18);
-    letter-spacing: 0.06em; text-transform: none; font-size: 8px;
+    letter-spacing: 0.02em; text-transform: none; font-size: 7.5px;
+    line-height: 1.25; text-align: center; padding: 2px 5px;
+    max-width: 100%; white-space: normal;
   }
   /* Fixiert ist kein Gold, sondern Stahl: die Karte gehoert nicht dem Deck. */
   .card-sonderzug.fixiert {
@@ -1140,10 +1149,11 @@
     <div class="hilfe-box panel">
       <h2>Steuerung</h2>
       <ul>
-        <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
-        <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
+        <li><b>Karten spielen:</b> Zwei Wege, beide gehen immer. <b>Ziehen:</b> die Karte greifen und aufs Ziel ziehen — auf ein Feld, einen Turm, eine Figur. <b>Oder klicken:</b> erst die Karte antippen, dann das Ziel.</li>
+        <li><b>Bauen:</b> Gebäude-Karte auf ein freies Feld am Wall.</li>
+        <li><b>Besetzen:</b> Einheiten-Karte auf einen Turm.</li>
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt höchstens einmal je Zug.</li>
-        <li><b>Der Befehl zum Schuss:</b> Jede <b>Einheit</b>, die Stellung bezieht, bringt ihre eigene Befehlskarte mit — <b>„Angriff Waldläufer"</b>, „Angriff Bogenschütze", je nachdem, wer oben steht. Zieh die Karte <b>auf die Figur</b>, dann legt sie an und schießt in diesem Zug. Das kostet <b>1 Tatendrang</b>. Ohne Befehl hält die Besatzung still: die Plakette über dem Turm steht dann blau statt gold.</li>
+        <li><b>Der Befehl zum Schuss:</b> Jede <b>Einheit</b>, die Stellung bezieht, bringt ihre eigene Befehlskarte mit — <b>„Angriff Waldläufer"</b>, „Angriff Bogenschütze", je nachdem, wer oben steht. <b>Zieh die Karte mit der Maus auf die Figur</b>, dann legt sie an und schießt in diesem Zug. Das kostet <b>1 Tatendrang</b>. Ohne Befehl hält die Besatzung still: die Plakette über dem Turm steht dann blau statt gold.</li>
         <li><b>Fixiert:</b> Befehlskarten liegen <b>nicht im Deck</b>. Sie werden nie gemischt und nie gezogen, sondern kommen zu <b>jeder Runde zusätzlich in die Hand</b> — gespielt oder nicht, nächste Runde sind sie wieder da. Deine Hand ist also fünf gezogene Karten plus eine je Einheit im Feld. Fällt die Einheit, geht ihre Karte mit; am Ende der Station gehen alle.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt höchstens einmal je Zug, und nur, wenn du es anweist und eine Angriffskarte freigegeben hast. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug mit freigegebenen, aber ungenutzten Schüssen, verfallen sie — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
@@ -7306,9 +7316,15 @@ canvas.addEventListener('mouseleave', () => {
   if (state.hoverCell) { state.hoverCell = null; draw(); }
 });
 
-canvas.addEventListener('click', (evt) => {
+canvas.addEventListener('click', (evt) => brettKlick(canvasPoint(evt)));
+
+/*
+ * Ein Griff aufs Brett - vom Klick oder vom Loslassen einer gezogenen Karte.
+ * Beide Wege muessen dasselbe tun, darum steht es hier und nicht im
+ * Klickhandler.
+ */
+function brettKlick(p) {
   if (state.castleHp <= 0 || state.phase !== 'kampf' || state.zugLaeuft) return;
-  const p = canvasPoint(evt);
   const treffer = pickAt(p);
   const cell = cellFromPoint(p);
 
@@ -7357,7 +7373,7 @@ canvas.addEventListener('click', (evt) => {
   } else if (ziel === 'turm') {
     wendeKarteAn({ turm: tower });
   }
-});
+}
 
 /**
  * Klick ohne Karte in der Hand: erst eine Einheit auf einem Turm auswaehlen,
@@ -8051,13 +8067,91 @@ function nimmAngriffskartenZurueck() {
 }
 
 /*
+ * ============================================================
+ *  Karten ziehen: die Hand ans Brett
+ * ============================================================
+ *
+ * Anklicken und dann das Ziel anklicken ging immer. Was fehlte, war das
+ * Naheliegende: die Karte greifen und auf die Figur ziehen. Gerade die
+ * Befehlskarte verlangt danach - man legt einem Mann einen Befehl hin, man
+ * klickt ihn nicht an.
+ *
+ * Gezogen wird mit einem Abbild im Dokument, das dem Zeiger folgt. Die Karte
+ * selbst bleibt, wo sie ist, nur blass: so springt die Hand nicht um, waehrend
+ * man zieht. Unter dem Zeiger laeuft die gewoehnliche Vorschau des Bretts mit,
+ * weil die gezogene Karte dieselbe `state.pendingCard` ist wie beim Klicken -
+ * es ist derselbe Weg, nur eine andere Geste.
+ */
+let ziehen = null;
+let ziehenGelaufen = false;   // unterdrueckt den Klick, der aufs Ziehen folgt
+
+function starteZiehen(card, slot, evt) {
+  const el = slot.querySelector('.card');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const klon = el.cloneNode(true);
+  klon.style.cssText = 'position:fixed;left:0;top:0;margin:0;z-index:9998;pointer-events:none;' +
+    'width:' + r.width + 'px;height:' + r.height + 'px;will-change:transform;' +
+    'filter:drop-shadow(0 16px 22px rgba(0,0,0,0.6));';
+  document.body.appendChild(klon);
+  ziehen = { card, klon, gx: r.width / 2, gy: r.height * 0.35 };
+  // Eine Karte mit Ziel wird nur angewaehlt; eine ohne wartet bis zum
+  // Loslassen, sonst waere sie schon gewirkt, bevor man losgelassen hat.
+  // renderAll baut die Hand neu auf - die Blasse erkennt `cardElement` am
+  // laufenden Zug, nicht an einer Klasse, die den Neuaufbau nicht ueberlebt.
+  if (zielArt(card)) playCard(card); else renderAll();
+  bewegeZiehen(evt);
+}
+
+function ueberBrett(evt) {
+  const r = canvas.getBoundingClientRect();
+  return evt.clientX >= r.left && evt.clientX <= r.right &&
+         evt.clientY >= r.top && evt.clientY <= r.bottom;
+}
+
+function bewegeZiehen(evt) {
+  if (!ziehen) return;
+  ziehen.klon.style.transform = 'translate(' + (evt.clientX - ziehen.gx) + 'px,' +
+    (evt.clientY - ziehen.gy) + 'px) rotate(-4deg) scale(0.94)';
+  if (ueberBrett(evt)) {
+    const p = canvasPoint(evt);
+    state.hoverCell = cellFromPoint(p);
+    const treffer = pickAt(p);
+    state.hoverGegner = treffer && treffer.art === 'enemy' ? treffer.ref.id : undefined;
+  } else {
+    state.hoverCell = null;
+  }
+}
+
+let ausZiehen = false;   // dann fliegt die Karte nicht noch einmal hin
+function beendeZiehen(evt) {
+  if (!ziehen) return;
+  const { klon, card } = ziehen;
+  ziehen = null;
+  klon.remove();
+  if (!ueberBrett(evt)) {
+    // Neben dem Brett losgelassen: die Karte geht zurueck auf die Hand.
+    state.pendingCard = null;
+    state.hoverCell = null;
+    renderAll();
+    return;
+  }
+  ausZiehen = true;
+  try {
+    if (!zielArt(card)) playCard(card);
+    else if (state.pendingCard === card) brettKlick(canvasPoint(evt));
+  } finally { ausZiehen = false; }
+  renderAll();
+}
+
+/*
  * Der Kartenflug. Eine Befehlskarte wird auf die Einheit gezogen - das soll
  * man sehen: die Karte loest sich aus der Hand, faehrt zur Figur und
  * verschwindet dort. Geflogen wird mit einem Abbild im Dokument, nicht mit
  * der Karte selbst; die ist im naechsten Bild ohnehin neu gezeichnet.
  */
 function fliegeKarteZu(card, turm) {
-  if (wenigerBewegung) return;
+  if (wenigerBewegung || ausZiehen) return;
   const quelle = document.querySelector('#hand .card-slot[data-uid="' + card.uid + '"] .card');
   if (!quelle) return;
   const r = quelle.getBoundingClientRect();
@@ -9688,7 +9782,7 @@ function karteRegel(card) {
   }
   // Die Einheit sagt an, welche Befehlskarte sie mitbringt.
   if (card.type === 'Einheit') {
-    return ('Bringt die fixierte Karte „Angriff ' + card.name + '“ mit. ' + satz).trim();
+    return ('Ziehe die Karte „Angriff ' + card.name + '“, damit sie schießt. ' + satz).trim();
   }
   // Die Grenze steht vorn: sie entscheidet, ob die Karte ueberhaupt geht.
   if (card.einmalJeKampf) return ('Einmal je Kampf, dann aus dem Spiel. ' + satz).trim();
@@ -9709,6 +9803,7 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   const slot = document.createElement('div');
   slot.className = 'card-slot' + (disabled ? ' gesperrt' : '');
   slot.dataset.uid = card.uid;   // damit der Kartenflug seine Karte findet
+  if (ziehen && ziehen.card.uid === card.uid) slot.classList.add('zieht');
 
   const verbraucht = state.phase === 'kampf' && schonVerbraucht(card);
   const el = document.createElement('div');
@@ -9808,8 +9903,8 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
       'Einmal je Kampf. Danach liegen alle Karten dieser Art bis zur nächsten Station beiseite.');
   }
   if (card.type === 'Einheit') {
-    schlagwort('+ Angriff ' + card.name, 'mitbringsel',
-      'Diese Einheit bringt ihre fixierte Befehlskarte mit.');
+    schlagwort('Ziehe die Karte Angriff ' + card.name, 'mitbringsel',
+      'Diese Einheit bringt ihre fixierte Befehlskarte mit. Zieh sie auf die Figur, dann schießt sie.');
   }
   if (schlagworte.childNodes.length) el.appendChild(schlagworte);
 
@@ -9886,7 +9981,35 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
     });
   }
 
-  if (onClick) slot.addEventListener('click', () => { if (!disabled) onClick(); });
+  if (onClick) {
+    slot.addEventListener('click', () => {
+      // Nach einem Ziehen kommt noch ein Klick hinterher - der ist keiner.
+      if (ziehenGelaufen) { ziehenGelaufen = false; return; }
+      if (!disabled) onClick();
+    });
+    slot.addEventListener('pointerdown', (evt) => {
+      if (disabled || evt.button > 0 || state.zugLaeuft || state.phase !== 'kampf') return;
+      const von = { x: evt.clientX, y: evt.clientY };
+      let los = false;
+      const zug = (e2) => {
+        if (!los && Math.hypot(e2.clientX - von.x, e2.clientY - von.y) > 6) {
+          los = true;
+          ziehenGelaufen = true;
+          starteZiehen(card, slot, e2);
+        }
+        if (los) { bewegeZiehen(e2); e2.preventDefault(); }
+      };
+      const hoch = (e2) => {
+        window.removeEventListener('pointermove', zug);
+        window.removeEventListener('pointerup', hoch);
+        window.removeEventListener('pointercancel', hoch);
+        if (los) beendeZiehen(e2);
+      };
+      window.addEventListener('pointermove', zug);
+      window.addEventListener('pointerup', hoch);
+      window.addEventListener('pointercancel', hoch);
+    });
+  }
   slot.appendChild(el);
   return slot;
 }
