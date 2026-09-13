@@ -5342,14 +5342,32 @@ function drawTower(t) {
    * Stein.
    */
   const wund = einheiten.filter(u => u.hp < u.maxHp);
+  /*
+   * Alles, was ueber dem Turm steht, liegt in einem Stapel: Mannschaftsbalken,
+   * Turmbalken, Zinnen, und ganz oben die Besatzung. `stapel` ist die
+   * Oberkante des bisher Gezeichneten - so stossen die Anzeigen nie
+   * zusammen, egal welche davon gerade da sind.
+   */
+  // Die Figuren auf der Krone reichen selbst rund zwanzig Punkte hinauf -
+  // darum faengt der Stapel nicht an der Krone an, sondern darueber.
+  let stapel = -24;
   if (wund.length) {
     const gesamt = einheiten.reduce((a, u) => a + u.hp, 0);
     const voll = einheiten.reduce((a, u) => a + u.maxHp, 0);
     drawHpBar(cx, cy - 18, 22, gesamt, voll, '#7fb36a');
   }
 
-  if (t.hp < t.maxHp) drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a');
-  if (t.zinnen > 0) drawZinnen(cx, cy - 38, t.zinnen);
+  if (t.hp < t.maxHp) { drawHpBar(cx, cy - 28, 30, t.hp, t.maxHp, '#d08a3a'); stapel = -34; }
+  if (t.zinnen > 0) { drawZinnen(cx, cy - 38, t.zinnen); stapel = -46; }
+
+  /*
+   * Die Besatzung stand unter dem Turm - und war dort halb verdeckt: was vor
+   * einem Turm steht, wird nach ihm gezeichnet, also legt sich jedes
+   * Mauerfeld davor. Ueber der Krone kann das nichts mehr: hoeher als ein Turm
+   * ist in seiner Nachbarschaft nichts, und was hoeher waere, steht dahinter
+   * und wird vorher gemalt.
+   */
+  drawBesatzung(cx, cy + stapel - 11, einheiten.length, t.slots.length);
 
   /*
    * Drei Zustaende, seit kein Turm mehr von selbst feuert: geschossen (grau,
@@ -5367,12 +5385,6 @@ function drawTower(t) {
     else if (turmHatZiel(t)) drawBadge(bx, by, '⚔ ' + towerDamageAt(t, 0), '#ffe3a8', '#8a5c12');
     else drawBadge(bx, by, '⚔ ' + towerDamageAt(t, 0), '#bfe39a', '#5c7a30');
   }
-
-  // Wie viele Plaetze belegt sind, steht unter dem Turm: ein Schild je Platz,
-  // gefuellt fuer besetzt. Die Zahl der Plaetze ist sonst nirgends zu sehen.
-  drawBesatzung(isoX(t.col + t.w / 2, t.row + t.h / 2),
-    isoY(t.col + t.w / 2, t.row + t.h / 2) + TH / 2 + (moeglich > 0 ? 11 : 1),
-    einheiten.length, t.slots.length);
 
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
 }

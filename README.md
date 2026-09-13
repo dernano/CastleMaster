@@ -1803,9 +1803,18 @@ Plakette über ihm — blau, solange kein Befehl da ist.
 
 #### Wie voll ein Turm ist
 
-Unter jedem Turm steht eine Reihe kleiner Schilde, eines je Platz, gefüllt für
+Über jedem Turm steht eine Reihe kleiner Schilde, eines je Platz, gefüllt für
 besetzt (`drawBesatzung`). Zwei Zahlen in einem Bild: wie viele oben sind und
 wie viele hinaufpassen — letzteres stand vorher nirgends.
+
+Der erste Versuch setzte sie **unter** den Turm, und dort waren sie halb
+verdeckt: was vor einem Turm steht, wird nach ihm gezeichnet, also legt sich
+jedes Mauerfeld davor. Über der Krone kann das nichts mehr — höher als ein Turm
+ist in seiner Nachbarschaft nichts, und was höher wäre, steht dahinter und wird
+vorher gemalt. Alles, was über dem Turm steht, liegt jetzt in einem Stapel
+(Mannschaftsbalken, Turmbalken, Zinnen, ganz oben die Besatzung), dessen
+Oberkante mitwandert; so stoßen die Anzeigen nie zusammen, egal welche davon
+gerade da sind.
 
 Dazu ein Deckel: **höchstens drei Batallione je Turm** (`MAX_PLAETZE`). Ein
 Wachturm trägt zwei, mit der Krone drei; ein Doppelturm bringt einen Platz mit
