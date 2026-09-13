@@ -145,6 +145,7 @@
     text-shadow: 0 2px 0 rgba(0,0,0,0.6); }
   .chip.burg b { color: #f0b4a2; }
   .chip.sold b { color: var(--gold); }
+  .chip.schuss b { color: #ffd166; }
   .chip.dim { color: var(--muted); }
   .chip.dim b { color: var(--parchment-dark); }
   .chip .saeule { display: flex; align-items: baseline; }
@@ -1126,8 +1127,9 @@
       <ul>
         <li><b>Bauen:</b> Gebäude-Karte antippen, dann ein freies Feld.</li>
         <li><b>Besetzen:</b> Einheiten-Karte antippen, dann einen Turm.</li>
-        <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
-        <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
+        <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt höchstens einmal je Zug.</li>
+        <li><b>Angriffskarten:</b> Ein Schuss ist kein Selbstläufer. Jede <b>Einheit</b>, die Stellung bezieht, legt eine Karte <b>Angriff</b> in dein Deck — und erst eine ausgespielte Angriffskarte gibt einen Schuss frei. Oben zeigen die Schwerter, wie viele bereitliegen; am Zugende verfallen sie. Damit dein eigenes Aufgebot dir nicht das Deck verstopft, wächst die Hand mit: <b>fünf Karten plus eine je Angriffskarte</b>. Am Ende der Station gehen die Angriffskarten mit den Einheiten wieder aus dem Deck.</li>
+        <li><b>Kein Schuss von allein:</b> Jeder Turm schießt höchstens einmal je Zug, und nur, wenn du es anweist und eine Angriffskarte freigegeben hast. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug mit freigegebenen, aber ungenutzten Schüssen, verfallen sie — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
         <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu zwei Flanken, die nach hinten laufen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinten steht keine Mauer: dort steht die Burg, und von hinten kommt niemand.</li>
         <li><b>Auch auf den Flanken:</b> Gebaut wird am Riegel <i>und</i> auf den seitlichen Mauern. Ein Turm nahe der Ecke flankiert den Anmarsch; einer tief hinten im Hof sieht nichts mehr.</li>
@@ -1135,7 +1137,7 @@
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
         <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
-        <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — der <b>Wachturm</b> zum Beispiel. Sie gehen <b>einmal je Kampf</b>, und danach ist die <b>ganze Art aus dem Spiel</b>: die gespielte Karte und jede weitere desselben Namens wandern beiseite, aus der Hand, dem Zugstapel und der Ablage. Du ziehst sie an dieser Station nicht wieder. Wie viele beiseiteliegen, steht oben am Siegel; zur nächsten Station kommen alle zurück ins Deck. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
+        <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — <b>Wachturm</b> und <b>Waldläufer</b> im Startdeck. Sie gehen <b>einmal je Kampf</b>, und danach ist die <b>ganze Art aus dem Spiel</b>: die gespielte Karte und jede weitere desselben Namens wandern beiseite, aus der Hand, dem Zugstapel und der Ablage. Du ziehst sie an dieser Station nicht wieder. Wie viele beiseiteliegen, steht oben am Siegel; zur nächsten Station kommen alle zurück ins Deck. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
@@ -1261,6 +1263,7 @@
     <span class="chip dim" id="pile-draw" title="Zugstapel"><i class="ic" data-ikone="stapel"></i> <b id="draw-count">0</b></span>
     <span class="chip dim" id="pile-discard" title="Ablage"><i class="ic" data-ikone="ablage"></i> <b id="discard-count">0</b></span>
     <span class="chip dim hidden" id="pile-beiseite" title="Sonderzug: liegt bis zum Ende der Station beiseite"><i class="ic" data-ikone="siegel"></i> <b id="beiseite-count">0</b></span>
+    <span class="chip schuss hidden" id="chip-schuss" title="Freigegebene Schüsse in diesem Zug"><i class="ic" data-ikone="schwerter"></i> <b id="schuss-count">0</b></span>
   </div>
 
   <div id="frist-tafel" class="hidden" title="Zuege bis zum Sturm">
@@ -1352,7 +1355,7 @@ const CARD_POOL = [
     text: 'Keine Nacht reicht, um so etwas zu bauen. Ihr habt es doch getan.' },
 
   // ---------------- Einheiten ----------------
-  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer', sel: 'gewoehnlich',
+  { id: 'waldlaeufer', name: 'Waldläufer', type: 'Einheit', suit: '❤', cost: 1, dmg: 2, range: 3, art: 'waldlaeufer', sel: 'gewoehnlich', einmalJeKampf: true,
     text: 'Braucht festen Boden unter den Füßen.' },
   { id: 'speertraeger', name: 'Speerträger', type: 'Einheit', suit: '❤', cost: 1, dmg: 3, range: 1, zaeh: 2, art: 'speer', sel: 'gewoehnlich',
     text: 'Er weicht nicht. Das ist seine ganze Kunst.' },
@@ -1501,6 +1504,16 @@ const CARD_POOL = [
   { id: 'morgenappell', name: 'Morgenappell', type: 'Macht', suit: '🔔', cost: 2, art: 'horn', sel: 'selten',
     wenn: { ausloeser: 'zugBeginn', dann: { flickeAlle: 2, heileBurg: 1 } },
     text: 'Vor dem ersten Licht wird gezählt und geflickt.' },
+
+  /*
+   * Der Angriff. Diese Karte wird nicht gekauft und nicht gefunden - jede
+   * Einheit, die Stellung bezieht, legt eine davon ins Deck, und am Ende der
+   * Station gehen sie mit den Einheiten wieder. Ein Schuss ist seither keine
+   * Selbstverstaendlichkeit mehr, sondern eine gezogene Karte.
+   */
+  { id: 'angriff', name: 'Angriff', type: 'Fähigkeit', suit: '🍃', cost: 0, art: 'pfeil',
+    sel: 'gewoehnlich', nichtImHandel: true, sofort: { schuss: 1 },
+    text: 'Ohne Befehl bleibt der Pfeil im Köcher.' },
 ];
 
 // Der Stapel wird beim Laden einmal gegen dieselbe Regel geprueft.
@@ -1639,11 +1652,20 @@ const LAGER_BREITE = 2;
  * kein Glueckspiel.
  */
 const STARTER_DECK = [
-  ['wachturm', 1], ['waldlaeufer', 4], ['zinnen', 4], ['krone', 1],
+  ['wachturm', 1], ['waldlaeufer', 1], ['zinnen', 4], ['krone', 1],
 ];
 const HAND_SIZE = 5;
-/** Wie viele Karten ein Zug bringt, samt anhaltender Maechte. */
-const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0);
+/*
+ * Fuenf Karten, dazu eine je Angriffskarte im Deck.
+ *
+ * Die Angriffskarten kommen von den Einheiten und verduennen das Deck. Ohne
+ * Ausgleich wuerde jede neue Einheit die Chance senken, ueberhaupt an Zinnen
+ * oder ein Gebaeude zu kommen - man haette sich mit dem eigenen Aufgebot
+ * selbst zugeschuettet. Die Hand waechst darum mit: fuenf fuer den Plan, eine
+ * je Einheit fuer das Schiessen.
+ */
+const handGroesse = () => HAND_SIZE + (state.maechte ? (state.maechte.handKarten || 0) : 0)
+  + (state.angriffKarten || 0);
 // Zielen kostet nichts. Gefeuert wird ohnehin jeden Zug; die Entscheidung
 // ist, WORAUF, nicht OB. Der Tatendrang gehoert weiter den Karten.
 const ATTACK_COST = 0;
@@ -1765,6 +1787,13 @@ let state = {
    * nur an einem roten Band erkennt; so sieht man sie am Stapel.
    */
   beiseite: [],
+  /*
+   * Freie Schuesse in diesem Zug und die Zahl der Angriffskarten, die im Deck
+   * liegen. Beides gehoert zur Station: Tuerme und Einheiten fallen an ihrem
+   * Ende weg, ihre Karten also auch.
+   */
+  schuesse: 0,
+  angriffKarten: 0,
   nextTowerId: 1,
   nextEnemyId: 1,
 };
@@ -6626,6 +6655,28 @@ function zeichneMotiv(c, art, w, h) {
       scheibe(c, mx - 25, boden - 5, 6, BLATT.gelb);
       scheibe(c, mx + 24, boden - 7, 6, BLATT.gelb);
       break;
+    case 'pfeil': {
+      /*
+       * Ein gespannter Bogen mit aufgelegtem Pfeil. Der Angriff braucht ein
+       * eigenes Motiv: mit dem Bogenschuetzen sah die Karte aus wie eine
+       * Einheit, mit dem Pfeilhagel wie eine Macht.
+       */
+      const bx = mx + 14, by = boden - 20;
+      c.strokeStyle = BLATT.schwarz; c.lineWidth = 5; c.lineCap = 'round';
+      c.beginPath(); c.arc(bx, by, 26, -1.9, 1.9); c.stroke();
+      c.strokeStyle = BLATT.holz; c.lineWidth = 3;
+      c.beginPath(); c.arc(bx, by, 26, -1.9, 1.9); c.stroke();
+      // Sehne, in der Mitte vom Pfeil zurueckgezogen
+      strichzug(c, [[bx - 9, by - 24], [bx - 18, by], [bx - 9, by + 24]], BLATT.schwarz, 1.5);
+      // Schaft, Spitze, Fiedern
+      strichzug(c, [[mx - 30, by], [bx + 22, by]], BLATT.holz, 3);
+      umriss(c, () => {
+        c.moveTo(bx + 16, by - 8); c.lineTo(bx + 34, by); c.lineTo(bx + 16, by + 8);
+        c.closePath();
+      }, BLATT.stein);
+      zug(c, [[mx - 30, by - 8], [mx - 18, by], [mx - 30, by + 8]], BLATT.fieder);
+      break;
+    }
     case 'wind':
       for (let i = 0; i < 3; i++) {
         const y = boden - 8 - i * 15;
@@ -7314,6 +7365,17 @@ function handleSelectionClick(treffer, cell) {
 function attackWithTower(tower, enemy) {
   if (!enemy || !state.enemies.includes(enemy)) { setMessage('Dieses Ziel gibt es nicht mehr.'); renderAll(); return; }
   if (towerHasFired(tower)) { setMessage(tower.name + ' hat in diesem Zug bereits geschossen.'); renderAll(); return; }
+  /*
+   * Ohne Befehl kein Schuss. Frueher feuerte jeder besetzte Turm einmal je
+   * Zug umsonst; das war die eine Handlung im Spiel, die nichts kostete und
+   * nie ausblieb. Jetzt legt jede Einheit eine Angriffskarte ins Deck, und
+   * erst die gespielte Karte gibt einen Schuss frei.
+   */
+  if (!state.schuesse) {
+    setMessage('Kein Angriff bereit. Spiele eine Angriffskarte — jede Einheit legt eine ins Deck.');
+    renderAll();
+    return;
+  }
 
   const d = distanceTo(tower, enemy);
   const schaden = towerDamageAt(tower, d);
@@ -7324,6 +7386,7 @@ function attackWithTower(tower, enemy) {
   }
 
   tower.attackedKey = state.runde + ':' + state.zug;
+  state.schuesse--;
   enemy.hp -= schaden;
   loeseAus('salve');
 
@@ -7517,6 +7580,10 @@ function wirke(card, ziel) {
     teile.push(g > 0 ? '+' + g + ' Burg' : 'die Burg steht schon fest');
   }
   if (w.sold) { state.sold += w.sold; teile.push('+' + w.sold + ' Sold'); }
+  if (w.schuss) {
+    state.schuesse = (state.schuesse || 0) + w.schuss;
+    teile.push(state.schuesse === 1 ? 'ein Schuss bereit' : state.schuesse + ' Schüsse bereit');
+  }
 
   if (w.flicke && ziel && ziel.turm) {
     const t = ziel.turm;
@@ -7724,6 +7791,7 @@ function wirkungText(w) {
   if (w.flaeche) teile.push(w.flaeche + ' Schaden auf alle Gegner');
   if (w.fessel) teile.push('Gegner setzt ' + w.fessel + ' Zug' + (w.fessel === 1 ? '' : 'e') + ' aus');
   if (w.stoss) teile.push('stößt einen Gegner ' + w.stoss + ' Felder zurück');
+  if (w.schuss) teile.push(w.schuss === 1 ? 'gibt einen Schuss frei' : 'gibt ' + w.schuss + ' Schüsse frei');
   if (w.zinnen) teile.push('gibt einem Turm ' + w.zinnen + ' Zinnen');
   if (w.flicke) teile.push('flickt einen Turm um ' + w.flicke);
   if (w.flickeAlle) teile.push('flickt alle Türme um ' + w.flickeAlle);
@@ -7849,11 +7917,39 @@ function placeUnit(tower, slotIdx) {
   removeFromHand(card);
   state.pendingCard = null;
   const zusatz = wirke(card, { turm: tower, einheit });
+  gibAngriffskarte();
   setMessage(card.name + ' bezieht Stellung auf ' + tower.name +
     (card.zaeh ? ' und verstärkt ihn um ' + card.zaeh + ' LP' : '') +
-    (zusatz ? ': ' + zusatz : '.'));
+    (zusatz ? ': ' + zusatz : '.') + ' Eine Angriffskarte geht ins Deck.');
   if (rundeGewonnen()) { beginneBelohnung(); return; }
   renderAll();
+}
+
+/*
+ * Jede Einheit, die Stellung bezieht, legt eine Angriffskarte ins Deck -
+ * gemischt in den Zugstapel, nicht obenauf: sie soll gezogen werden, nicht
+ * garantiert sein. Dafuer waechst die Hand um eine Karte (siehe
+ * `handGroesse`), damit das Deck durch das eigene Aufgebot nicht verstopft.
+ */
+function gibAngriffskarte() {
+  const karte = neueKarte(protoVon('angriff'));
+  state.draw.splice(Math.floor(Math.random() * (state.draw.length + 1)), 0, karte);
+  state.angriffKarten++;
+}
+
+/**
+ * Am Ende der Station gehen die Angriffskarten mit den Einheiten. Sie liegen
+ * ueberall verstreut - im Zugstapel, in der Hand, in der Ablage, beiseite -,
+ * also wird ueberall gesucht.
+ */
+function nimmAngriffskartenZurueck() {
+  const ohne = (liste) => liste.filter(c => c.id !== 'angriff');
+  state.draw = ohne(state.draw);
+  state.hand = ohne(state.hand);
+  state.discard = ohne(state.discard);
+  state.beiseite = ohne(state.beiseite);
+  state.angriffKarten = 0;
+  state.schuesse = 0;
 }
 
 /** Eine Fähigkeit auf ein gewaehltes Ziel anwenden. */
@@ -8158,7 +8254,9 @@ function turmHatZiel(t) {
 
 /** Tuerme, die in diesem Zug noch schiessen koennten und es nicht getan haben. */
 function ungenutzteTuerme() {
-  return state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && turmHatZiel(t)).length;
+  // Ein Turm ohne freien Schuss ist nicht ungenutzt, sondern ohne Befehl.
+  const bereit = state.towers.filter(t => !towerHasFired(t) && towerUnits(t).length && turmHatZiel(t)).length;
+  return Math.min(bereit, state.schuesse || 0);
 }
 
 /**
@@ -8264,6 +8362,7 @@ function betreteKnoten(id) {
   state.tor = [];
   state.einmalGenutzt = {};
   holeBeiseiteZurueck();
+  nimmAngriffskartenZurueck();
   wegCache = new Map();
   gegnerzug = null;
   schuesseImZug = 0;
@@ -8353,6 +8452,8 @@ function neuerFeldzug(stufe) {
   state.hand = [];
   state.discard = [];
   state.beiseite = [];
+  state.schuesse = 0;
+  state.angriffKarten = 0;
   state.nextTowerId = 1;
   state.nextEnemyId = 1;
   state.runde = 1;
@@ -8404,6 +8505,7 @@ function feldzugVerloren() {
 /** Nach gewonnenem Kampf: Sold, dann Karten zur Auswahl. */
 function beginneBelohnung() {
   holeBeiseiteZurueck();
+  nimmAngriffskartenZurueck();
   const k = aktuellerKnoten();
   const vorhut = k && k.typ === 'elite';
   const lohn = Math.round((SOLD_JE_STATION + (vorhut ? SOLD_VORHUT : 0)) * (1 + state.runde * 0.05));
@@ -8427,6 +8529,7 @@ function beginneBelohnung() {
 function ziehKarten(anzahl, mindestens) {
   const topf = [];
   for (const c of CARD_POOL) {
+    if (c.nichtImHandel) continue;   // die Angriffskarte kommt von den Einheiten
     let g = SELTENHEIT[c.sel || 'gewoehnlich'].gewicht;
     if (mindestens === 'selten' && (c.sel || 'gewoehnlich') === 'gewoehnlich') g = Math.round(g * 0.4);
     for (let i = 0; i < g; i++) topf.push(c);
@@ -8938,6 +9041,7 @@ function endTurn() {
  */
 function derSturm() {
   holeBeiseiteZurueck();
+  nimmAngriffskartenZurueck();
   const alle = [...state.enemies, ...state.lager];
   const schaden = alle.reduce((sum, e) => sum + Math.max(1, e.dmg), 0);
   for (const e of state.enemies) zeigeZahl(e.col, e.row, 'Sturm', '#ff9a5c');
@@ -8959,6 +9063,9 @@ function derSturm() {
 function zugAbschluss(lauf) {
   state.zugLaeuft = false;
   schuesseImZug = 0;   // die Tonleiter faengt in jedem Zug wieder unten an
+  // Ein freigegebener, aber nicht abgegebener Schuss verfaellt mit dem Zug -
+  // wie die Karte, die ihn freigegeben hat.
+  state.schuesse = 0;
   const kampfMeldung = lauf && lauf.stumm
     ? document.getElementById('message').textContent : '';
 
@@ -10161,6 +10268,9 @@ function renderAll() {
   // Der Sonderzug-Stapel zeigt sich nur, wenn etwas darauf liegt.
   document.getElementById('beiseite-count').textContent = state.beiseite.length;
   document.getElementById('pile-beiseite').classList.toggle('hidden', !state.beiseite.length);
+  // Freigegebene Schuesse: nur zu sehen, wenn welche bereitliegen.
+  document.getElementById('schuss-count').textContent = state.schuesse || 0;
+  document.getElementById('chip-schuss').classList.toggle('hidden', !state.schuesse);
   // Die Deckgroesse zaehlt die beiseitegelegten Karten mit: sie sind nicht
   // verloren, sie kommen mit der naechsten Station zurueck.
   document.getElementById('deck-total').textContent =

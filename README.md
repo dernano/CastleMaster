@@ -750,15 +750,17 @@ dieselben vier Fragen:
 | Karte | Art | Kosten | Anzahl | Frage |
 | --- | --- | --- | --- | --- |
 | Wachturm | Gebäude | 2 | **1** | Wo baue ich? |
-| Waldläufer | Einheit | 1 | 4 | Wen stelle ich drauf? |
+| Waldläufer | Einheit | 1 | **1** | Wen stelle ich drauf? |
 | Zinnen | Fähigkeit | 1 | 4 | Was schütze ich? |
 | Krone der Belagerung | Macht | 3 | 1 | Halte ich die große Karte? |
 
+Sieben Karten, dazu im Kampf eine Angriffskarte je Einheit.
+
 Eine Karte je Kategorie, und ein Deck, das sich alle zwei Züge einmal durchhat.
 
-**Warum der Wachturm nur einmal darin liegt.** Er ist ein Sonderzug: der erste
-gespielte nimmt die ganze Art aus dem Spiel. Weitere Abzüge wären tote Blätter,
-die nur den Zugstapel füllen. Einmal in zehn heißt: im ersten Blatt liegt er
+**Warum Wachturm und Waldläufer nur einmal darin liegen.** Beide sind
+Sonderzüge: der erste gespielte nimmt die ganze Art aus dem Spiel. Weitere
+Abzüge wären tote Blätter, die nur den Zugstapel füllen. Einmal in zehn heißt: im ersten Blatt liegt er
 mit Wahrscheinlichkeit eins zu zwei, im zweiten liegt er sicher — fünf gezogene
 Karten je Zug drehen das Deck in zwei Zügen um. Ein Zug Wartezeit im
 schlechtesten Fall, kein Glücksspiel.
@@ -767,14 +769,13 @@ Je zwölf Bot-Feldzüge über vier Mischungen:
 
 | Startdeck | Siege | Station im Schnitt |
 | --- | --- | --- |
-| 3 Wachturm, 3 / 3 / 1 (vorher) | 3/12 | 14,5 |
-| **1 Wachturm, 4 / 4 / 1** | 3/12 | 13,3 |
+| 3 Wachturm, 3 / 3 / 1 | 3/12 | 14,5 |
+| 1 Wachturm, 4 / 4 / 1 | 3/12 | 13,3 |
 | 1 Wachturm, 3 / 3 / 1 (acht Karten) | 6/12 | 14,4 |
 | 1 Wachturm, 5 / 3 / 1 | 2/12 | 14,1 |
 
-Die Unterschiede liegen bis auf die Achtkartenzeile im Rauschen. Das kleinere
-Deck sieht stark aus — es dreht sich schneller, also kommt die Krone öfter —,
-aber zehn Karten sind die Vorgabe, und die bleibt.
+Die Unterschiede lagen bis auf die Achtkartenzeile im Rauschen. Mit dem
+Waldläufer als zweitem Sonderzug sind es jetzt sieben Karten.
 
 ### Zinnen
 
@@ -1759,9 +1760,66 @@ Das Deck wächst über den Feldzug durch Belohnungen, Käufe beim Marketender un
 Funde bei Begegnungen. Streichen im Lager oder beim Marketender hält es wieder
 schlank.
 
+### Die Angriffskarte
+
+Ein Schuss war die einzige Handlung im Spiel, die nichts kostete und nie
+ausblieb: jeder besetzte Turm feuerte einmal je Zug, umsonst. Damit war die
+Frage nie *ob*, sondern nur *worauf*.
+
+Jetzt legt **jede Einheit, die Stellung bezieht, eine Karte `Angriff` ins
+Deck** — gemischt in den Zugstapel, nicht obenauf: sie soll gezogen werden,
+nicht garantiert sein. Erst die ausgespielte Angriffskarte gibt einen Schuss
+frei (`state.schuesse`), und jeder abgegebene Schuss verbraucht einen. Am
+Zugende verfallen die übrigen, wie die Karte, die sie freigegeben hat.
+
+Die Karte kostet nichts an Tatendrang. Ihr Preis ist der Platz in der Hand.
+
+**Die Hand wächst mit.** Fünf Karten, dazu eine je Angriffskarte im Deck:
+
+```js
+const handGroesse = () => HAND_SIZE + (state.maechte.handKarten || 0)
+  + (state.angriffKarten || 0);
+```
+
+Ohne diesen Ausgleich würde jede neue Einheit die Chance senken, überhaupt an
+Zinnen oder ein Gebäude zu kommen — man hätte sich mit dem eigenen Aufgebot
+selbst zugeschüttet. Fünf für den Plan, eine je Einheit für das Schießen.
+
+Die Angriffskarten gehören zur Station, nicht zum Feldzug: Türme und Einheiten
+fallen an ihrem Ende weg, also werden auch ihre Karten wieder aus dem Deck
+genommen (`nimmAngriffskartenZurueck`, sucht in Zugstapel, Hand, Ablage und
+Sonderzug-Stapel). Gekauft oder gefunden wird sie nie — `ziehKarten`
+überspringt alles mit `nichtImHandel`.
+
+#### Was sie kostet
+
+Sehr viel. Je zehn Bot-Feldzüge, jeder Schalter einzeln:
+
+| | Siege | Station im Schnitt |
+| --- | --- | --- |
+| vorher (1 Wachturm, 4 Waldläufer, 4 Zinnen, 1 Krone) | 3/12 | 13,3 |
+| nur Angriffskarten, Waldläufer noch frei | 1/10 | 9,0 |
+| nur Waldläufer als Sonderzug, Schuss frei | 1/10 | 12,5 |
+| **beides, wie ausgeliefert** | 0/10 | **4,5** |
+
+Die Angriffskarte allein kostet rund vier Stationen, der zweite Sonderzug ein
+bis zwei — zusammen neun. Das ist kein Rundungsfehler, das ist eine andere
+Schwierigkeit: der Feldzug endet jetzt an Station vier statt an dreizehn.
+
+Der Grund ist die Kette. Ein Sonderzug-Waldläufer heißt **eine** Einheit je
+Station aus dem Startdeck, eine Einheit heißt **eine** Angriffskarte, und eine
+Angriffskarte in einem Deck von acht heißt: in einem von vier Zügen fällt der
+Schuss ganz aus. Was vorher zwei bis drei Schüsse je Zug waren, ist jetzt
+höchstens einer, oft keiner.
+
+Das ist kein Fehler der Mechanik, sondern ihre Wirkung — nur ist die Tuning-Lage
+darauf noch nicht eingestellt. Die Stellschrauben dafür liegen alle bereit:
+`sofort.schuss` der Angriffskarte (zwei Schüsse je Karte), der Sonderzug am
+Waldläufer, `zugFrist` und `rundenBudget`.
+
 ### Sonderzug
 
-Der **Wachturm** geht nur einmal je Kampf. Das stand vorher bloß als Satz auf
+**Wachturm** und **Waldläufer** gehen nur einmal je Kampf. Das stand vorher bloß als Satz auf
 der Karte, und die gespielte Karte wanderte wie jede andere in den
 Ablagestapel — die Grenze war eine unsichtbare Buchführung mit einem roten Band
 als einzigem Hinweis.
