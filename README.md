@@ -410,12 +410,25 @@ Bei der Höhe war ein Zwischenstand zu viel des Guten: mit `WALL_HOEHE + halbe
 Modellhöhe` verschluckte der Sockel den Turmkörper, und der Turm las sich als
 etwas erhöhtes Stück Wall. Jetzt sind es `WALL_HOEHE + 11`.
 
-**Der Wachturm** bekommt denselben Sandstein wie Wall und Torhaus statt des
-grauen `stein` aus der Zeit, als Türme frei auf der Wiese standen. Seine
-hölzerne Hurde bleibt: ein Versuch mit steinerner Wehrplatte ging zwar besser
-mit dem Wall zusammen, nahm ihm aber die Silhouette — er las sich dann als
-breiteres, höheres Wallstück. Falsch ist am Holz nichts, eine Hurde auf einem
-Steinturm ist genau so gebaut worden.
+**Der Wachturm füllt jetzt sein Feld aus** (1,9 von 2 statt 1,5), und damit ist
+die zweite Ursache dort behoben, wo sie sitzt — im Modell, nicht in einem
+Hilfsklotz davor.
+
+Zwei Umwege dorthin, beide wieder ausgebaut, weil sie es **schlimmer** machten:
+
+- Ein Sockel, der über die Grundfläche hinausragte und bis zur halben
+  Modellhöhe reichte. Er deckte den Wall dahinter zwar ab, verschmolz aber mit
+  ihm zu einem Klotz und nahm dem Turm die Silhouette.
+- Der Wachturm in Sandstein statt im grauen `stein`. Zusammen mit dem Sockel
+  verschmolz sein Schaft vollends mit dem Wall, und übrig blieb optisch eine
+  braune Kiste, die darauf schwebte. Der Turm **braucht** den Kontrast, um als
+  Turm gelesen zu werden.
+
+Was offen bleibt: sechs weitere Gebäudemodelle sind schmaler als ihr Feld
+(Steinturm 1,64, Turmwache 1,50, Alter Turm 1,56, Pechnase 1,40, Hoher Horst
+1,16, Doppelturm 1,06). Neben ihnen bleibt die Wallkrone sichtbar. Bei einem
+absichtlich schlanken Wachtturm ist das richtig; beim Steinturm sieht es aus
+wie eine Fuge.
 
 ### Zwei Felder dick, und warum das nötig war
 
