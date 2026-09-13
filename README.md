@@ -1769,12 +1769,49 @@ Frage nie *ob*, sondern nur *worauf*.
 Jetzt bringt **jede Einheit ihre eigene Befehlskarte mit** — „Angriff
 Waldläufer", „Angriff Bogenschütze", je nach Besatzung (`angriffKarteFuer`).
 Man zieht sie **auf die Figur**, dann legt die Einheit an und schießt in diesem
-Zug. Das kostet **1 Tatendrang**. Ohne Befehl hält die Besatzung still.
+Zug. Ohne Befehl hält die Besatzung still.
+
+**Bezahlt wird der Schuss, nicht der Befehl.** Das Ausspielen ist hier
+zweigeteilt, und als einzige Karte im Spiel: `ruesteEinheit` nimmt die Karte
+von der Hand und merkt sie an der Einheit vor (`einheit.befehlKarte`), aber sie
+kostet noch nichts. Erst `attackWithTower` bezahlt — und nur für die Einheiten,
+die wirklich mitschießen; wer zu weit weg steht, behält seinen Befehl für einen
+späteren Schuss im selben Zug.
+
+Drei Wege zurück, und keiner kostet etwas:
+
+- **Niemand in Reichweite.** Der Befehl wird gar nicht erst angenommen, die
+  Karte bleibt auf der Hand. Sonst wäre die häufigste Fehlbedienung des Spiels
+  — Befehl auf einen Turm, der nichts sieht — auch die teuerste.
+- **<kbd>Esc</kbd>**, und **das Zugende**: `alleBefehleZurueck` legt jede nicht
+  eingelöste Karte zurück auf die Hand.
+- **Der Tatendrang ist zwischendurch woanders hingegangen.** Dann lehnt der
+  Schuss ab und gibt die Karte zurück, statt als Leiche liegen zu bleiben. Das
+  fiel erst im Bot auf: er drehte sich an dieser Stelle endlos im Kreis.
+
+Nach dem Ablegen ist der Turm **sofort angewählt** — wer den Befehl gibt, will
+schießen, nicht noch einmal klicken.
+
+Die Karte hängt beim Ziehen klein und durchscheinend am Zeiger (halbe Größe,
+zwei Drittel Deckkraft): sie soll zeigen, was man trägt, und dabei nicht
+zudecken, worauf man es legt.
 
 Die Bereitschaft hängt an der Einheit, nicht am Turm (`einheit.befehlZug`), und
 `towerDamageAt` zählt nur Einheiten mit Befehl. Damit ist die Vorschau ehrlich:
 was der rote Bogen anzeigt, kommt auch an. Was der Turm *könnte*, zeigt die
 Plakette über ihm — blau, solange kein Befehl da ist.
+
+#### Wie voll ein Turm ist
+
+Unter jedem Turm steht eine Reihe kleiner Schilde, eines je Platz, gefüllt für
+besetzt (`drawBesatzung`). Zwei Zahlen in einem Bild: wie viele oben sind und
+wie viele hinaufpassen — letzteres stand vorher nirgends.
+
+Dazu ein Deckel: **höchstens drei Batallione je Turm** (`MAX_PLAETZE`). Ein
+Wachturm trägt zwei, mit der Krone drei; ein Doppelturm bringt einen Platz mit
+und läuft ohne Deckel auf vier. Die Turmkrone zeigt ohnehin nur drei Mann. Das
+**Torhaus** hat einen Platz statt zwei — es ist die Einfahrt, nicht die
+Kaserne.
 
 #### Fixiert
 
@@ -1833,6 +1870,7 @@ war eindeutig:
 | ohne Angriffskarten (1 Wachturm, 4 Waldläufer, 4 Zinnen, 1 Krone) | 3/12 | 13,3 |
 | Angriffskarte **ins Deck gemischt** | 0/10 | **4,5** |
 | Angriffskarte **fixiert**, 1 Tatendrang | 0/12 | **10,0** |
+| dieselbe, bezahlt erst beim Schuss, Torhaus mit einem Platz | 0/10 | 9,8 |
 
 Von dreizehn auf viereinhalb — der Feldzug brach zusammen. Und die
 naheliegende Gegenmaßnahme war die falsche: gibt die Karte *zwei* Schüsse statt

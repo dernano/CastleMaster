@@ -1153,7 +1153,9 @@
         <li><b>Bauen:</b> Gebäude-Karte auf ein freies Feld am Wall.</li>
         <li><b>Besetzen:</b> Einheiten-Karte auf einen Turm.</li>
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt höchstens einmal je Zug.</li>
-        <li><b>Der Befehl zum Schuss:</b> Jede <b>Einheit</b>, die Stellung bezieht, bringt ihre eigene Befehlskarte mit — <b>„Angriff Waldläufer"</b>, „Angriff Bogenschütze", je nachdem, wer oben steht. <b>Zieh die Karte mit der Maus auf die Figur</b>, dann legt sie an und schießt in diesem Zug. Das kostet <b>1 Tatendrang</b>. Ohne Befehl hält die Besatzung still: die Plakette über dem Turm steht dann blau statt gold.</li>
+        <li><b>Der Befehl zum Schuss:</b> Jede <b>Einheit</b>, die Stellung bezieht, bringt ihre eigene Befehlskarte mit — <b>„Angriff Waldläufer"</b>, „Angriff Bogenschütze", je nachdem, wer oben steht. <b>Zieh die Karte mit der Maus auf die Figur</b>: sie legt an, und der Turm ist sofort angewählt — jetzt nur noch das Ziel anklicken. Ohne Befehl hält die Besatzung still, die Plakette über dem Turm steht dann blau statt gold.</li>
+        <li><b>Bezahlt wird der Schuss, nicht der Befehl:</b> Die Karte kostet <b>1 Tatendrang</b> — aber erst, wenn wirklich geschossen wird. Steht niemand in Reichweite, bleibt die Karte auf der Hand und kostet nichts. Nimmst du den Befehl mit <kbd>Esc</kbd> zurück oder beendest den Zug, ohne zu feuern, kommt sie ebenfalls zurück.</li>
+        <li><b>Wie voll ein Turm ist:</b> Unter jedem Turm steht eine Reihe kleiner Schilde — eines je Platz, gefüllt für besetzt. Ein <b>Wachturm</b> trägt zwei Batallione, mit der Krone drei; mehr als drei passen auf keinen Turm. Das <b>Torhaus</b> hat einen Platz.</li>
         <li><b>Fixiert:</b> Befehlskarten liegen <b>nicht im Deck</b>. Sie werden nie gemischt und nie gezogen, sondern kommen zu <b>jeder Runde zusätzlich in die Hand</b> — gespielt oder nicht, nächste Runde sind sie wieder da. Deine Hand ist also fünf gezogene Karten plus eine je Einheit im Feld. Fällt die Einheit, geht ihre Karte mit; am Ende der Station gehen alle.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt höchstens einmal je Zug, und nur, wenn du es anweist und eine Angriffskarte freigegeben hast. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug mit freigegebenen, aber ungenutzten Schüssen, verfallen sie — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
@@ -1703,6 +1705,8 @@ const LAGER_BREITE = 2;
 const STARTER_DECK = [
   ['wachturm', 1], ['waldlaeufer', 1], ['zinnen', 4], ['krone', 1],
 ];
+// Mehr als drei Batallione traegt keine Turmkrone - und keine Darstellung.
+const MAX_PLAETZE = 3;
 const HAND_SIZE = 5;
 /*
  * Wie viele Karten GEZOGEN werden. Die fixierten Angriffskarten kommen
@@ -4175,7 +4179,8 @@ function setzeWall(runde) {
     id: state.nextTowerId++, name: 'Torhaus', col: th.col, row: th.row, w: th.w, h: th.h,
     hp: 22, maxHp: 22, rangeBonus: 2, zinnen: 0,
     modell: 'torhaus',
-    slots: [null, null],
+    // Ein Platz. Das Torhaus ist die Einfahrt, nicht die Kaserne.
+    slots: [null],
     // Durch diese Felder laeuft die Einfahrt: sie gehoeren zum Bauwerk,
     // sperren aber nicht. Sonst waere das Torhaus eine Mauer mit Dach.
     durchfahrt: w.durchfahrt,
@@ -5363,7 +5368,48 @@ function drawTower(t) {
     else drawBadge(bx, by, '⚔ ' + towerDamageAt(t, 0), '#bfe39a', '#5c7a30');
   }
 
+  // Wie viele Plaetze belegt sind, steht unter dem Turm: ein Schild je Platz,
+  // gefuellt fuer besetzt. Die Zahl der Plaetze ist sonst nirgends zu sehen.
+  drawBesatzung(isoX(t.col + t.w / 2, t.row + t.h / 2),
+    isoY(t.col + t.w / 2, t.row + t.h / 2) + TH / 2 + (moeglich > 0 ? 11 : 1),
+    einheiten.length, t.slots.length);
+
   addPick('tower', t, cx - TW * 0.75, cy - 30, TW * 1.5, H + 52);
+}
+
+/**
+ * Die Besatzung eines Turms als Reihe kleiner Schilde: gefuellt, wo einer
+ * steht, leer, wo noch Platz ist. Zwei Zahlen in einem Bild - wie viele oben
+ * sind und wie viele hinaufpassen.
+ */
+function drawBesatzung(x, y, belegt, plaetze) {
+  if (!plaetze) return;
+  const b = 7, h = 9, luecke = 2;
+  const ganz = plaetze * b + (plaetze - 1) * luecke;
+  let px = Math.round(x - ganz / 2);
+  // Ein dunkles Kissen darunter, damit die Schilde auf hellem Stein und auf
+  // dunklem Boden gleich gut zu lesen sind.
+  ctx.fillStyle = 'rgba(12,9,6,0.45)';
+  ctx.beginPath();
+  ctx.roundRect(px - 3, y - 2, ganz + 6, h + 4, 3);
+  ctx.fill();
+  for (let i = 0; i < plaetze; i++) {
+    const voll = i < belegt;
+    // Schildform: oben gerade, unten zur Spitze
+    ctx.beginPath();
+    ctx.moveTo(px, y);
+    ctx.lineTo(px + b, y);
+    ctx.lineTo(px + b, y + h * 0.55);
+    ctx.lineTo(px + b / 2, y + h);
+    ctx.lineTo(px, y + h * 0.55);
+    ctx.closePath();
+    ctx.fillStyle = voll ? '#2f5fa8' : 'rgba(18,14,10,0.42)';
+    ctx.fill();
+    ctx.strokeStyle = voll ? '#cfe0f6' : 'rgba(220,205,175,0.45)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    px += b + luecke;
+  }
 }
 
 /**
@@ -7364,7 +7410,7 @@ function brettKlick(p) {
       if (towerHasFired(tower)) { setMessage(tower.name + ' hat in diesem Zug schon geschossen.'); renderAll(); return; }
       const u = tower.slots.find(x => x && x.kartenId === karte.angriffAuf && !hatBefehl(x));
       if (!u) { setMessage('Auf ' + tower.name + ' wartet niemand auf diesen Befehl.'); renderAll(); return; }
-      wendeKarteAn({ turm: tower, einheit: u });
+      ruesteEinheit(karte, tower, u);
       return;
     }
     const slotIdx = tower.slots.findIndex(s => s !== null);
@@ -7465,10 +7511,31 @@ function attackWithTower(tower, enemy) {
     return;
   }
 
+  /*
+   * Jetzt wird die Befehlskarte wirklich gespielt. Bezahlt wird, was
+   * mitschiesst - wer zu weit weg steht, behaelt seinen Befehl fuer einen
+   * spaeteren Schuss in diesem Zug.
+   */
+  const schiessen = bereiteEinheiten(tower).filter(u => unitRange(tower, u) >= d);
+  const preis = schiessen.reduce((sum, u) => sum + (u.befehlKarte ? u.befehlKarte.cost : 0), 0);
+  if (preis > state.tatendrang) {
+    /*
+     * Der Tatendrang ist zwischendurch woanders hingegangen. Dann darf der
+     * Befehl nicht als Leiche liegen bleiben: er geht zurueck auf die Hand,
+     * und es ist nichts verloren ausser dem Zug.
+     */
+    for (const u of schiessen) nimmBefehlZurueck(u);
+    setMessage('Der Befehl kostet ' + preis + ' Tatendrang, du hast ' + state.tatendrang +
+      '. Die Karte geht zurück auf die Hand.');
+    renderAll();
+    return;
+  }
+  for (const u of schiessen) {
+    if (u.befehlKarte) { bezahle(u.befehlKarte); u.befehlKarte = null; }
+    u.befehlZug = null;
+  }
+
   tower.attackedKey = zugSchluessel();
-  // Der Befehl ist ausgefuehrt: die Einheiten, die mitgeschossen haben,
-  // sind fuer diesen Zug durch.
-  for (const u of bereiteEinheiten(tower)) u.befehlZug = null;
   enemy.hp -= schaden;
   loeseAus('salve');
 
@@ -7957,7 +8024,12 @@ function placeTower(col, row) {
    * noetig - seit Tuerme nur noch an den Wall duerfen, steht das ganze Feuer
    * auf einer Linie, und wer sie passiert, hat freie Bahn zur Burg.
    */
-  const plaetze = (card.plaetze || 1) + (state.maechte.allePlaetze || 0) + 1;
+  /*
+   * Hoechstens drei Batallione auf einem Turm. Die Krone gibt einen Platz
+   * dazu, ein Doppelturm bringt einen mit - ohne Deckel stuenden auf einer
+   * Turmkrone vier und mehr, und das Bild zeigt ohnehin nur drei Mann.
+   */
+  const plaetze = Math.min(MAX_PLAETZE, (card.plaetze || 1) + (state.maechte.allePlaetze || 0) + 1);
   const turm = {
     id: state.nextTowerId++, name: card.name, col, row, w: 2, h: 2,
     hp: card.hp + (state.maechte.turmLeben || 0),
@@ -8067,6 +8139,54 @@ function nimmAngriffskartenZurueck() {
 }
 
 /*
+ * Der Befehl wird VORGEMERKT, nicht gespielt. Die Karte verlaesst die Hand,
+ * aber sie kostet noch nichts: bezahlt wird erst der Schuss. Findet die
+ * Einheit niemanden in Reichweite, geht die Karte zurueck und der Zug war
+ * umsonst - im woertlichen Sinn, er kostet keinen Tatendrang.
+ *
+ * Das ist der Unterschied zu jeder anderen Karte im Spiel: hier ist das
+ * Ausspielen zweigeteilt. Man legt den Befehl hin, und erst der abgegebene
+ * Schuss loest ihn ein.
+ */
+function ruesteEinheit(karte, turm, einheit) {
+  const rw = unitRange(turm, einheit);
+  const inReichweite = state.enemies.some(e => distanceTo(turm, e) <= rw);
+  if (!inReichweite) {
+    setMessage(einheit.name + ' sieht niemanden in Reichweite (' + rw + ' Felder). Die Karte bleibt.');
+    state.pendingCard = null;
+    state.hoverCell = null;
+    renderAll();
+    return false;
+  }
+  state.hand = state.hand.filter(c => c.uid !== karte.uid);
+  einheit.befehlZug = zugSchluessel();
+  einheit.befehlKarte = karte;
+  state.pendingCard = null;
+  // Gleich angewaehlt: wer den Befehl gibt, will schiessen, nicht noch einmal
+  // klicken.
+  state.selectedTower = turm.id;
+  fliegeKarteZu(karte, turm);
+  staub(turm.col + 1, turm.row + 1, 5, '#e8d5a8');
+  klang('karte');
+  setMessage(einheit.name + ' legt an. Jetzt das Ziel wählen — bezahlt wird erst der Schuss.');
+  renderAll();
+  return true;
+}
+
+/** Ein vorgemerkter Befehl wird zurueckgenommen: die Karte kommt zurueck. */
+function nimmBefehlZurueck(einheit) {
+  if (!einheit || !einheit.befehlKarte) return;
+  state.hand.push(einheit.befehlKarte);
+  einheit.befehlKarte = null;
+  einheit.befehlZug = null;
+}
+
+/** Alle vorgemerkten Befehle zuruecknehmen - Esc und Zugende tun das. */
+function alleBefehleZurueck() {
+  for (const t of state.towers) for (const u of t.slots) if (u) nimmBefehlZurueck(u);
+}
+
+/*
  * ============================================================
  *  Karten ziehen: die Hand ans Brett
  * ============================================================
@@ -8092,9 +8212,10 @@ function starteZiehen(card, slot, evt) {
   const klon = el.cloneNode(true);
   klon.style.cssText = 'position:fixed;left:0;top:0;margin:0;z-index:9998;pointer-events:none;' +
     'width:' + r.width + 'px;height:' + r.height + 'px;will-change:transform;' +
-    'filter:drop-shadow(0 16px 22px rgba(0,0,0,0.6));';
+    'transition:transform .12s ease-out,opacity .12s ease-out;' +
+    'filter:drop-shadow(0 10px 16px rgba(0,0,0,0.55));';
   document.body.appendChild(klon);
-  ziehen = { card, klon, gx: r.width / 2, gy: r.height * 0.35 };
+  ziehen = { card, klon, gx: r.width / 2, gy: r.height / 2 };
   // Eine Karte mit Ziel wird nur angewaehlt; eine ohne wartet bis zum
   // Loslassen, sonst waere sie schon gewirkt, bevor man losgelassen hat.
   // renderAll baut die Hand neu auf - die Blasse erkennt `cardElement` am
@@ -8111,8 +8232,11 @@ function ueberBrett(evt) {
 
 function bewegeZiehen(evt) {
   if (!ziehen) return;
+  // Klein und durchscheinend: die Karte haengt am Zeiger, aber sie deckt das
+  // Brett nicht zu - man muss sehen, worauf man sie legt.
   ziehen.klon.style.transform = 'translate(' + (evt.clientX - ziehen.gx) + 'px,' +
-    (evt.clientY - ziehen.gy) + 'px) rotate(-4deg) scale(0.94)';
+    (evt.clientY - ziehen.gy) + 'px) rotate(-5deg) scale(0.5)';
+  ziehen.klon.style.opacity = '0.66';
   if (ueberBrett(evt)) {
     const p = canvasPoint(evt);
     state.hoverCell = cellFromPoint(p);
@@ -9308,6 +9432,9 @@ function zugAbschluss(lauf) {
 
   if (state.frist && state.zug >= state.frist) { derSturm(); return; }
 
+  // Ein Befehl, der nicht eingeloest wurde, kostet nichts: die Karte kommt
+  // zurueck, bevor die Hand abgeraeumt wird.
+  alleBefehleZurueck();
   // Fixierte Karten wandern nicht in die Ablage - sie liegen neben dem Deck
   // und kommen gleich wieder auf die Hand.
   const abgelegt = state.hand.filter(c => !c.fixiert).length;
@@ -9341,11 +9468,14 @@ window.addEventListener('keydown', (evt) => {
     const tafel = document.getElementById(id);
     if (!tafel.classList.contains('hidden')) { tafel.classList.add('hidden'); return; }
   }
-  if (!state.pendingCard && !state.selectedTower) return;
+  const hatteBefehl = state.towers.some(t => t.slots.some(u => u && u.befehlKarte));
+  if (!state.pendingCard && !state.selectedTower && !hatteBefehl) return;
+  // Ein vorgemerkter Befehl ist noch nicht bezahlt: die Karte kommt zurueck.
+  alleBefehleZurueck();
   state.pendingCard = null;
   state.selectedTower = null;
   state.hoverCell = null;
-  setMessage('Auswahl aufgehoben.');
+  setMessage(hatteBefehl ? 'Befehl zurückgenommen.' : 'Auswahl aufgehoben.');
   renderAll();
 });
 
