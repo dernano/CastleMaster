@@ -393,17 +393,24 @@ Drei Dinge gehören dazu:
   Burg im Freien. Jetzt läuft der Wall an den Seiten entlang und hinten herum,
   und aus der Sperre wird eine Umfassung — man sieht, was sie umschließt.
 
-  Sie liegen auf den Zeilen und Spalten **außerhalb** des Spielfelds. Dorthin
-  führt kein Weg, dort kämpft niemand, und `isValidTowerPlacement` verlangt
-  `col >= 0`, lässt dort also kein Bauwerk zu. Am Spiel ändert sich damit
-  nichts: kein Feld geht verloren, kein Bauplatz kommt hinzu, und der Riegel
-  bleibt so dicht wie vorher (200 von 200 Layouts ohne Leck). Es ist eine
-  Sache des Bildes — und es kostet 3,6 ms je Bild, weil rund achtzig
-  Mauerfelder mehr durch die Zeichenreihenfolge gehen.
+  Die **Flanken liegen auf den äußersten Zeilen des Spielfelds**, und das ist
+  der Punkt: dort lässt sich bauen. Genau dafür hat das Raster vier Zeilen
+  bekommen. Ein Turm nahe der Ecke flankiert den Anmarsch; einer tief hinten
+  sieht nichts mehr — die Zahl der Bauplätze ist ohnehin nie die Grenze,
+  sondern das Deck und der Sold. Gemessen bleibt die Schwierigkeit gleich.
 
-  Auf den Zeilen 0 und 14 statt −2 und −1 wäre es billiger gewesen, aber dann
-  hätte die Umfassung zwei Reihen Spielfeld gefressen und ringsum Bauplätze
-  verschenkt, die niemand braucht.
+  Sie sind zugleich der Abschluss des Riegels. Früher lief der oben und unten
+  aus dem Bild heraus, damit er nicht in der Luft endete; jetzt treffen sich
+  Riegel und Flanke in einer Ecke.
+
+  Die **Rückwand** steht außerhalb des Felds (Spalte −1 und −2) und ist bloß
+  Bild — aber **nicht hinter der Burg**. Die steht mit ihrer Westseite genau
+  in der Flucht der Wand und schließt dort selbst ab; eine Mauer dahinter wäre
+  eine zweite Wand vor derselben Wand. Auf diesen fünf Zeilen *ist* die Burg
+  die Rückwand.
+
+  Der Riegel bleibt so dicht wie vorher: 200 von 200 Layouts ohne Leck, 200
+  von 200 symmetrisch.
 - **Türme überall im Wall.** Alle vier Felder eines Turms müssen auf Mauerwerk
   stehen — dann sitzt er vollständig darin. Vorher gab es dafür Basteien:
   2×2-Podeste mit einer gelben Marke darüber. Das machte aus dem Wall ein Brett
@@ -1381,8 +1388,15 @@ kopiert, das hält die Bildrate stabil.
 
 ## Spielfeld
 
-Ein Raster von 20 mal 15 Feldern als Testgröße, angepeilt sind später 80 mal
-60. Die Burg steht links am Wasser. Rechts liegt das Lager der Angreifer.
+Ein Raster von 20 mal 19 Feldern. Die Burg steht links, mittig an der
+Rückseite; rechts liegt das Lager der Angreifer.
+
+Die vier zusätzlichen Zeilen (vorher 15) gehören den **Flanken**: der Wall
+umschließt den Hof auch an den Seiten, und darauf soll gebaut werden können.
+Gekämpft wird weiter auf fünfzehn Zeilen. Die Breite bleibt bei 20 — sie ist
+der Anmarschweg, und an dem hängt die ganze Schwierigkeit: jede Spalte mehr
+ist ein Zug mehr unter Beschuss. Acht Feldzüge vor und nach der Vergrößerung
+endeten beide im Schnitt an Station 14,6.
 
 Türme belegen zwei mal zwei Felder und werden frei platziert. Beim Setzen einer
 Gebäude-Karte zeigt eine Vorschau, ob die Stelle frei ist. Jeder Turm hat eigene

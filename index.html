@@ -271,7 +271,7 @@
     display: grid; place-items: center;
     margin-bottom: 4px;
   }
-  canvas#minimap { display: block; image-rendering: pixelated; width: 108px; height: 81px; }
+  canvas#minimap { display: block; image-rendering: pixelated; width: 108px; height: 103px; }
 
   /* Kein Rahmen: Die Karten liegen unmittelbar auf der Mauer. */
   /*
@@ -1011,7 +1011,7 @@
     #hand .card-slot:hover { transform: none; }
     #tray { padding: 0 5px 5px; gap: 3px; }
     #minimap-panel { padding: 3px; border-width: 1px; margin-bottom: 2px; }
-    canvas#minimap { width: 58px; height: 44px; }
+    canvas#minimap { width: 58px; height: 55px; }
     button.endround { font-size: 11px; padding: 6px 7px; border-width: 2px; border-radius: 5px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #3a0d14; }
     #deck-pile { font-size: 8px; padding: 3px 5px; border-width: 1px; line-height: 1.2; }
@@ -1101,7 +1101,8 @@
         <li><b>Zielen:</b> Turm anklicken, dann über einen Gegner fahren: ein roter Bogen zeigt, wohin geschossen wird und wie viel Schaden ankommt. Klick feuert. Jeder Turm schießt einmal je Zug, und es kostet keinen Tatendrang.</li>
         <li><b>Kein Schuss von allein:</b> Jeder Turm schießt genau einmal je Zug, und nur, wenn du es anweist. Eine goldene <b>⚔</b>-Plakette heißt: dieser Turm ist geladen und hat ein Ziel. Beendest du den Zug, verfällt der Schuss — darum glüht der Knopf dann rot.</li>
         <li><b>Die Frist:</b> Die Sanduhr oben zählt, wie viele Züge dir bleiben. Läuft sie ab, rennt alles, was noch steht, gemeinsam ins Tor — und bringt seinen vollen Schaden mit.</li>
-        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu Flanken und Rückwand, die den Hof mit deiner Burg umschließen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Gekämpft wird am Riegel — nur dort kannst du bauen.</li>
+        <li><b>Der Wall:</b> Jede Station beginnt mit einer fertigen Befestigung: ein Riegel quer über die Karte, dazu die beiden Flanken und die Rückwand, die den Hof mit deiner Burg umschließen. Sie ist bei jeder Station anders, steht dann aber fest, und sie sperrt wirklich. Hinter der Burg steht keine Mauer — dort schließt die Burg selbst ab.</li>
+        <li><b>Auch auf den Flanken:</b> Gebaut wird am Riegel <i>und</i> auf den seitlichen Mauern. Ein Turm nahe der Ecke flankiert den Anmarsch; einer tief hinten im Hof sieht nichts mehr.</li>
         <li><b>Das Torhaus:</b> Ein Gebäude mitten im Wall, die <b>Durchfahrt geht hindurch</b>, hinter einer Gittertür. Oben liegt eine Wehrplatte mit zwei Plätzen, besetzbar ab Zug 1.</li>
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
@@ -1209,7 +1210,7 @@
   </div>
 
   <div id="tray">
-    <div id="minimap-panel"><canvas id="minimap" width="108" height="81"></canvas></div>
+    <div id="minimap-panel"><canvas id="minimap" width="108" height="103"></canvas></div>
     <div id="hand-wrap"><div id="hand"></div></div>
     <div id="side">
       <button class="endround" onclick="endTurn()" id="endround-btn">Zug beenden</button>
@@ -1259,7 +1260,16 @@
 // ============================================================
 //  Castle Master - Daten und Spielzustand
 // ============================================================
-const COLS = 20, ROWS = 15;
+/*
+ * Das Raster. Vier Zeilen mehr als frueher (15): der Wall umschliesst den Hof
+ * jetzt auch an den Seiten, und die Flanken sollen BEGEHBARES Feld sein, damit
+ * man Tuerme darauf setzen kann. Zwei Zeilen je Seite gehen dafuer drauf -
+ * gekaempft wird weiterhin auf fuenfzehn.
+ *
+ * Die Breite bleibt bei 20. Sie ist der Anmarschweg, und an dem haengt die
+ * ganze Schwierigkeit: jede Spalte mehr ist ein Zug mehr unter Beschuss.
+ */
+const COLS = 20, ROWS = 19;
 
 /**
  * Alle Karten des Spiels. Jede ist im Lauf kaufbar, es gibt keinen gesperrten
@@ -1477,7 +1487,9 @@ for (const karte of CARD_POOL) {
 // Die Burg haelt 50 Treffer aus. Der Wert haengt an der Wucht der schweren
 // Belagerer: eine Ramme schlaegt spaet fast 30 auf einmal heraus, und ein
 // Tor, das zwei Schlaege nicht ueberlebt, macht jeden Durchbruch endgueltig.
-const CASTLE = { col: 0, row: 5, w: 2, h: 5, maxHp: 50 };
+// Die Burg steht mittig an der Rueckseite - abgeleitet, damit sie bei einer
+// anderen Zeilenzahl nicht aus der Achse faellt.
+const CASTLE = { col: 0, row: Math.round((ROWS - 5) / 2), w: 2, h: 5, maxHp: 50 };
 
 /**
  * Gegnertypen. `move` ist die Strecke pro Runde, `reach` die eigene
@@ -2030,12 +2042,20 @@ let SZENE_B = 960, SZENE_H = 768;   // logische Bildgroesse
 let SKALA = 1;                      // Geraetepixel je logischem Punkt
 
 /*
- * So viel Hoehe braucht das Spielfeld in logischen Punkten: von der Spitze der
- * Burgfahne (72 ueber dem Ursprung) bis zur vorderen Kante der vordersten
- * Scholle (393 darunter). UEBERHANG ist, wie weit die Handkarten oben ueber
- * die Bruestung ragen duerfen - sie liegen darauf, sie stehen nicht davor.
+ * Wie viel Platz die Anlage in logischen Punkten braucht - aus dem Raster
+ * gerechnet, nicht abgeschrieben, sonst stimmt es beim naechsten Feld nicht
+ * mehr. Oben steht die Ecke der Rueckwand samt Zinnen, unten die vordere
+ * Kante der vordersten Scholle; links reicht die Rueckwand ueber das Feld
+ * hinaus, rechts das Lager der Belagerer.
+ *
+ * UEBERHANG ist, wie weit die Handkarten oben ueber die Bruestung ragen
+ * duerfen - sie liegen darauf, sie stehen nicht davor.
  */
-const FELD_HOCH = 465, FELD_UEBER = 72, UEBERHANG = 48;
+const FELD_UEBER = 2 * TH + 41;
+const FELD_HOCH = FELD_UEBER + (COLS + ROWS - 2) * TH / 2 + 34;
+const FELD_LINKS = (ROWS + 4) * TW / 2;
+const FELD_RECHTS = (COLS + 1) * TW / 2;
+const UEBERHANG = 48;
 let BRUESTUNG_Y = 572;              // Oberkante der Mauer, auf der die Karten liegen
 
 const EINST_SPEICHER = 'cm-einst';
@@ -2116,7 +2136,7 @@ function baueBuehne() {
    * groesser, aber es nutzt wenigstens, was da ist.
    */
   const seite = Math.max(1.15, Math.min(2.25, platzB / platzH));
-  SZENE_B = Math.round(Math.max(940, SZENE_H * seite));
+  SZENE_B = Math.round(Math.max(FELD_LINKS + FELD_RECHTS + 48, SZENE_H * seite));
   SZENE_H = Math.round(SZENE_B / seite);
 
   // Groesse auf dem Schirm: so gross wie moeglich, ohne das Verhaeltnis zu
@@ -2143,8 +2163,10 @@ function baueBuehne() {
   document.documentElement.style.setProperty(
     '--zeilen-unten', ((SZENE_H - BRUESTUNG_Y + 16) / SZENE_H * 100).toFixed(2) + '%');
 
-  // Das Feld mittig in den Raum zwischen Himmel und Bruestung
-  ORIGIN_X = Math.round(SZENE_B / 2 - ((COLS - 1) - (ROWS - 1)) * TW / 4);
+  // Das Feld mittig in den Raum zwischen Himmel und Bruestung. Gemittelt wird
+  // ueber die ganze Anlage, nicht ueber das Raster: die Rueckwand steht links
+  // davon, und ohne sie liefe die Burg aus dem Bild.
+  ORIGIN_X = Math.round(SZENE_B / 2 + (FELD_LINKS - FELD_RECHTS) / 2);
   ORIGIN_Y = Math.round(10 + (BRUESTUNG_Y - 36 - FELD_HOCH) / 2 + FELD_UEBER);
 
   /*
@@ -3866,30 +3888,35 @@ function baueWall(runde) {
     for (let r = torhaus.row; r < torhaus.row + torhaus.h; r++) wall.delete(wkey(c, r));
   }
 
-  // Der Riegel laeuft oben und unten aus dem Spielfeld heraus.
-  for (const r of [-2, -1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[0] + d, r);
-  for (const r of [ROWS, ROWS + 1]) for (let d = 0; d < WALL_DICK; d++) setz(spalte[ROWS - 1] + d, r);
-
   /*
-   * Flanken und Rueckwand. Ohne sie ist die Anlage eine Sperre quer durchs
-   * Bild: eine Mauer, die oben anfaengt und unten aufhoert, und dahinter
-   * liegt die Burg im Freien. Mit ihnen wird sie eine Umfassung - die Burg
-   * steht in einem Hof, und man sieht, was der Wall umschliesst.
+   * Die Flanken. Sie liegen auf den aeussersten Zeilen des Spielfelds - und
+   * das ist Absicht: dort soll gebaut werden koennen. Genau darum hat das
+   * Raster vier Zeilen mehr bekommen; gekaempft wird nach wie vor auf
+   * fuenfzehn, die vier gehen an die Flanken.
    *
-   * Sie liegen auf den Zeilen und Spalten AUSSERHALB des Spielfelds. Dort
-   * kaempft niemand, dorthin fuehrt kein Weg, und `isValidTowerPlacement`
-   * laesst kein Bauwerk zu. Am Spiel aendert sich also nichts: kein Feld geht
-   * verloren, kein Bauplatz kommt hinzu, der Riegel bleibt so dicht wie
-   * vorher. Es ist eine Sache des Bildes.
+   * Sie sind zugleich der Abschluss des Riegels. Frueher lief der oben und
+   * unten aus dem Bild heraus, damit er nicht in der Luft endete; jetzt
+   * treffen sich Riegel und Flanke in einer Ecke, und die Anlage ist ein
+   * geschlossenes Viereck.
    */
   for (let d = 0; d < WALL_DICK; d++) {
-    // Flanken: von der Rueckwand bis an den Riegel heran
-    for (const r of [-2 + d, ROWS + 1 - d]) {
-      const bis = spalte[r < 0 ? 0 : ROWS - 1] + WALL_DICK - 1;
+    for (const r of [d, ROWS - 1 - d]) {
+      const bis = spalte[r] + WALL_DICK - 1;
       for (let c = -2; c <= bis; c++) setz(c, r);
     }
-    // Rueckwand: schliesst den Hof nach hinten, ueber die ganze Hoehe
-    for (let r = -2; r <= ROWS + 1; r++) setz(-1 - d, r);
+  }
+
+  /*
+   * Die Rueckwand schliesst den Hof nach hinten - aber nicht hinter der Burg.
+   * Die steht mit ihrer Westseite genau in der Flucht der Wand und schliesst
+   * dort selbst ab; eine Mauer dahinter waere eine zweite Wand vor derselben
+   * Wand. Die Burg IST auf diesen fuenf Zeilen die Rueckwand.
+   */
+  for (let d = 0; d < WALL_DICK; d++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (r >= CASTLE.row && r < CASTLE.row + CASTLE.h) continue;
+      setz(-1 - d, r);
+    }
   }
 
   return { wall, torhaus, durchfahrt, form, tor: durchfahrt };
