@@ -1269,9 +1269,23 @@ Nachzeichnen, sobald das letzte Bild liegt, zeigte die Karte beim ersten
 Aufbau das gemalte Motiv und behielt es, weil niemand sie noch einmal
 anfasste.
 
-Denselben Weg geht der **Wachturm**: `bilder/wachturm.ganz.png`, ein eigener
-Ausschnitt in `zuschnitt.json`, dasselbe Werkzeug. Beide Bilder zusammen wiegen
-88 KB.
+Denselben Weg gehen **Wachturm** und **Zinnen**: `bilder/wachturm.ganz.png`,
+`bilder/zinnen.ganz.png`, je ein eigener Ausschnitt in `zuschnitt.json`,
+dasselbe Werkzeug. Die drei Blätter zusammen wiegen 134 KB.
+
+**Eine Bildkarte braucht trotzdem ihre Regel.** Bei einer Einheit erklären die
+Werte unten die Karte — Schaden, Reichweite, Leben —, bei einem Gebäude Plätze
+und Leben. Eine Fähigkeit erklärt sich aber *nur* über ihre Regel: auf dem
+Zinnenblatt steht nirgends, wie viel Stein es bringt, und die Werteleiste zeigt
+dort allein die Kosten. Wo die Leiste leer bleibt, kommt die Regel darum als
+helles Band aufs Blatt, wie ein Schlagwort. Nur dort — sonst stünde auf einer
+Einheitenkarte zweimal dasselbe.
+
+Dabei fiel eine alte Dopplung auf: die Regelzeile einer Einheit begann mit
+„Ziehe die Karte „Angriff X", damit sie schießt." — derselbe Satz, den das Band
+darüber schon trägt. Auf der Hand stand er zweimal, und in den kürzeren Karten
+des Angebots lief er unten aus der Karte heraus, mitten im Wort. Jetzt steht er
+an genau einer Stelle.
 
 #### Der Rahmen muss zumachen
 
