@@ -3493,7 +3493,17 @@ function baueWall(runde) {
     wall.set(wkey(c, r), { col: c, row: r, hp: WALL_HP, maxHp: WALL_HP, wachsen: WALL_WACHSEN, ...(extra || {}) });
   };
 
-  const formen = ['gerade', 'knick', 'bug', 'bucht'];
+  /*
+   * Alle vier Formen sind spiegelsymmetrisch zur Mittelzeile des Feldes. Eine
+   * Burg ist ein gebautes Ding, keine gewachsene Landschaft - eine Anlage, die
+   * oben anders aussieht als unten, wirkt nicht wild, sondern verunglueckt.
+   *
+   * 'knick' war genau das: die untere Haelfte sprang zwei Spalten vor, die
+   * obere nicht. Gemessen ueber 200 Layouts war kein einziges davon
+   * symmetrisch. An seine Stelle tritt 'erker' - zwei gleiche Vorspruenge auf
+   * Viertel- und Dreiviertelhoehe.
+   */
+  const formen = ['gerade', 'erker', 'bug', 'bucht'];
   const form = formen[Math.floor(Math.random() * formen.length)];
   /*
    * Grundspalte 6..8. Bei 4..6 stand der Wall der Burg auf den Fuessen und das
@@ -3504,17 +3514,28 @@ function baueWall(runde) {
    * darf statt nur auf sechs Podesten.
    */
   const basis = 6 + Math.floor(Math.random() * 3);
-  const torZeile = 5 + Math.floor(Math.random() * 3);   // Torhaus auf Zeile 5..7, drei Felder hoch
   const mitte = (ROWS - 1) / 2;
+  /*
+   * Das Torhaus ist drei Zeilen hoch und sitzt fest auf der Mittelachse: bei
+   * fuenfzehn Zeilen sind das die Zeilen 6, 7 und 8 um die Mitte 7. Vorher
+   * wuerfelte die Torzeile zwischen 5 und 7, und in zwei von drei Faellen lag
+   * das Tor damit ausserhalb der Achse - und mit ihm die Glaettung ringsum,
+   * die den Wall dort begradigt. Ein Tor gehoert in die Mitte.
+   */
+  const torZeile = Math.round(mitte) - 1;
 
   // Fuer jede Zeile die Spalte, in der der Wall steht.
   const spalte = [];
   for (let r = 0; r < ROWS; r++) {
     const naehe = 1 - Math.abs(r - mitte) / mitte;      // 1 in der Mitte, 0 am Rand
     let c = basis;
-    if (form === 'knick') c = basis + (r < ROWS / 2 ? 0 : 2);
-    else if (form === 'bug') c = basis + Math.round(naehe * 3);      // Mitte nach Osten: Barbakane
-    else if (form === 'bucht') c = basis - Math.round(naehe * 2);    // Mitte nach Westen: Trichter
+    if (form === 'bug') c = basis + Math.round(naehe * 3);        // Mitte nach Osten: Barbakane
+    else if (form === 'bucht') c = basis - Math.round(naehe * 2); // Mitte nach Westen: Trichter
+    else if (form === 'erker') {
+      // Zwei gleiche Vorspruenge, auf Viertel- und Dreiviertelhoehe
+      const abstand = Math.abs(Math.abs(r - mitte) - mitte * 0.55);
+      c = basis + (abstand < 1.4 ? 2 : 0);
+    }
     spalte.push(Math.max(3, Math.min(COLS - 7, c)));
   }
 
@@ -3526,7 +3547,9 @@ function baueWall(runde) {
    * Flucht, und der Riegel ist dicht.
    */
   const torSpalte = spalte[torZeile];
-  for (let r = torZeile - 1; r <= torZeile + 2; r++) {
+  // Eine Zeile ueber und eine unter dem Torhaus - symmetrisch, sonst kippt
+  // die ganze Anlage wieder aus der Achse.
+  for (let r = torZeile - 1; r <= torZeile + 3; r++) {
     if (r >= 0 && r < ROWS) spalte[r] = torSpalte;
   }
 

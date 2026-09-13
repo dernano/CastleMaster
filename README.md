@@ -342,13 +342,13 @@ Turm gab es sie gar nicht, und der erste Zug hatte nichts zu entscheiden.
 
 Jetzt steht an jeder Station ein **fertiger Riegel**: eine geschlossene Linie
 vom oberen zum unteren Kartenrand. Er hängt nicht an der Burg, sondern kommt
-seitlich herein und schließt ab. Vier Grundformen, dazu gewürfelte Grundspalte,
-Torzeile und Basteienverteilung:
+seitlich herein und schließt ab. Vier Grundformen, dazu eine gewürfelte
+Grundspalte:
 
 | Form | Was sie macht |
 | --- | --- |
 | `gerade` | eine Flucht von oben nach unten |
-| `knick` | die untere Hälfte springt zwei Spalten vor |
+| `erker` | zwei gleiche Vorsprünge auf den Viertelpunkten |
 | `bug` | die Mitte wölbt sich nach Osten — eine Barbakane |
 | `bucht` | die Mitte weicht nach Westen — ein Trichter |
 
@@ -392,6 +392,39 @@ Drei Dinge gehören dazu:
   stehen — dann sitzt er vollständig darin. Vorher gab es dafür Basteien:
   2×2-Podeste mit einer gelben Marke darüber. Das machte aus dem Wall ein Brett
   mit sechs Steckplätzen; jetzt geht es überall an ihm entlang.
+
+### Symmetrisch gebaut
+
+Die Layouts waren *fast* symmetrisch — nah genug, dass es wie ein Versehen
+aussah statt wie Absicht. Ein Messskript spiegelt jedes Wallfeld an der
+Mittelzeile (`spiegel = (r) => (ROWS - 1) - r`) und prüft getrennt, ob das
+Torhaus auf der Achse sitzt. Bei 200 Layouts:
+
+| Form | Layouts | symmetrisch | Tor mittig |
+| --- | --- | --- | --- |
+| `gerade` | 54 | 17 | 17 |
+| `knick` | 43 | 0 | 15 |
+| `bug` | 54 | 0 | 18 |
+| `bucht` | 49 | 0 | 13 |
+
+Drei Ursachen, alle im Generator:
+
+- **`knick` war von Bauart schief.** `c = basis + (r < ROWS / 2 ? 0 : 2)` lässt
+  nur die untere Hälfte vorspringen; das kann nie spiegeln. An seine Stelle
+  tritt `erker` mit zwei gleichen Vorsprüngen auf den Viertelpunkten.
+- **Die Torzeile war gewürfelt** (`5 + Math.floor(Math.random() * 3)`). In zwei
+  von drei Fällen saß das Tor damit neben der Achse. Jetzt ist sie fest:
+  `Math.round(mitte) - 1`, also Zeile 6, womit das 2×3-Torhaus die Zeilen 6, 7
+  und 8 um die Mittelzeile 7 belegt.
+- **Die Begradigung ums Tor war einseitig.** Damit der Wall an der Einfahrt
+  nicht die Spalte wechselt (sonst leckt er, siehe unten), werden die Zeilen
+  ringsum auf die Torspalte gezogen — aber von `torZeile - 1` bis
+  `torZeile + 2`: eine Zeile über dem Haus, keine darunter. Jetzt bis
+  `torZeile + 3`.
+
+Danach: **200 von 200 symmetrisch**, Tor in allen vier Formen mittig. Die
+Dichtprüfung (Tor zumauern, vom rechten Rand fluten) meldet weiterhin null
+Lecks bei 200 Layouts.
 
 ### Ein Stein für alles
 
