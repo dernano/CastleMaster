@@ -1,15 +1,15 @@
 {
-  "_hinweis": "Ausschnitte in Anteilen der Bildkante. Das Blatt ist 2:3, die Karte ist schmaler (128:224). Der Ausschnitt trifft das Kartenmass genau, damit nachher nichts mehr beschnitten wird - abgezogen wird seitlich, wo nur die Randzier steht.",
+  "_hinweis": "Ausschnitte in Anteilen der Bildkante. Weggeschnitten wird nur, was AUSSERHALB der gedruckten Rahmenlinie liegt - der ausgefranste Rand der Vorlage. Der Rahmen selbst muss ganz bleiben: er schliesst die Karte ab, wie bei einem doppeldeutschen Blatt. Das Seitenverhaeltnis des Ausschnitts bleibt erhalten, die Karte laesst dafuer oben und unten einen Hauch Papier stehen.",
   "waldlaeufer": {
-    "x": 0.087,
-    "y": 0.018,
-    "w": 0.826,
-    "h": 0.964
+    "x": 0.035,
+    "y": 0.021,
+    "w": 0.926,
+    "h": 0.956
   },
   "wachturm": {
-    "x": 0.087,
-    "y": 0.018,
-    "w": 0.826,
-    "h": 0.964
+    "x": 0.006,
+    "y": 0.004,
+    "w": 0.988,
+    "h": 0.992
   }
 }

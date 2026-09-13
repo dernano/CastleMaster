@@ -1269,11 +1269,38 @@ Nachzeichnen, sobald das letzte Bild liegt, zeigte die Karte beim ersten
 Aufbau das gemalte Motiv und behielt es, weil niemand sie noch einmal
 anfasste.
 
-Denselben Weg geht der **Wachturm**: `bilder/wachturm.ganz.png`, derselbe
-Ausschnitt in `zuschnitt.json` (`x 0.087, y 0.018, w 0.826, h 0.964`), dasselbe
-Werkzeug. Der Zuschnitt ist nicht Geschmack, sondern Maß — die Vorlage bringt
-einen eigenen Rand mit, und ungeschnitten stand er neben dem Kartenrand des
-Spiels, zwei Rahmen um dasselbe Bild. Beide Bilder zusammen wiegen 95 KB.
+Denselben Weg geht der **Wachturm**: `bilder/wachturm.ganz.png`, ein eigener
+Ausschnitt in `zuschnitt.json`, dasselbe Werkzeug. Beide Bilder zusammen wiegen
+88 KB.
+
+#### Der Rahmen muss zumachen
+
+Ein doppeldeutsches Blatt schließt mit seinem Rahmen ab: außen Papier, dann die
+gedruckte Linie, dann das Bild. Genau diese Linie fehlte — die Karten wirkten
+seitlich abgeschnitten, und sie waren es auch. **Zweimal** sogar, an zwei
+verschiedenen Stellen:
+
+- Der Zuschnitt nahm links und rechts je 8,7 % weg. Gemessen steht die
+  Rahmenlinie der Vorlage bei 4,7 % — der Schnitt lag also 41 Bildpunkte
+  *innerhalb* von ihr.
+- Und das Werkzeug passte den Rest **deckend** ins Kartenmaß ein
+  (`Math.max`, mittig beschnitten). Das Blatt ist 2:3, die Karte ist schmaler
+  — also fiel noch einmal seitlich etwas weg.
+
+Beide Schnitte trafen denselben Streifen. Jetzt gilt für ein ganzes Blatt
+`passung: 'ganz'`: das Seitenverhältnis bleibt, die Leinwand richtet sich nach
+dem Bild, geschnitten wird nichts. Der Zuschnitt nimmt nur noch weg, was
+*außerhalb* der Rahmenlinie liegt — den ausgefransten Rand der Vorlage —, und
+weil die Vorlagen verschieden ausgefranst sind, hat jede ihren eigenen
+(gemessen, nicht geschätzt: ein Helligkeitsprofil von außen nach innen findet
+die erste dunkle Linie nach dem Papier).
+
+Bleibt die Frage, wohin mit dem Rest: die Karte ist schmaler als 2:3, also
+bleibt unten Platz. Der ist kein Verschnitt, sondern der **Streifen für die
+Werte**. Die lagen vorher als Leiste mit Farbverlauf auf dem Bild und deckten
+die untere Randzier zu; jetzt stehen sie darunter auf eigenem Grund. Ein Blatt,
+das komplett ist, und Werte, die nichts verdecken — beides aus derselben
+Änderung.
 
 Was dabei auffiel: eine Bildkarte hat keinen Platz für einen Spruch, aber sehr
 wohl für ein **Schlagwort**. Der Wachturm ist eine Sonderzug-Karte, und das
@@ -1907,6 +1934,32 @@ Die Bereitschaft hängt an der Einheit, nicht am Turm (`einheit.befehlZug`), und
 was der rote Bogen anzeigt, kommt auch an. Was der Turm *könnte*, zeigt die
 Plakette über ihm — blau, solange kein Befehl da ist.
 
+#### Wer von den dreien ist wer
+
+Ein Turm zeigt drei Stellungen — links, rechts, Mitte —, und darauf können bis
+zu drei Einheiten stehen. Verteilt waren sie vorher so: die erste bekam die
+Mitte, die zweite **beide** Flanken, die dritte war gar nicht zu sehen. Bei
+zwei verschiedenen Einheiten sagte das Bild also nicht, welche der drei Figuren
+wen meint, und bei dreien log es.
+
+Jetzt hat jede Einheit ihre eigene Stellung (`besatzungStellungen`); nur wenn
+weniger Männer als Stellungen da sind, füllt der letzte die übrigen auf. Dazu
+drei Dinge, die jede für sich sprechen lassen:
+
+- **Ein Streifen zu Füßen genau der Figur**, der sie gehört (`drawMannschaft`):
+  ihr Leben, wenn sie angeschlagen ist, und ein goldener Winkel, wenn sie einen
+  Befehl hat. Wem nichts fehlt und wer nichts vorhat, bekommt keinen Streifen —
+  die Krone bleibt ruhig. Den einen Sammelbalken für die ganze Besatzung gibt es
+  nicht mehr: der sagte, dass jemand blutet, aber nicht wer.
+- **Ein Pfeil, solange eine Befehlskarte am Zeiger hängt.** Er steht über der
+  Figur, die die Karte bekäme — dieselbe Antwort, die auch das Ablegen benutzt
+  (`befehlsEmpfaenger`, von Brett und Zeichnung gemeinsam). Vorher leuchtete der
+  ganze Turm; bei drei gleichen Waldläufern darauf sagte das nichts. Gezeichnet
+  wird der Pfeil zuletzt, über den Schilden: was dauerhaft über dem Turm steht,
+  darf das Flüchtige nicht verdecken.
+- **Namen statt Zahlen in der Zeile.** „2 Einheiten" wird zu
+  „Besatzung: Waldläufer ⌃, Späherin" — mit dem Winkel bei dem, der angelegt hat.
+
 #### Wie voll ein Turm ist
 
 Über jedem Turm steht eine Reihe kleiner Schilde, eines je Platz, gefüllt für
@@ -1976,16 +2029,51 @@ das Klick und Loslassen gemeinsam benutzen.
 
 Drei Kleinigkeiten, die beim Bauen auffielen:
 
-- Der Zug beginnt erst nach sechs Punkten Weg. Sonst verschluckt jeder
+- Der Zug beginnt erst nach einem Stück Weg. Sonst verschluckt jeder
   Klick-mit-Zittern die Auswahl, und man müsste zweimal tippen.
 - Nach dem Ziehen kommt noch ein `click` hinterher. Der ist keiner und wird
-  verworfen (`ziehenGelaufen`), sonst spielte sich die Karte doppelt.
+  verworfen, sonst spielte sich die Karte doppelt.
 - `user-select: none` auf der Karte. Ohne das markiert der Zeiger beim Ziehen
   den Kartentext blau, und die halbe Hand steht unter einer Auswahl.
 
 Wird eine Karte geklickt statt gezogen, fliegt ein Abbild von selbst zur Figur
 (`fliegeKarteZu`) — dieselbe Bewegung, nur ohne Hand. Nach einem Zug bleibt sie
 aus: die Karte ist ja schon dort.
+
+#### Warum Ziehen „manchmal nicht ging"
+
+Drei Fehler, jeder für sich klein, zusammen genau das Gefühl, dass die Geste
+unzuverlässig sei. Alle drei sind nachgestellt und gemessen (`ziehtest3.mjs`,
+echte Mausereignisse, nicht nachgebaute):
+
+**Der verschluckte Klick.** Der Nachklapp-`click` wurde über einen Schalter
+abgefangen, den erst der *nächste* Klick löschte. Nach einem Ziehen aufs Brett
+kommt aber gar kein Klick mehr auf die Hand — der Schalter blieb stehen, und
+der nächste echte Klick fiel hinein. Gemessen, direkt nach einem geglückten
+Ziehen:
+
+| | Karte angewählt? |
+| --- | --- |
+| vorher | **nein** — der Klick wird verschluckt |
+| jetzt | ja |
+
+Man klickte, nichts geschah, man klickte nochmal, es ging. Genau das heißt
+„funktioniert ab und zu nicht". Statt eines Schalters steht dort jetzt ein
+Zeitstempel: was älter ist als 300 ms, ist der nächste Griff des Spielers und
+kein Nachklapp mehr.
+
+**Das Zucken.** Sechs Punkte Weg waren zu wenig — beim Klicken wackelt die Hand
+schon um mehr. Aus einem Klick wurde ein Ziehen, das Ziehen endete über der
+Hand, und die Karte wurde wieder abgewählt. Jetzt sind es elf Punkte, und wer
+über der Hand loslässt, behält die Karte angewählt: die Geste war ein Klick, und
+so wird sie behandelt. Das musste **vor** die Frage „über dem Brett?" — die
+Leinwand liegt unter der ganzen Brüstung, ein Loslassen über den Karten war
+bisher ein Brettklick weit unterhalb des Feldes.
+
+**Das hängende Abbild.** Bleibt das Loslassen aus — Fenster verliert den Griff,
+Wechsel in einen anderen Tab —, klebte das Abbild am Zeiger und jeder weitere
+Griff ging ins Leere. `blur` und `visibilitychange` brechen ein verlorenes
+Ziehen jetzt ab, und die Karte liegt wieder da, wo sie herkam.
 
 #### Warum nicht ins Deck
 

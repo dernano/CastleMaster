@@ -17,13 +17,31 @@ Seite darf nichts von außen laden.
 
 ## Ausschnitt
 
-Ist auf dem Bild mehr zu sehen als in die Karte soll — etwa weil es schon
-einen eigenen Rahmen und Eckzeichen mitbringt —, steht der Ausschnitt in
-`zuschnitt.json`, in Anteilen der Bildkante:
+Ein ganzes Blatt (`*.ganz.png`) wird **nicht** beschnitten: es behält sein
+Seitenverhältnis, und die Karte lässt dafür unten den Streifen für die Werte.
+So bleibt der gedruckte Rahmen umlaufend geschlossen, wie bei einem
+doppeldeutschen Blatt.
+
+Weggeschnitten wird nur, was *außerhalb* dieses Rahmens liegt — der
+ausgefranste oder dunkle Rand der Vorlage. Das steht in `zuschnitt.json`, in
+Anteilen der Bildkante:
 
     {
-      "waldlaeufer": { "x": 0.06, "y": 0.08, "w": 0.88, "h": 0.46 }
+      "waldlaeufer": { "x": 0.035, "y": 0.021, "w": 0.926, "h": 0.956 }
     }
+
+Wo der Rahmen steht, ist messbar statt Geschmack: ein Helligkeitsprofil von
+außen nach innen findet die erste dunkle Linie nach dem Papier. Fehlt ein
+Eintrag, wird das Bild ganz genommen — für eine Vorlage ohne Rand ist das
+richtig.
+
+## Eine neue Karte dazulegen
+
+1. Die Datei nach `bilder/<kennung>.ganz.png` legen (die Kennung ist die
+   Karten-Id aus `CARD_POOL`, also `zinnen.ganz.png` für die Karte Zinnen).
+2. `node scripts/kartenbilder.mjs` aufrufen.
+3. Sieht die Karte an einer Kante zu breit aus, den Rand in `zuschnitt.json`
+   eintragen und noch einmal aufrufen.
 
 ## Was das Spiel weiter selbst zeichnet
 

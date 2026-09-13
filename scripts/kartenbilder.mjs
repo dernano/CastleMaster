@@ -57,9 +57,25 @@ async function browserFabrik() {
   }
 }
 
-/** Verkleinert ein Bild im Browser auf Kartenmass und gibt eine Datenadresse. */
-async function verkleinern(seite, quelle, zielBreite, zielHoehe, zuschnitt) {
-  return seite.evaluate(([quelle, breite, hoehe, guete, zuschnitt]) => new Promise((fertig, schief) => {
+/**
+ * Verkleinert ein Bild im Browser auf Kartenmass und gibt eine Datenadresse.
+ *
+ * `passung` entscheidet ueber das, was am Ende sichtbar ist:
+ *
+ *   'decken'  fuellt das Feld und schneidet mittig weg, was ueber steht. Fuer
+ *             ein 'motiv', das nur die obere Haelfte eines festen Feldes
+ *             fuellt - dort ist der Ausschnitt das Feld.
+ *   'ganz'    behaelt das Seitenverhaeltnis des Ausschnitts und schneidet
+ *             NICHTS weg; die Leinwand richtet sich nach dem Bild. Ein ganzes
+ *             Blatt bringt seinen gedruckten Rahmen mit, und der muss
+ *             umlaufend geschlossen bleiben. Vorher stand hier fuer beide
+ *             Faelle 'decken', und weil das Blatt 2:3 ist und die Karte
+ *             schmaler, verschwand links und rechts je ein Streifen - genau
+ *             der Streifen, in dem die Rahmenlinie steht. Die Karte sah
+ *             seitlich abgeschnitten aus, weil sie es war.
+ */
+async function verkleinern(seite, quelle, zielBreite, zielHoehe, zuschnitt, passung) {
+  return seite.evaluate(([quelle, breite, hoehe, guete, zuschnitt, passung]) => new Promise((fertig, schief) => {
     const bild = new Image();
     bild.onerror = () => schief(new Error('Bild nicht lesbar'));
     bild.onload = () => {
@@ -67,18 +83,26 @@ async function verkleinern(seite, quelle, zielBreite, zielHoehe, zuschnitt) {
       const qx = bild.naturalWidth * z.x, qy = bild.naturalHeight * z.y;
       const qw = bild.naturalWidth * z.w, qh = bild.naturalHeight * z.h;
       const cv = document.createElement('canvas');
-      cv.width = breite; cv.height = hoehe;
       const c = cv.getContext('2d');
-      c.imageSmoothingEnabled = true;
-      c.imageSmoothingQuality = 'high';
-      // deckend einpassen, mittig beschneiden
-      const mass = Math.max(breite / qw, hoehe / qh);
-      const bw = qw * mass, bh = qh * mass;
-      c.drawImage(bild, qx, qy, qw, qh, (breite - bw) / 2, (hoehe - bh) / 2, bw, bh);
+      if (passung === 'ganz') {
+        const mass = Math.min(breite / qw, hoehe / qh);
+        cv.width = Math.round(qw * mass);
+        cv.height = Math.round(qh * mass);
+        c.imageSmoothingEnabled = true;
+        c.imageSmoothingQuality = 'high';
+        c.drawImage(bild, qx, qy, qw, qh, 0, 0, cv.width, cv.height);
+      } else {
+        cv.width = breite; cv.height = hoehe;
+        c.imageSmoothingEnabled = true;
+        c.imageSmoothingQuality = 'high';
+        const mass = Math.max(breite / qw, hoehe / qh);
+        const bw = qw * mass, bh = qh * mass;
+        c.drawImage(bild, qx, qy, qw, qh, (breite - bw) / 2, (hoehe - bh) / 2, bw, bh);
+      }
       fertig(cv.toDataURL('image/jpeg', guete));
     };
     bild.src = quelle;
-  }), [quelle, zielBreite, zielHoehe, GUETE, zuschnitt]);
+  }), [quelle, zielBreite, zielHoehe, GUETE, zuschnitt, passung]);
 }
 
 const werkzeug = await browserFabrik();
@@ -101,7 +125,8 @@ for (const datei of (await readdir(BILDER)).sort()) {
     // 'motiv' fuellt nur die obere Haelfte, 'ganz' das ganze Feld
     const breite = art === 'ganz' ? KARTE_BREITE : BREITE;
     const hoehe = art === 'ganz' ? KARTE_HOCH : Math.round(HOCH / 2);
-    daten = await verkleinern(werkzeug.seite, quelle, breite, hoehe, zuschnitte[id]);
+    daten = await verkleinern(werkzeug.seite, quelle, breite, hoehe, zuschnitte[id],
+      art === 'ganz' ? 'ganz' : 'decken');
   }
   eintraege.push({ id, art, daten, datei, kb: Math.round(daten.length * 0.75 / 1024) });
 }
