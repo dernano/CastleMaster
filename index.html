@@ -531,11 +531,19 @@
    * Kennung. Eine Bildkarte fuellt aber immer die ganze Karte - darum hier
    * ausdruecklich, sonst haengt das Blatt oben und darunter bleibt Papier.
    */
+  /*
+   * Das ganze Blatt, nichts abgeschnitten. Vorher stand hier `cover`: das
+   * Bild fuellte die Karte, aber der Rahmen des Blattes lief unter dem
+   * Kartenrand weg - anderthalb Punkte Rand je Seite, genug, dass die
+   * gedruckte Randlinie fehlte. `contain` laesst dafuer oben und unten je
+   * einen Punkt Papier stehen, und der faellt auf dem gleichen Ton nicht auf.
+   */
+  .card.mit-bild .card-art-frame { background: #ece0c2; }
   .card.mit-bild .card-art,
   #station-karten .card.mit-bild .card-art,
   #reward-cards .card.mit-bild .card-art {
     width: 100%; height: 100%;
-    object-fit: cover;   /* lieber beschneiden als verzerren */
+    object-fit: contain;
   }
 
   /*
@@ -600,6 +608,25 @@
     padding: 3px 0 2px;
     flex: none;
   }
+
+  /*
+   * Das Schlagwort. Es steht wie ein Stempel unter dem Typenband: klein,
+   * gesperrt und in Gold auf dunklem Grund - damit man es als Regel liest
+   * und nicht als Beschreibung.
+   */
+  .card-sonderzug {
+    flex: none; align-self: center;
+    margin: -1px 0 2px;
+    padding: 1px 7px 2px;
+    font-family: var(--fliess); font-size: 7.5px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: #2a1c06;
+    background: linear-gradient(180deg, #f3d283, #c79a37);
+    border: 1px solid #7a5a1c;
+    border-radius: 2px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 1px 0 rgba(0,0,0,0.35);
+  }
+  .card.mit-bild .card-sonderzug { display: none; }
 
   .card-stats {
     display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;
@@ -999,6 +1026,7 @@
     .card-zier.zier-ul { bottom: 3px; left: 3px; }
     .card-band.lang { font-size: 6.5px; }
     .card-typ { font-size: 5.5px; padding: 2px 0 1px; letter-spacing: 0.08em; }
+    .card-sonderzug { font-size: 5.5px; padding: 0 4px 1px; letter-spacing: 0.1em; }
     .card-stats { gap: 2px; padding: 0 2px 1px; }
     .pill { font-size: 7px; padding: 1px 2px 0; }
     .card-unten { display: none; }
@@ -1107,7 +1135,7 @@
         <li><b>Alles will ans Tor:</b> Wer nur eine Armlänge weit reicht, geht auf das Torhaus zu — egal wo er steht. Dort staut sich die Belagerung, und dort entscheidet sie sich. Fällt das Torhaus, steht ein Loch im Wall und das Fußvolk sucht sich den nächsten Turm.</li>
         <li><b>Schützen zielen auf Männer:</b> Armbrust und Katapult schießen auf deine Besatzung, nicht auf den Stein. Der grüne Balken unter den Figuren zeigt, wie es ihnen geht; bei null fällt der Mann vom Turm. Steht keiner oben, nehmen sie das Mauerwerk. Zinnen helfen dagegen nicht — sie decken den Turm, nicht den Kopf.</li>
         <li><b>Türme:</b> Sie gehören auf den Wall — überall daran entlang, wo mindestens zwei ihrer vier Felder auf Mauerwerk stehen. Feste Bauplätze gibt es nicht. Die Vorschau zeigt grün, wo es geht.</li>
-        <li><b>Nur einmal je Kampf:</b> Der <b>Wachturm</b> trägt diese Grenze. Ist er an einer Station einmal gebaut, liegt über jeder weiteren Wachturm-Karte das rote Band <b>Verbraucht</b>, bis die nächste Station beginnt. Ungespielt wandert sie wie jede andere Karte in den Ablagestapel. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
+        <li><b>Sonderzug:</b> Manche Karten tragen dieses Schlagwort gedruckt — der <b>Wachturm</b> zum Beispiel. Sie gehen <b>einmal je Kampf</b>, und die ausgespielte Karte kommt danach <b>nicht</b> in den Ablagestapel: sie liegt bis zur nächsten Station beiseite und wird in diesem Kampf nicht mehr gezogen. Wie viele es sind, steht oben am Siegel. Über jeder weiteren Karte derselben Art liegt bis zum Ende der Station das rote Band <b>Verbraucht</b>; ungespielt wandert die wie jede andere in die Ablage. Willst du mehr Türme an einer Station, kaufe beim Marketender andere Gebäude — für die gilt die Grenze nicht.</li>
         <li><b>Bresche:</b> Wer keinen Weg findet, schlägt sich einen. Die Ramme geht gar nicht erst zum Tor — sie bricht durch, wo sie steht, doppelt so schnell wie alle anderen, und das Loch nutzen danach alle. Was Reichweite hat, kümmert der Wall ohnehin nicht: ein Katapult steht davor und schießt darüber hinweg.</li>
         <li><b>Zinnen:</b> Liegen als eigener Vorrat oben auf den Turm-LP und fangen jeden Treffer zuerst ab. Sie verfallen nicht am Zugende — wer sie früh setzt, hat sie später noch. Über dem Turm steht, wie viel Stein noch da ist.</li>
         <li><b>Reichweite:</b> Die Höhe des Gebäudes zählt mit. Wachturm +2, Palisade +1.</li>
@@ -1232,6 +1260,7 @@
     <span class="chip sold" title="Sold"><i class="ic" data-ikone="muenze"></i> <b id="sold-val">0</b></span>
     <span class="chip dim" id="pile-draw" title="Zugstapel"><i class="ic" data-ikone="stapel"></i> <b id="draw-count">0</b></span>
     <span class="chip dim" id="pile-discard" title="Ablage"><i class="ic" data-ikone="ablage"></i> <b id="discard-count">0</b></span>
+    <span class="chip dim hidden" id="pile-beiseite" title="Sonderzug: liegt bis zum Ende der Station beiseite"><i class="ic" data-ikone="siegel"></i> <b id="beiseite-count">0</b></span>
   </div>
 
   <div id="frist-tafel" class="hidden" title="Zuege bis zum Sturm">
@@ -1719,6 +1748,13 @@ let state = {
   hoverCell: null,
   wall: new Map(), tor: [],
   einmalGenutzt: {},   // Kennungen der Karten mit `einmalJeKampf`, die schon liefen
+  /*
+   * Der Sonderzug-Stapel. Eine Sonderzug-Karte kommt nach dem Ausspielen
+   * weder in die Ablage noch zurueck ins Deck - sie liegt bis zum Ende der
+   * Station beiseite. Sonst waere "nur einmal je Kampf" eine Regel, die man
+   * nur an einem roten Band erkennt; so sieht man sie am Stapel.
+   */
+  beiseite: [],
   nextTowerId: 1,
   nextEnemyId: 1,
 };
@@ -2068,6 +2104,7 @@ const EINST_STD = {
   vignette: true,        // Randabfall und Rasterzeilen
   bewegung: 'auto',      // auto | voll | wenig
   roentgen: true,        // Verdeckte Gegner blass darueberlegen
+  tonLaut: 'mittel',     // leise | mittel | laut
 };
 let einst = { ...EINST_STD };
 try {
@@ -2299,35 +2336,117 @@ let tonAn = true;
 try { tonAn = localStorage.getItem('cm-ton') !== 'aus'; } catch (e) { /* ohne Speicher eben so */ }
 let tonKontext = null;
 
+/*
+ * ============================================================
+ *  Toene statt Geraeusche
+ * ============================================================
+ *
+ * Vorher war jeder Klang aus zwei Zutaten gebaut: ein Oszillator, der von
+ * einer Frequenz zur anderen rutscht, und ein Rauschstoss durch einen
+ * Tiefpass. Das ist die uebliche Art, Spielgeraeusche zu synthetisieren, und
+ * sie klingt auch so - nach Geraet, nicht nach Welt. Bei einem Schritt je
+ * Gegner und Zug hoert man das fuenfzig Mal in einer Runde.
+ *
+ * Jetzt klingt alles ANGESCHLAGEN und GESTIMMT. Zwei Entscheidungen tragen
+ * das:
+ *
+ *   Gestimmt: jeder Ton sitzt auf einer Stufe derselben Tonleiter (d-moll,
+ *   aeolisch). Was gleichzeitig oder kurz nacheinander erklingt, passt
+ *   deshalb zusammen, statt sich zu reiben. Aufeinanderfolgende Schuesse
+ *   gehen die Leiter entlang - eine Salve wird eine Figur statt einer Reihe
+ *   gleicher Pieptoene.
+ *
+ *   Angeschlagen: ein Ton beginnt hell und wird dunkler, waehrend er
+ *   ausklingt. Das macht der Tiefpass, der ueber die Lebensdauer des Tons
+ *   zufaellt - dieselbe Bewegung wie bei einer gezupften Saite oder einem
+ *   angeschlagenen Stueck Holz. Dazu eine leise Oktave darueber fuer den
+ *   Glanz des Anschlags.
+ *
+ * Rauschen gibt es nur noch an zwei Stellen, wo es wirklich etwas bedeutet:
+ * im Einschlag und im Einsturz. Dort ist es Bruch, nicht Verzierung.
+ */
+const TON_GRUND = 146.83;                   // D3
+const TON_LEITER = [0, 2, 3, 5, 7, 8, 10];  // d-moll, aeolisch
+/** Halbtonschritte ueber dem Grundton als Frequenz. */
+const halbton = (n) => TON_GRUND * Math.pow(2, n / 12);
+/** Stufe der Leiter, ueber mehrere Oktaven fortgesetzt. */
+function stufe(i) {
+  const okt = Math.floor(i / TON_LEITER.length);
+  return halbton(TON_LEITER[((i % TON_LEITER.length) + TON_LEITER.length) % TON_LEITER.length] + okt * 12);
+}
+// Wandert bei jedem Schuss eine Stufe weiter, damit eine Salve eine Linie
+// ergibt statt eines Stotterns auf einem Ton.
+let tonLauf = 0;
+const TON_STAERKE = { leise: 0.5, mittel: 1, laut: 1.6 };
+
 function klang(art) {
   if (!tonAn) return;
   try {
     if (!tonKontext) tonKontext = new (window.AudioContext || window.webkitAudioContext)();
-    if (tonKontext.state === 'suspended') tonKontext.resume();
+    // resume() gibt ein Versprechen zurueck; ohne Vorsorge liegt bei einer
+    // Ablehnung eine unbehandelte Zurueckweisung in der Konsole.
+    if (tonKontext.state === 'suspended') Promise.resolve(tonKontext.resume()).catch(() => {});
   } catch (e) { tonAn = false; return; }
 
   const k = tonKontext;
   const jetzt = k.currentTime;
   const huelle = k.createGain();
+  huelle.gain.value = TON_STAERKE[einst.tonLaut] || 1;
   huelle.connect(k.destination);
 
-  const ton = (typ, von, bis, dauer, laut) => {
-    const o = k.createOscillator();
-    o.type = typ;
-    o.frequency.setValueAtTime(von, jetzt);
-    o.frequency.exponentialRampToValueAtTime(Math.max(20, bis), jetzt + dauer);
+  /**
+   * Ein angeschlagener Ton.
+   * `hz` Tonhoehe, `dauer` bis zum Verklingen, `laut` der Anschlag.
+   * In `art`: `typ` die Wellenform, `spaeter` der Versatz in Sekunden,
+   * `glanz` wie weit der Tiefpass beim Anschlag geoeffnet ist (Vielfaches
+   * der Tonhoehe), `oberton` die Lautstaerke der Oktave darueber.
+   */
+  const ton = (hz, dauer, laut, art2 = {}) => {
+    const beginn = jetzt + (art2.spaeter || 0);
+    const anschlag = art2.anschlag === undefined ? 0.007 : art2.anschlag;
     const g = k.createGain();
-    g.gain.setValueAtTime(laut, jetzt);
-    g.gain.exponentialRampToValueAtTime(0.0008, jetzt + dauer);
-    o.connect(g); g.connect(huelle);
-    o.start(jetzt); o.stop(jetzt + dauer + 0.02);
+    g.gain.setValueAtTime(0.0001, beginn);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, laut), beginn + anschlag);
+    g.gain.exponentialRampToValueAtTime(0.0001, beginn + dauer);
+    const f = k.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = 0.6;
+    f.frequency.setValueAtTime(Math.min(14000, hz * (art2.glanz || 8)), beginn);
+    f.frequency.exponentialRampToValueAtTime(Math.max(140, hz * 1.4), beginn + dauer);
+    g.connect(f); f.connect(huelle);
+
+    const o = k.createOscillator();
+    o.type = art2.typ || 'triangle';
+    o.frequency.setValueAtTime(hz, beginn);
+    if (art2.biegen) {
+      o.frequency.exponentialRampToValueAtTime(hz * art2.biegen, beginn + dauer * 0.7);
+    }
+    o.connect(g);
+    o.start(beginn); o.stop(beginn + dauer + 0.05);
+
+    const ober = art2.oberton === undefined ? 0.3 : art2.oberton;
+    if (ober > 0) {
+      const o2 = k.createOscillator();
+      o2.type = 'sine';
+      o2.frequency.setValueAtTime(hz * 2, beginn);
+      const g2 = k.createGain();
+      g2.gain.setValueAtTime(0.0001, beginn);
+      g2.gain.exponentialRampToValueAtTime(Math.max(0.0002, laut * ober), beginn + anschlag);
+      g2.gain.exponentialRampToValueAtTime(0.0001, beginn + dauer * 0.6);
+      o2.connect(g2); g2.connect(huelle);
+      o2.start(beginn); o2.stop(beginn + dauer + 0.05);
+    }
   };
 
-  const rauschen = (dauer, laut, filter) => {
+  /** Bruch: kurzes Rauschen hinter einem Tiefpass. Nur fuer Einschlaege. */
+  const bruch = (dauer, laut, filter, spaeter = 0) => {
     const n = Math.floor(k.sampleRate * dauer);
     const puffer = k.createBuffer(1, n, k.sampleRate);
     const d = puffer.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    for (let i = 0; i < n; i++) {
+      const ab = 1 - i / n;
+      d[i] = (Math.random() * 2 - 1) * ab * ab;
+    }
     const q = k.createBufferSource();
     q.buffer = puffer;
     const f = k.createBiquadFilter();
@@ -2336,28 +2455,51 @@ function klang(art) {
     const g = k.createGain();
     g.gain.value = laut;
     q.connect(f); f.connect(g); g.connect(huelle);
-    q.start(jetzt);
+    q.start(jetzt + spaeter);
   };
 
-  if (art === 'schritt') { rauschen(0.07, 0.035, 480); ton('triangle', 95, 60, 0.08, 0.022); }
-  else if (art === 'schuss') { ton('sawtooth', 900, 260, 0.13, 0.05); rauschen(0.09, 0.05, 2600); }
-  else if (art === 'treffer') { ton('square', 240, 90, 0.12, 0.06); rauschen(0.1, 0.07, 900); }
-  else if (art === 'bau') { ton('triangle', 180, 70, 0.3, 0.09); rauschen(0.26, 0.09, 700); }
-  else if (art === 'fall') { ton('sawtooth', 150, 45, 0.45, 0.1); rauschen(0.4, 0.12, 500); }
-  else if (art === 'burg') { ton('square', 130, 55, 0.35, 0.1); rauschen(0.3, 0.11, 420); }
-  else if (art === 'sieg') {
-    [523, 659, 784, 1047].forEach((f, i) => {
-      const o = k.createOscillator(); o.type = 'triangle';
-      o.frequency.value = f;
-      const g = k.createGain();
-      g.gain.setValueAtTime(0.0001, jetzt + i * 0.1);
-      g.gain.exponentialRampToValueAtTime(0.07, jetzt + i * 0.1 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0008, jetzt + i * 0.1 + 0.34);
-      o.connect(g); g.connect(huelle);
-      o.start(jetzt + i * 0.1); o.stop(jetzt + i * 0.1 + 0.36);
+  if (art === 'schritt') {
+    // Leise und tief. Es passiert oft, also darf es kaum auffallen - aber es
+    // hat eine Tonhoehe, und die liegt in der Leiter.
+    // Tief, aber nicht unter der Kimm kleiner Lautsprecher: eine Oktave
+    // tiefer waere auf einem Notebook nur noch ein Hauch.
+    ton(stufe(tonLauf % 3), 0.13, 0.016, { typ: 'sine', glanz: 3, oberton: 0 });
+  } else if (art === 'schuss') {
+    // Ein Zupfer, der die Leiter hinaufgeht: die Salve wird eine Figur.
+    tonLauf = (tonLauf + 1) % 14;
+    ton(stufe(14 + tonLauf), 0.2, 0.05, { glanz: 11, oberton: 0.45, anschlag: 0.004 });
+  } else if (art === 'treffer') {
+    // Der Einschlag antwortet eine Quinte tiefer und biegt sich nach unten.
+    ton(stufe(7 + (tonLauf % 7)), 0.26, 0.055, { typ: 'sawtooth', glanz: 4, biegen: 0.93 });
+    bruch(0.07, 0.03, 1400);
+  } else if (art === 'bau') {
+    // Zwei Toene aufwaerts: etwas entsteht.
+    ton(stufe(7), 0.3, 0.055, { glanz: 6 });
+    ton(stufe(11), 0.42, 0.05, { glanz: 7, spaeter: 0.1 });
+  } else if (art === 'fall') {
+    // Drei Toene abwaerts, dazu der Bruch. Etwas geht zu Boden.
+    ton(stufe(9), 0.26, 0.055, { typ: 'sawtooth', glanz: 5 });
+    ton(stufe(5), 0.3, 0.05, { typ: 'sawtooth', glanz: 4, spaeter: 0.09 });
+    ton(stufe(2), 0.55, 0.055, { typ: 'sawtooth', glanz: 3, spaeter: 0.18 });
+    bruch(0.3, 0.045, 700, 0.16);
+  } else if (art === 'burg') {
+    // Eine tiefe Glocke: Grundton und Quinte, lang, mit Schwebung.
+    ton(stufe(0) / 2, 1.1, 0.07, { glanz: 4, oberton: 0.5 });
+    ton(stufe(0) / 2 * 1.006, 1.0, 0.045, { glanz: 4, oberton: 0 });
+    ton(stufe(4) / 2, 0.9, 0.04, { glanz: 4, spaeter: 0.02 });
+    bruch(0.25, 0.05, 500);
+  } else if (art === 'sieg') {
+    [0, 2, 4, 7].forEach((st, i) => {
+      ton(stufe(7 + st), 0.5, 0.06, { glanz: 9, spaeter: i * 0.11, oberton: 0.4 });
     });
-  } else if (art === 'karte') { ton('triangle', 700, 420, 0.07, 0.035); }
-  else if (art === 'runde') { ton('triangle', 330, 495, 0.3, 0.06); }
+  } else if (art === 'karte') {
+    // Ein leichter Zupfer, hoch und kurz.
+    ton(stufe(18), 0.12, 0.03, { glanz: 12, anschlag: 0.003, oberton: 0.25 });
+  } else if (art === 'runde') {
+    // Ein Hornruf: Quarte hinauf.
+    ton(stufe(7), 0.34, 0.055, { glanz: 5, oberton: 0.5 });
+    ton(stufe(10), 0.44, 0.05, { glanz: 6, spaeter: 0.13, oberton: 0.5 });
+  }
 }
 
 const BAU_DAUER = 0.75;       // Sekunden, bis ein Turm steht
@@ -6738,6 +6880,20 @@ const IKONEN = {
   ],
 
   // Hilfe: eine Schriftrolle.
+  // Sonderzug: eine Karte mit Siegel, beiseitegelegt.
+  siegel: [
+    '...........',
+    '..ddddddd..',
+    '..dwwwwwd..',
+    '..dwGGGwd..',
+    '..dGGGGGd..',
+    '..dGGGGGd..',
+    '..dwGGGwd..',
+    '..dwwwwwd..',
+    '..ddddddd..',
+    '...........',
+    '...........',
+  ],
   // Einstellungen: drei Schieber mit goldenem Griff.
   regler: [
     '...........',
@@ -7704,10 +7860,21 @@ function wendeKarteAn(ziel) {
 }
 
 // Gespielte Karten verschwinden nicht, sie kommen auf den Ablagestapel
-// und damit spaeter wieder ins Deck.
+// und damit spaeter wieder ins Deck. Eine Sonderzug-Karte nicht: die liegt
+// bis zum Ende der Station beiseite und wird in diesem Kampf nicht wieder
+// gezogen. Ungespielt wandert auch sie ganz normal in die Ablage - beiseite
+// legt sie erst das Ausspielen.
 function removeFromHand(card) {
   state.hand = state.hand.filter(c => c.uid !== card.uid);
-  state.discard.push(card);
+  if (card.einmalJeKampf) state.beiseite.push(card);
+  else state.discard.push(card);
+}
+
+/** Holt die beiseitegelegten Karten zurueck. Das Ende des Kampfes loest es. */
+function holeBeiseiteZurueck() {
+  if (!state.beiseite.length) return;
+  state.discard.push(...state.beiseite);
+  state.beiseite = [];
 }
 
 // ---------- Gegnerzug ----------
@@ -8061,6 +8228,7 @@ function betreteKnoten(id) {
   state.wall = new Map();
   state.tor = [];
   state.einmalGenutzt = {};
+  holeBeiseiteZurueck();
   wegCache = new Map();
   gegnerzug = null;
   schuesseImZug = 0;
@@ -8149,6 +8317,7 @@ function neuerFeldzug(stufe) {
   state.draw = buildStarterDeck();
   state.hand = [];
   state.discard = [];
+  state.beiseite = [];
   state.nextTowerId = 1;
   state.nextEnemyId = 1;
   state.runde = 1;
@@ -8199,6 +8368,7 @@ function feldzugVerloren() {
 
 /** Nach gewonnenem Kampf: Sold, dann Karten zur Auswahl. */
 function beginneBelohnung() {
+  holeBeiseiteZurueck();
   const k = aktuellerKnoten();
   const vorhut = k && k.typ === 'elite';
   const lohn = Math.round((SOLD_JE_STATION + (vorhut ? SOLD_VORHUT : 0)) * (1 + state.runde * 0.05));
@@ -8732,6 +8902,7 @@ function endTurn() {
  * Wer das ueberlebt, hat die Station gehalten, aber teuer bezahlt.
  */
 function derSturm() {
+  holeBeiseiteZurueck();
   const alle = [...state.enemies, ...state.lager];
   const schaden = alle.reduce((sum, e) => sum + Math.max(1, e.dmg), 0);
   for (const e of state.enemies) zeigeZahl(e.col, e.row, 'Sturm', '#ff9a5c');
@@ -9065,6 +9236,11 @@ const EINST_TAFEL = [
     setze: () => document.getElementById('sound-btn').click(),
   },
   {
+    id: 'tonLaut', name: 'Lautstärke der Klänge',
+    hinweis: 'Die Töne sitzen alle in derselben Tonleiter; eine Salve geht sie entlang.',
+    wahl: [['leise', 'Leise'], ['mittel', 'Mittel'], ['laut', 'Laut']],
+  },
+  {
     id: 'musik', name: 'Musik',
     hinweis: 'Der Soundtrack im Hintergrund.',
     wahl: [[true, 'An'], [false, 'Aus']],
@@ -9224,7 +9400,7 @@ function karteRegel(card) {
     ? (() => { const t = teile.join('. '); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; })()
     : '';
   // Die Grenze steht vorn: sie entscheidet, ob die Karte ueberhaupt geht.
-  if (card.einmalJeKampf) return ('Nur einmal je Kampf. ' + satz).trim();
+  if (card.einmalJeKampf) return ('Einmal je Kampf, dann beiseite. ' + satz).trim();
   return satz;
 }
 
@@ -9313,6 +9489,16 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
   typ.className = 'card-typ';
   typ.textContent = card.type;
   el.appendChild(typ);
+
+  // Schlagwort: eine Karte mit Sonderzug traegt das gedruckt, wie eine
+  // Faehigkeit im Regelwerk. Ohne das waere die Regel eine Zeile Kleintext.
+  if (card.einmalJeKampf) {
+    const sz = document.createElement('div');
+    sz.className = 'card-sonderzug';
+    sz.textContent = 'Sonderzug';
+    sz.title = 'Einmal je Kampf. Danach liegt die Karte bis zur nächsten Station beiseite.';
+    el.appendChild(sz);
+  }
 
   const werte = kartenWerte(card);
   const bildkarte = Boolean(kartenBild(card.id));
@@ -9937,7 +10123,13 @@ function renderAll() {
     Math.max(0, Math.min(100, 100 * state.castleHp / CASTLE.maxHp)) + '%';
   document.getElementById('draw-count').textContent = state.draw.length;
   document.getElementById('discard-count').textContent = state.discard.length;
-  document.getElementById('deck-total').textContent = state.draw.length + state.hand.length + state.discard.length;
+  // Der Sonderzug-Stapel zeigt sich nur, wenn etwas darauf liegt.
+  document.getElementById('beiseite-count').textContent = state.beiseite.length;
+  document.getElementById('pile-beiseite').classList.toggle('hidden', !state.beiseite.length);
+  // Die Deckgroesse zaehlt die beiseitegelegten Karten mit: sie sind nicht
+  // verloren, sie kommen mit der naechsten Station zurueck.
+  document.getElementById('deck-total').textContent =
+    state.draw.length + state.hand.length + state.discard.length + state.beiseite.length;
   const knopf = document.getElementById('endround-btn');
   knopf.disabled = state.phase !== 'kampf' || state.zugLaeuft;
   // Der Knopf kuendigte frueher die Salve an. Jetzt warnt er: was hier noch

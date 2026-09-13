@@ -1211,6 +1211,14 @@ Zur Größe: bei Anzeigemaß wiegt ein Kartenbild als JPEG rund 20 KB. Alle
 fünfundsiebzig wären also etwa 1,5 MB gegen eine Grenze von 16 MB. Der Platz
 ist nicht das Problem, die fünfundsiebzig Zeichnungen sind es.
 
+**Nichts abschneiden.** Das Blatt lag mit `object-fit: cover` auf der Karte:
+es füllte sie ganz, aber der Rahmen des Kartenbildes lief unter dem Kartenrand
+weg. Die Karte ist 132 mal 228 Punkte, der Rahmen darin nur 129 mal 225 — der
+Rand von anderthalb Punkten je Seite gehört dem Kartenrahmen, und `cover`
+beschnitt das Blatt auf dieses Maß. Ein Prozent, aber genau die gedruckte
+Randlinie. Jetzt steht dort `contain`; die knapp zwei Punkte Papier, die oben
+und unten übrig bleiben, liegen auf demselben Ton und fallen nicht auf.
+
 ## Zahlen muss man lesen können
 
 An Zahlen hängt hier jede Entscheidung — wie viel Schaden dieser Schuss macht,
@@ -1379,10 +1387,47 @@ Dazu ein paar Änderungen an derselben Stelle:
 
 ## Ton
 
-Alle Geräusche werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu.
-Bogenschuss, Treffer, Turmbau, einstürzender Turm, Schlag gegen die Burg, ein
-kleiner Dreiklang nach gehaltener Station. Der Schalter `♪` oben rechts schaltet
-den Ton ab, die Einstellung bleibt gespeichert.
+Alle Klänge werden zur Laufzeit erzeugt, es kommen keine Klangdateien dazu
+(der Soundtrack ausgenommen). Der Schalter `♪` oben rechts schaltet sie ab, die
+Lautstärke steht im Einstellungsmenü.
+
+### Töne statt Geräusche
+
+Die erste Fassung baute jeden Klang aus zwei Zutaten: ein Oszillator, der von
+einer Frequenz zur anderen rutscht, und ein Rauschstoß durch einen Tiefpass.
+Das ist die übliche Art, Spielgeräusche zu synthetisieren, und sie klingt auch
+so — nach Gerät, nicht nach Welt. Bei einem Schritt je Gegner und Zug hört man
+das fünfzigmal in einer Runde.
+
+Jetzt klingt alles **angeschlagen** und **gestimmt**. Zwei Entscheidungen
+tragen das:
+
+**Gestimmt.** Jeder Ton sitzt auf einer Stufe derselben Tonleiter — d-moll,
+äolisch. Was gleichzeitig oder kurz nacheinander erklingt, passt deshalb
+zusammen, statt sich zu reiben. Aufeinanderfolgende Schüsse gehen die Leiter
+entlang (`tonLauf` wandert bei jedem Schuss eine Stufe weiter), eine Salve wird
+damit eine Figur statt einer Reihe gleicher Piepser. Der Treffer antwortet
+eine Quinte unter dem Schuss und biegt sich nach unten.
+
+**Angeschlagen.** Ein Ton beginnt hell und wird dunkler, während er ausklingt.
+Das macht ein Tiefpass, dessen Grenzfrequenz über die Lebensdauer des Tons von
+etwa dem Achtfachen der Tonhöhe auf das Anderthalbfache fällt — dieselbe
+Bewegung wie bei einer gezupften Saite oder einem angeschlagenen Stück Holz.
+Dazu eine leise Oktave darüber für den Glanz des Anschlags.
+
+Rauschen gibt es nur noch an drei Stellen, wo es etwas bedeutet: im Einschlag,
+im Einsturz und im Schlag gegen die Burg. Dort ist es Bruch, keine Verzierung.
+
+Gemessen (offline gerendert, Spitzenpegel / Grundton):
+
+| | Spitze | Hz | Dauer |
+| --- | --- | --- | --- |
+| Schritt | 0,015 | 147 | 0,07 s |
+| Schuss (drei nacheinander) | 0,056 | 658 → 698 → 779 | 0,12 s |
+| Treffer | 0,046 | 435 | 0,15 s |
+| Burg getroffen | 0,132 | 73 | 0,66 s |
+
+Nichts kommt auch bei „Laut" (×1,6) in die Nähe der Übersteuerung.
 
 Wer im System weniger Bewegung eingestellt hat, bekommt alles ohne Animation,
 die Zahlen und Effekte bleiben lesbar.
@@ -1695,6 +1740,28 @@ einer Station wandert sie zurück ins Deck und wird frisch gezogen.
 Das Deck wächst über den Feldzug durch Belohnungen, Käufe beim Marketender und
 Funde bei Begegnungen. Streichen im Lager oder beim Marketender hält es wieder
 schlank.
+
+### Sonderzug
+
+Der **Wachturm** geht nur einmal je Kampf. Das stand vorher bloß als Satz auf
+der Karte, und die gespielte Karte wanderte wie jede andere in den
+Ablagestapel — die Grenze war eine unsichtbare Buchführung mit einem roten Band
+als einzigem Hinweis.
+
+Jetzt trägt sie das Schlagwort **Sonderzug** gedruckt, und die Regel steht im
+Stapel statt in einer Variablen: die ausgespielte Karte kommt **weder in die
+Ablage noch zurück ins Deck**, sondern liegt bis zum Ende der Station beiseite
+(`state.beiseite`). Oben in der Kopfzeile zeigt ein Siegel, wie viele es sind.
+Am Ende des Kampfes — gehaltene Station oder Sturm — gehen sie zurück in die
+Ablage.
+
+Ungespielt wandert eine Sonderzug-Karte ganz normal in die Ablage: beiseite
+legt sie erst das Ausspielen. Weitere Karten derselben Art tragen bis zum Ende
+der Station weiterhin das rote Band **Verbraucht**.
+
+Nebenbei ist das ein kleiner Vorteil für den Spieler: die verbrauchte Karte
+liegt nicht mehr im Zugstapel und verstopft ihn nicht. Das gleicht einen Teil
+der siebzehn Punkte Siegquote aus, die die Einmal-Regel gekostet hat.
 
 ## Schwierigkeit
 
