@@ -1,4 +1,15 @@
 {
   "_hinweis": "Ausschnitte in Anteilen der Bildkante. Das Blatt ist 2:3, die Karte ist schmaler (128:224). Der Ausschnitt trifft das Kartenmass genau, damit nachher nichts mehr beschnitten wird - abgezogen wird seitlich, wo nur die Randzier steht.",
-  "waldlaeufer": { "x": 0.087, "y": 0.018, "w": 0.826, "h": 0.964 }
+  "waldlaeufer": {
+    "x": 0.087,
+    "y": 0.018,
+    "w": 0.826,
+    "h": 0.964
+  },
+  "wachturm": {
+    "x": 0.087,
+    "y": 0.018,
+    "w": 0.826,
+    "h": 0.964
+  }
 }

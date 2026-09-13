@@ -663,6 +663,27 @@ sie decken den Turm, nicht den Kopf. Vorher war der Turm das einzige Ziel und
 wer oben stand unantastbar: ein Armbrustschütze schoss auf Mauerwerk statt auf
 Männer.
 
+### Zinnen gehören nach außen
+
+Eine Mauer, die nach innen zinnt, deckt den Feind statt der Burg. Genau das tat
+der Wall: die Zinnen standen auf den beiden Kanten zum Betrachter hin
+(`+Spalte` und `+Zeile`). Beim Riegel traf das zufällig die richtige Seite —
+der wehrt nach Osten ab, und Osten ist `+Spalte`. Bei den Flanken traf es die
+falsche. Die obere Flanke wehrt nach Norden ab, also nach `-Zeile`, und dort
+blieb die Krone glatt, während die Zinnen zum Hof hin standen. Aufgefallen ist
+das erst, als die Flanken dazukamen; vorher gab es nur den Riegel.
+
+Außen ist an dieser Anlage eindeutig, es braucht keine Feldsuche: **Riegel nach
+Osten, obere Flanke nach Norden, untere nach Süden.** Nach Westen liegt die
+Burg, dorthin zinnt niemand.
+
+Der erste Versuch war die allgemeine Regel „Zinne auf jede Kante ohne
+Mauernachbarn". Sie ist richtig gedacht und sah trotzdem falsch aus: der Wall
+ist zwei Felder dick, also liegt auch seine **Innen**kante frei, und die Krone
+bekam zwei Zinnenreihen mit einer Rinne dazwischen. Die Bedingung bleibt als
+zweiter Halb stehen — sie hält das innere der beiden Felder eben —, aber die
+Richtung entscheidet zuerst. Eine Zinnenreihe, dahinter der Wehrgang.
+
 ## Wer durchs Tor geht und wer nicht
 
 Der Wall sperrt (`blockiert` kennt ihn jetzt) und er fällt (jedes Feld hat 24
@@ -1227,6 +1248,16 @@ Und: auch eine Datenadresse wird erst nebenher entschlüsselt. Ohne ein
 Nachzeichnen, sobald das letzte Bild liegt, zeigte die Karte beim ersten
 Aufbau das gemalte Motiv und behielt es, weil niemand sie noch einmal
 anfasste.
+
+Denselben Weg geht der **Wachturm**: `bilder/wachturm.ganz.png`, derselbe
+Ausschnitt in `zuschnitt.json` (`x 0.087, y 0.018, w 0.826, h 0.964`), dasselbe
+Werkzeug. Der Zuschnitt ist nicht Geschmack, sondern Maß — die Vorlage bringt
+einen eigenen Rand mit, und ungeschnitten stand er neben dem Kartenrand des
+Spiels, zwei Rahmen um dasselbe Bild. Beide Bilder zusammen wiegen 95 KB.
+
+Was dabei auffiel: eine Bildkarte hat keinen Platz für einen Spruch, aber sehr
+wohl für ein **Schlagwort**. Der Wachturm ist eine Sonderzug-Karte, und das
+Band sitzt jetzt zwischen Bild und Werten statt im verdrängten Spruchfeld.
 
 Zur Größe: bei Anzeigemaß wiegt ein Kartenbild als JPEG rund 20 KB. Alle
 fünfundsiebzig wären also etwa 1,5 MB gegen eine Grenze von 16 MB. Der Platz
@@ -1821,6 +1852,19 @@ Wachturm trägt zwei, mit der Krone drei; ein Doppelturm bringt einen Platz mit
 und läuft ohne Deckel auf vier. Die Turmkrone zeigt ohnehin nur drei Mann. Das
 **Torhaus** hat einen Platz statt zwei — es ist die Einfahrt, nicht die
 Kaserne.
+
+Der Deckel gilt auch der **Krone der Belagerung**, und das ist der Grund, warum
+sie sich überhaupt ändern musste. Sie gibt jedem Gebäude einen Platz dazu; ohne
+Deckel schob sie einen Wachturm auf vier Mann und zwei Kronen auf fünf, und die
+Turmkrone hat Standflächen für drei. Jetzt wächst jeder Turm bis höchstens
+`MAX_PLAETZE` und keinen Platz weiter, das **Torhaus** bleibt ausgenommen (es
+hat einen Platz, und dabei bleibt es), und sind alle Gebäude voll besetzbar, ist
+die Karte **nicht mehr spielbar** statt für drei Tatendrang wirkungslos
+(`hatZiel`). Auf dem Blatt steht das mit: „Gebäude +1 Platz, höchstens 3."
+
+Die Meldung zählt, was wirklich passiert ist — „2 Plätze mehr auf den Gebäuden",
+nicht die Zahl der Türme. Eine Wirkung, die verschweigt, dass sie nur halb
+angekommen ist, ist schlimmer als gar keine.
 
 #### Fixiert
 
