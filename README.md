@@ -749,12 +749,32 @@ dieselben vier Fragen:
 
 | Karte | Art | Kosten | Anzahl | Frage |
 | --- | --- | --- | --- | --- |
-| Wachturm | Gebäude | 2 | 3 | Wo baue ich? |
-| Waldläufer | Einheit | 1 | 3 | Wen stelle ich drauf? |
-| Zinnen | Fähigkeit | 1 | 3 | Was schütze ich? |
+| Wachturm | Gebäude | 2 | **1** | Wo baue ich? |
+| Waldläufer | Einheit | 1 | 4 | Wen stelle ich drauf? |
+| Zinnen | Fähigkeit | 1 | 4 | Was schütze ich? |
 | Krone der Belagerung | Macht | 3 | 1 | Halte ich die große Karte? |
 
 Eine Karte je Kategorie, und ein Deck, das sich alle zwei Züge einmal durchhat.
+
+**Warum der Wachturm nur einmal darin liegt.** Er ist ein Sonderzug: der erste
+gespielte nimmt die ganze Art aus dem Spiel. Weitere Abzüge wären tote Blätter,
+die nur den Zugstapel füllen. Einmal in zehn heißt: im ersten Blatt liegt er
+mit Wahrscheinlichkeit eins zu zwei, im zweiten liegt er sicher — fünf gezogene
+Karten je Zug drehen das Deck in zwei Zügen um. Ein Zug Wartezeit im
+schlechtesten Fall, kein Glücksspiel.
+
+Je zwölf Bot-Feldzüge über vier Mischungen:
+
+| Startdeck | Siege | Station im Schnitt |
+| --- | --- | --- |
+| 3 Wachturm, 3 / 3 / 1 (vorher) | 3/12 | 14,5 |
+| **1 Wachturm, 4 / 4 / 1** | 3/12 | 13,3 |
+| 1 Wachturm, 3 / 3 / 1 (acht Karten) | 6/12 | 14,4 |
+| 1 Wachturm, 5 / 3 / 1 | 2/12 | 14,1 |
+
+Die Unterschiede liegen bis auf die Achtkartenzeile im Rauschen. Das kleinere
+Deck sieht stark aus — es dreht sich schneller, also kommt die Krone öfter —,
+aber zehn Karten sind die Vorgabe, und die bleibt.
 
 ### Zinnen
 
@@ -1720,18 +1740,16 @@ Gegner laufen nicht durch Mauerwerk, sie weichen an Türmen und Burg vorbei.
 
 ## Deck
 
-Das Startdeck besteht aus zwölf Karten und zirkuliert wie in einem klassischen
+Das Startdeck besteht aus zehn Karten und zirkuliert wie in einem klassischen
 Deckbuilder. Gespielte und am Zugende übrige Karten wandern auf den
 Ablagestapel. Ist der Nachziehstapel leer, wird die Ablage gemischt und wird zum
 neuen Nachziehstapel.
 
 | Karte | Anzahl im Startdeck |
 | --- | --- |
-| Palisade | 3 |
-| Waldläufer | 3 |
-| Wachturm | 2 |
-| Bogenschütze | 2 |
-| Sturmwind | 1 |
+| Waldläufer | 4 |
+| Zinnen | 4 |
+| Wachturm | 1 |
 | Krone der Belagerung | 1 |
 
 Fünf Karten pro Zug. Die Hand gehört zur Station, nicht zum Ritt: Beim Betreten

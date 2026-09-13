@@ -1628,8 +1628,18 @@ const LAGER_BREITE = 2;
  * bedeuten, dass jeder Zug dieselben vier Fragen stellt - bauen, besetzen,
  * schuetzen, oder die eine grosse Karte halten.
  */
+/*
+ * Zehn Karten, vier Arten. Der Wachturm liegt nur EINMAL darin: seit er ein
+ * Sonderzug ist, nimmt der erste gespielte die ganze Art aus dem Spiel -
+ * weitere Abzuege waeren tote Blaetter, die nur den Zugstapel fuellen.
+ *
+ * Einmal in zehn heisst: im ersten Blatt liegt er mit Wahrscheinlichkeit
+ * eins zu zwei, im zweiten liegt er sicher, denn fuenf gezogene Karten je Zug
+ * drehen das Deck in zwei Zuegen um. Ein Zug Wartezeit im schlechtesten Fall,
+ * kein Glueckspiel.
+ */
 const STARTER_DECK = [
-  ['wachturm', 3], ['waldlaeufer', 3], ['zinnen', 3], ['krone', 1],
+  ['wachturm', 1], ['waldlaeufer', 4], ['zinnen', 4], ['krone', 1],
 ];
 const HAND_SIZE = 5;
 /** Wie viele Karten ein Zug bringt, samt anhaltender Maechte. */
