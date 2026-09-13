@@ -420,9 +420,27 @@ gegen den grauen Turmkörper, unten verschmolz es mit dem Wall — eine Fuge que
 durch den Turm, an der es aussah, als schiene der Wall dahinter durch. Aus einem
 Stein steht der Turm durchgehend vom Boden auf.
 
-Gefunden habe ich das erst mit einem **dreifarbigen Testbild**: Wall grün,
-Sockel blau, Modell unverändert. Bis dahin hatte ich den hellen Streifen für
-durchscheinenden Wall gehalten — er war mein eigener Sockel.
+**Der Turmkörper füllt sein Feld ganz aus** — 2,0 von 2, nicht 1,9. Die
+verbleibenden 0,05 je Seite waren genug: durch diesen Spalt schaute der Wall
+dahinter als dünner Streifen am Turmrand hervor.
+
+### Wie man so etwas findet
+
+Drei Runden lang habe ich aus dem fertigen Bild heraus interpretiert und dabei
+zweimal das Falsche repariert. Was schließlich funktioniert hat, war, die Ebenen
+**auseinanderzufärben** und nacheinander enger zu fassen:
+
+| Testbild | Was es zeigte |
+| --- | --- |
+| Zinnen rot | Die hellen Blöcke am Turmschaft waren gar keine Zinnen |
+| Wall grün | Der Wall lugte neben dem schmaleren Schaft hervor |
+| Sockel blau | Der helle Streifen am Turmfuß war mein eigener Sockel, in Wallfarbe |
+| Turmkörper magenta | Ein dünner grüner Saum am Turmrand — die fehlenden 0,05 |
+
+Jede Farbe hat genau einen Irrtum ausgeräumt, und keiner davon wäre durch
+Hinsehen allein zu klären gewesen. Die letzte Färbung — den Turm selbst — hat
+mir der Spieler vorgeschlagen; ohne sie hätte ich den Saum weiter für ein
+Sortierproblem gehalten.
 
 Zwei Umwege dorthin, beide wieder ausgebaut, weil sie es **schlimmer** machten:
 

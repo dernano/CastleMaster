@@ -2817,8 +2817,11 @@ const MODELLE = {
    */
   wachturm: (g, f) => {
     const h = 34 * f;
-    teilQuader(g, 0.05, 0.05, 0, 1.9, 1.9, h, 'stein', 17);
-    teilFenster(g, 1.95, 0.9, h * 0.6, 9, false);
+    // Volle Feldbreite, kein Rand. Bei 1.9 blieben 0.05 je Seite frei, und
+    // durch diesen Spalt schaute der Wall dahinter als duenner Streifen am
+    // Turmrand hervor - das war das letzte Durchleuchten.
+    teilQuader(g, 0, 0, 0, 2, 2, h, 'stein', 17);
+    teilFenster(g, 2.05, 0.9, h * 0.6, 9, false);
     if (f < 0.75) return;
     /*
      * Die hoelzerne Hurde bleibt. Ein Versuch mit steinerner Wehrplatte und
