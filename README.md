@@ -54,8 +54,9 @@ Breschen geschlossen und die Türme teilweise ausgebessert; ein gefallener Turm
 bleibt gefallen. Neben dem Deck ist damit auch das Feld eine
 Fortschrittsachse — siehe „Die Burg · Sie bleibt stehen".
 
-**Die Besatzung nicht.** Männer gehören zum Kampf, nicht zum Bauwerk: an jeder
-Station besetzt du deine Türme neu.
+**Die Besatzung auch.** Wer eine Station übersteht, steht an der nächsten wieder
+auf seinem Turm. Gleiche Befehlskarten liegen dafür als ein Stapel mit Zahl in
+der Hand.
 
 **Die Burg reitet mit.** Ihre 50 Lebenspunkte müssen den ganzen Feldzug tragen
 und heilen nicht von selbst. Geheilt wird nur im Lager oder durch eine
@@ -1903,27 +1904,59 @@ steht am Ende hinter einer gewachsenen Anlage.
 | --- | --- |
 | Breschen im Wall | werden geschlossen, Risse verputzt |
 | Türme | bekommen 40 % ihrer Lebenspunkte zurück |
-| Ein gefallener Turm | bleibt gefallen |
-| Die Besatzung | zieht ab |
+| Die Besatzung | bleibt oben und erholt sich im selben Maß |
+| Ein gefallener Turm, ein gefallener Mann | bleibt gefallen |
 
-Die drei Zeilen sind je eine Entscheidung, keine Bequemlichkeit:
+Die Zeilen sind je eine Entscheidung, keine Bequemlichkeit:
 
 **Der Wall wird ganz hergestellt**, weil eine bleibende Bresche das Ende jeder
 Verteidigung wäre. Das Tor ist der Engpass, auf den das ganze Spiel gebaut ist;
 ein Loch daneben macht es für den Rest des Feldzugs zur Zierde.
 
-**Türme nur teilweise**, damit eine teuer gehaltene Station dem Bauwerk
-anzusehen ist. Wer einen Turm verliert, verliert ihn wirklich — das ist der
-Preis, der das Bauen zu einer Entscheidung macht. Im Lager gibt es dafür
-**„Türme ausbessern"**: eine Nacht, und alles steht wieder voll.
+**Türme und Männer nur teilweise**, damit eine teuer gehaltene Station der
+Anlage anzusehen ist. Wer einen Turm oder einen Mann verliert, verliert ihn
+wirklich — das ist der Preis, der das Bauen zu einer Entscheidung macht. Im
+Lager gibt es dafür **„Anlage ausbessern"**: eine Nacht, und Mauerwerk wie
+Besatzung stehen wieder voll.
 
-**Die Besatzung zieht ab**, und das ist die wichtigste der drei. Männer gehören
-zum Kampf, nicht zum Bauwerk — und technisch hängt daran die Hand: jede Einheit
-im Feld bringt ihre fixierte Befehlskarte mit. Bei bleibender Besatzung wäre
-aus fünf Karten plus einer je Einheit nach ein paar Stationen ein Blatt von
-zwanzig geworden. So bleibt jede Station die Frage, wen du wohin stellst, und
-die Einheitenkarten bleiben den ganzen Feldzug über nützlich statt irgendwann
-tote Blätter zu sein.
+**Die Besatzung bleibt**, und daran hing die einzige echte Schwierigkeit:
+jede Einheit im Feld bringt ihre fixierte Befehlskarte mit. Aus fünf Karten
+plus einer je Einheit wären nach ein paar Stationen zwanzig geworden.
+
+Die Antwort ist kein Deckel, sondern ein **Stapel**: gleiche Befehlskarten
+liegen als *ein* Blatt mit einer Zahl in der Hand — „Angriff Waldläufer ×6" —
+und jedes Ausspielen nimmt eines davon (`renderHand`). Gestapelt wird nur, was
+wirklich austauschbar ist: dieselbe Kennung *und* eine Befehlskarte. Zwei
+Zinnen bleiben zwei Blätter, denn die spielt man nacheinander auf verschiedene
+Türme.
+
+Damit der Vorrat über viele Stationen nicht auseinanderläuft, wird er einmal je
+Station gegen die Besatzung abgeglichen (`richteBefehlskartenAus`): genau eine
+Karte je lebendem Mann, keine ohne. Das kostet nichts und kann nicht schiefgehen
+— anders als die Buchführung, die vorher nur eine Station halten musste.
+
+#### Ein Mann schläft sich aus, ein Turm nicht
+
+Der erste Versuch gab der Besatzung denselben Anteil zurück wie dem Mauerwerk,
+40 Prozent. Gemessen war das **schlechter als gar keine bleibende Besatzung**:
+Station 6,9 gegen 8,5. Der Grund steht in einem Satz: ein Mann mit einem
+Lebenspunkt **blockiert seinen Platz**. Vorher bekam man an jeder Station eine
+frische Mannschaft; mit 40 Prozent sitzt die alte da, hält kaum noch etwas aus
+und lässt sich nicht ersetzen. Bleibende Einheiten sollen ein Gewinn sein, kein
+Schleppanker — also stehen die Männer zur nächsten Station wieder voll da, das
+Mauerwerk nur zum Teil.
+
+Damit ist die bleibende Besatzung **kostenneutral**: über je sechzehn
+Bot-Feldzüge steht sie bei Station 8,5 und zwei Siegen, genau wie die Fassung
+ohne sie (8,5 und drei Siege). Die Zwischenstände von 6,9 und 7,6 aus je acht
+Läufen lagen im Rauschen — acht Läufe können einen Unterschied von einer
+Station nicht auflösen, und das ist beim Messen dieses Spiels die eigentliche
+Lehre.
+
+Im Deck liegt anfangs übrigens nur **eine** Einheitenkarte, und die ist ein
+Sonderzug. Die Mannschaft wächst also nicht von selbst, sondern über das, was
+man beim Marketender kauft und als Belohnung nimmt. Deshalb ist die Anlage
+zuerst eine Sache der Türme und erst später eine der Männer.
 
 Ein Nebeneffekt, der gefällt: die **Krone der Belagerung** gibt ihre Plätze den
 Gebäuden, die gerade stehen — und die stehen jetzt bis zum Ende. Aus einer
@@ -1954,13 +1987,20 @@ dass er in diesem Zug schon geschossen hat. `Esc` hebt jede Auswahl auf.
 
 ## Gegner
 
-| Gegner | LP | Schaden | Bewegung | Reichweite | Ab Station |
-| --- | --- | --- | --- | --- | --- |
-| Späher | 4 | 1 | 5 | 1 | 1 |
-| Armbrustschütze | 6 | 2 | 2 | 4 | 2 |
-| Ritter | 14 | 3 | 3 | 1 | 3 |
-| Ramme | 20 | 5 | 2 | 1 | 5 |
-| Belagerungsmeister | 65 | 8 | 2 | 2 | nur die letzte Station |
+Grundwerte, bevor `belagerungsHp` und `belagerungsWucht` sie mit der Station
+hochrechnen:
+
+| Gegner | LP | Schaden | Bewegung | Reichweite | Punkte | Ab Station |
+| --- | --- | --- | --- | --- | --- | --- |
+| Späher | 4 | 1 | 5 | 1 | 2 | 1 |
+| Armbrustschütze | 7 | 2 | 3 | 4 | 3 | 2 |
+| Ritter | 20 | 5 | 3 | 1 | 6 | 3 |
+| Ramme | 36 | 11 | 2 | 2 | 12 | 4 |
+| Katapult | 18 | 9 | 1 | 7 | 9 | 5 |
+| Belagerungsmeister | 80 | 14 | 2 | 2 | — | nur die letzte Station |
+
+Die Spalte „Ab Station" folgt der Härtestufe, nicht der Stationsnummer: auf der
+alten Länge von siebzehn kam die Ramme ab Station 5, auf der neuen ab 4.
 
 Jeder Gegner hat eine eigene Angriffsreichweite. Ein Späher muss bis auf ein
 Feld heran, ein Armbrustschütze beschießt deinen Turm aus vier Feldern und

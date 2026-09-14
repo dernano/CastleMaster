@@ -660,6 +660,22 @@
     border-radius: 2px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 1px 0 rgba(0,0,0,0.35);
   }
+  /* Ein Stapel gleicher Karten: zwei Blaetter dahinter, dazu die Zahl. */
+  .card-slot.stapel > .card {
+    box-shadow:
+      3px -3px 0 -1px var(--papier, #efe5cd), 3px -3px 0 0 #2a2016,
+      6px -6px 0 -1px var(--papier, #efe5cd), 6px -6px 0 0 #2a2016,
+      0 5px 0 #241a11, 0 9px 18px rgba(0,0,0,0.45);
+  }
+  .card-stapelzahl {
+    position: absolute; right: -4px; bottom: -4px; z-index: 6;
+    min-width: 20px; padding: 1px 4px 2px;
+    font-family: var(--zahl); font-size: 13px; font-weight: 700; line-height: 1;
+    text-align: center; color: #f6ecd4;
+    background: linear-gradient(180deg, #4a3720, #241a11);
+    border: 1.5px solid #14100a; border-radius: 9px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.5);
+  }
   .card-schlagworte { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   /* Auf einer Bildkarte legen sich die Schlagworte ueber das Blatt. */
   .card.mit-bild .card-schlagworte {
@@ -1220,7 +1236,7 @@
         <li><b>Gewicht:</b> Wer schwer ist, geht langsam. Ein Späher steht nach fünf Zügen am Tor und kratzt; die Ramme braucht neun und schlägt ein Loch, das Katapult zwölf. Die bronzene Plakette markiert schweres Gerät — es kommt spät, aber es kommt.</li>
         <li><b>Route:</b> 11 Stationen bis zum Belagerungsmeister. Du wählst nach jeder Station, wohin es weitergeht.</li>
         <li><b>Deine Burg bleibt stehen.</b> Es ist über den ganzen Feldzug dieselbe Anlage: Wall, Torhaus und jeder Turm, den du gebaut hast. Zwischen zwei Stationen werden Breschen im Wall geschlossen und die Türme teilweise ausgebessert — ein <b>gefallener Turm bleibt gefallen</b>. Im Lager kannst du alle Türme ganz instand setzen.</li>
-        <li><b>Die Besatzung nicht.</b> Männer gehören zum Kampf, nicht zum Bauwerk: an jeder Station besetzt du deine Türme neu. Deshalb wächst auch die Hand nicht mit der Zahl der Türme.</li>
+        <li><b>Deine Männer bleiben oben.</b> Wer eine Station übersteht, steht an der nächsten wieder auf seinem Turm — verwundete erholen sich teilweise, Gefallene sind fort. Damit die Hand davon nicht überläuft, liegen gleiche Befehlskarten als <b>ein Stapel mit Zahl</b> da: „Angriff Waldläufer ×3" ist ein Blatt, und jedes Ausspielen nimmt eines davon.</li>
         <li><b>Burg:</b> Ihre Lebenspunkte reitest du mit. Geheilt wird nur im Lager oder durch Begegnungen.</li>
         <li><b>Sold:</b> Nach jedem Kampf, mehr bei einer Vorhut. Beim Marketender kaufst, streichst und schärfst du Karten.</li>
         <li><b>Einstellungen:</b> Das Schieberzeichen oben rechts. Dort stellst du ein, wie viel vom Bild das Schlachtfeld bekommt, wie fein das Spiel malt, wie groß Karten und Anzeigen sind — und was an Himmel, Rand und Bewegung gezeichnet wird. Das Bild wächst mit dem Fenster; die Einstellungen bleiben im Browser.</li>
@@ -4379,9 +4395,14 @@ const ANLAGE_HEILUNG = 0.4;
  * waere fuer immer umgehbar. Die Tuerme behalten dagegen ihre Schrammen und
  * bekommen nur einen Teil zurueck; ein gefallener Turm bleibt gefallen.
  *
- * Die Besatzung zieht ab: Maenner gehoeren zum Kampf, nicht zum Bauwerk. Sonst
- * waechst mit jeder Station auch die Hand (jede Einheit bringt ihre Befehls-
- * karte mit), und aus fuenf Karten wuerden zwanzig.
+ * Die Besatzung bleibt oben. Sie ist der zweite Teil dessen, was ueber den
+ * Feldzug waechst: wer einen Mann verliert, verliert ihn wirklich, und wer
+ * seine Tuerme voll bekommt, hat dafuer zehn Stationen gebraucht. Verwundete
+ * erholen sich zwischen zwei Stationen im selben Mass wie das Mauerwerk.
+ *
+ * Dass die Hand davon nicht ueberlaeuft, liegt an der Stapelung in der Hand:
+ * drei Waldlaeufer im Feld sind drei gleiche Befehlskarten, und die liegen als
+ * EIN Blatt mit einer Zahl da (siehe `renderHand`).
  */
 function richteAnlageHer() {
   for (const [k, plan] of state.anlage.wall) {
@@ -4391,12 +4412,29 @@ function richteAnlageHer() {
   }
   if (!state.towers.some(t => t.torhaus)) state.towers.push(macheTorhaus());
   for (const t of state.towers) {
-    t.slots = t.slots.map(() => null);
     t.zinnen = 0;
     t.attackedKey = null;
     t.spann = 0;
     t.hp = Math.min(t.maxHp, t.hp + Math.ceil(t.maxHp * ANLAGE_HEILUNG));
+    for (const u of towerUnits(t)) {
+      // Der Befehl gilt fuer einen Zug, nicht fuer eine Station.
+      u.befehlZug = null;
+      u.befehlKarte = null;
+      /*
+       * Ein Mann schlaeft sich aus, ein Turm nicht: die Besatzung steht zur
+       * naechsten Station wieder voll da, das Mauerwerk nur zu einem Teil.
+       *
+       * Gemessen war das noetig. Mit demselben Anteil wie beim Stein (40 %)
+       * kam der Bot nur noch bis Station 6,9 statt 8,5 - schlechter als mit
+       * abziehender Besatzung. Der Grund: ein Mann mit einem Lebenspunkt
+       * BLOCKIERT seinen Platz. Vorher bekam man an jeder Station eine frische
+       * Mannschaft, jetzt sitzt die alte da und laesst sich nicht ersetzen.
+       * Bleibende Einheiten sollen ein Gewinn sein, kein Schleppanker.
+       */
+      u.hp = u.maxHp;
+    }
   }
+  richteBefehlskartenAus();
   // Was unter einem Turm liegt, wird verdeckt - auch wieder aufgebautes.
   for (const m of state.wall.values()) m.verdeckt = false;
   for (const t of state.towers) {
@@ -4409,14 +4447,23 @@ function richteAnlageHer() {
   wegCache = new Map();
 }
 
-/** Setzt alle Tuerme wieder instand - die Nacht im Lager reicht dafuer. */
+/** Setzt Tuerme und Besatzung wieder instand - die Nacht im Lager reicht. */
 function flickeAlleTuerme() {
   let geflickt = 0;
   for (const t of state.towers) {
     geflickt += t.maxHp - t.hp;
     t.hp = t.maxHp;
+    for (const u of towerUnits(t)) {
+      geflickt += u.maxHp - u.hp;
+      u.hp = u.maxHp;
+    }
   }
   return geflickt;
+}
+
+/** Fehlt irgendwo in der Anlage etwas - am Mauerwerk oder am Mann? */
+function anlageWund() {
+  return state.towers.some(t => t.hp < t.maxHp || towerUnits(t).some(u => u.hp < u.maxHp));
 }
 
 // Zaehlt jede Aenderung an Mauern und Tuermen. Die Wegfelder haengen daran:
@@ -8718,15 +8765,27 @@ function nimmAngriffskarteWeg(einheit) {
   state.hand = state.hand.filter(k => k.fuerEinheit !== einheit.uid);
 }
 
-/** Am Ende der Station gehen alle fixierten Karten mit ihren Einheiten. */
-function nimmAngriffskartenZurueck() {
-  const uids = new Set(state.fixiert.map(k => k.uid));
-  state.fixiert = [];
-  const ohne = (liste) => liste.filter(c => !uids.has(c.uid) && !c.fixiert);
-  state.draw = ohne(state.draw);
-  state.hand = ohne(state.hand);
-  state.discard = ohne(state.discard);
-  state.beiseite = ohne(state.beiseite);
+/**
+ * Gleicht die Befehlskarten gegen die Besatzung ab: genau eine je lebendem
+ * Mann, keine ohne. Seit die Einheiten ueber den Feldzug stehen bleiben, laeuft
+ * dieser Vorrat ueber viele Stationen mit - da ist eine Karte ohne Mann (oder
+ * ein Mann ohne Karte) frueher oder spaeter die Folge irgendeines Sonderfalls.
+ * Einmal je Station geradegezogen kostet nichts und kann nicht schief gehen.
+ */
+function richteBefehlskartenAus() {
+  const maenner = [];
+  for (const t of state.towers) for (const u of towerUnits(t)) maenner.push(u);
+  const uids = new Set(maenner.map(u => u.uid));
+  state.fixiert = state.fixiert.filter(k => uids.has(k.fuerEinheit));
+  state.hand = state.hand.filter(k => !k.angriffAuf || uids.has(k.fuerEinheit));
+  for (const u of maenner) {
+    if (state.fixiert.some(k => k.fuerEinheit === u.uid)) continue;
+    const grund = CARD_POOL.find(c => c.id === u.kartenId);
+    if (!grund) continue;
+    const karte = neueKarte(angriffKarteFuer(grund));
+    karte.fuerEinheit = u.uid;
+    state.fixiert.push(karte);
+  }
 }
 
 /*
@@ -8917,7 +8976,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) brich
  */
 function fliegeKarteZu(card, turm) {
   if (wenigerBewegung || ausZiehen) return;
-  const quelle = document.querySelector('#hand .card-slot[data-uid="' + card.uid + '"] .card');
+  const quelle = document.querySelector('#hand .card-slot[data-uid="' + card.uid + '"] .card')
+    || document.querySelector('#hand .card-slot[data-karte="' + card.id + '"] .card');
   if (!quelle) return;
   const r = quelle.getBoundingClientRect();
   const leinwand = canvas.getBoundingClientRect();
@@ -9386,7 +9446,6 @@ function betreteKnoten(id) {
   staubkoerner.length = 0;
   state.einmalGenutzt = {};
   holeBeiseiteZurueck();
-  nimmAngriffskartenZurueck();
   wegCache = new Map();
   gegnerzug = null;
   schuesseImZug = 0;
@@ -9421,9 +9480,10 @@ function betreteKnoten(id) {
     zeigeBanner(art.name, k.typ === 'meister' ? 'Die letzte Feste' : state.lager.length + state.enemies.length + ' Gegner im Lager');
     klang('runde');
     const gebaut = state.towers.filter(t => !t.torhaus).length;
+    const mann = state.towers.reduce((n, t) => n + towerUnits(t).length, 0);
     setMessage('Station ' + state.runde + ' von ' + STATIONEN + '. ' + (gebaut
       ? 'Deine Anlage steht' + (gebaut === 1 ? ' mit einem Turm' : ' mit ' + gebaut + ' Türmen') +
-        '. Besetze sie und baue weiter.'
+        (mann ? ', ' + mann + ' Mann darauf' : ', unbesetzt') + '. Baue weiter.'
       : 'Besetze das Torhaus und baue Türme an den Wall.'));
   } else if (k.typ === 'haendler') {
     oeffneHaendler();
@@ -9536,7 +9596,6 @@ function feldzugVerloren() {
 /** Nach gewonnenem Kampf: Sold, dann Karten zur Auswahl. */
 function beginneBelohnung() {
   holeBeiseiteZurueck();
-  nimmAngriffskartenZurueck();
   const k = aktuellerKnoten();
   const vorhut = k && k.typ === 'elite';
   const lohn = Math.round((SOLD_JE_STATION + (vorhut ? SOLD_VORHUT : 0)) * (1 + state.runde * 0.05));
@@ -9868,13 +9927,14 @@ function rastSicht(meldung) {
          * Kleinigkeit mehr: ein angeschlagener Turm nimmt seine Schrammen mit
          * bis zum Belagerungsmeister.
          */
-        text: 'Türme ausbessern', hinweis: 'alle auf volle LP',
-        gesperrt: fertig || !state.towers.some(t => t.hp < t.maxHp),
+        text: 'Anlage ausbessern', hinweis: 'Türme und Besatzung',
+        gesperrt: fertig || !anlageWund(),
         aktion: () => {
           const g = flickeAlleTuerme();
           state.rastGenutzt = true;
           klang('bau');
-          zeigeStation(rastSicht('Die Zimmerleute waren die Nacht über wach. +' + g + ' LP auf den Türmen.'));
+          zeigeStation(rastSicht('Die Zimmerleute waren die Nacht über wach, der Feldscher auch. +' +
+            g + ' LP auf Türmen und Besatzung.'));
         },
       },
       {
@@ -10087,7 +10147,6 @@ function endTurn() {
  */
 function derSturm() {
   holeBeiseiteZurueck();
-  nimmAngriffskartenZurueck();
   const alle = [...state.enemies, ...state.lager];
   const schaden = alle.reduce((sum, e) => sum + Math.max(1, e.dmg), 0);
   for (const e of state.enemies) zeigeZahl(e.col, e.row, 'Sturm', '#ff9a5c');
@@ -10636,10 +10695,11 @@ function karteJetzt(card) {
 }
 
 /** Baut die Darstellung einer Karte samt Halter. */
-function cardElement(card, { disabled = false, selected = false, onClick = null } = {}) {
+function cardElement(card, { disabled = false, selected = false, anzahl = 1, onClick = null } = {}) {
   const slot = document.createElement('div');
   slot.className = 'card-slot' + (disabled ? ' gesperrt' : '');
   slot.dataset.uid = card.uid;   // damit der Kartenflug seine Karte findet
+  slot.dataset.karte = card.id;  // ... und zur Not eine gleiche aus dem Stapel
   if (ziehen && ziehen.card.uid === card.uid) slot.classList.add('zieht');
 
   const verbraucht = state.phase === 'kampf' && schonVerbraucht(card);
@@ -10889,6 +10949,18 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
       window.addEventListener('pointercancel', hoch);
     });
   }
+  if (anzahl > 1) {
+    /*
+     * Ein Stapel sieht aus wie ein Stapel: zwei versetzte Blaetter dahinter und
+     * eine Zahl. Ohne die Blaetter waere die Zahl eine Behauptung.
+     */
+    slot.classList.add('stapel');
+    const zahl = document.createElement('div');
+    zahl.className = 'card-stapelzahl';
+    zahl.textContent = '\u00d7' + anzahl;
+    zahl.title = anzahl + ' gleiche Karten. Jedes Ausspielen nimmt eine davon.';
+    el.appendChild(zahl);
+  }
   slot.appendChild(el);
   return slot;
 }
@@ -10896,12 +10968,32 @@ function cardElement(card, { disabled = false, selected = false, onClick = null 
 function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
-  state.hand.forEach((card, i) => {
-    const disabled = !spielbar(card);
-
+  /*
+   * Befehlskarten werden gestapelt. Seit die Besatzung ueber den Feldzug oben
+   * bleibt, liegen spaet im Lauf fuenf, sechs gleiche "Angriff Waldlaeufer" in
+   * der Hand - fuenf Blaetter, die dasselbe sagen und dieselbe Wahl treffen.
+   * Sie liegen darum als EIN Blatt mit einer Zahl da; gespielt wird jedes Mal
+   * eins davon, und die Zahl zaehlt herunter.
+   *
+   * Gestapelt wird nur, was wirklich austauschbar ist: dieselbe Kennung UND
+   * eine Befehlskarte. Zwei Zinnen bleiben zwei Zinnen - die spielt man
+   * nacheinander auf verschiedene Tuerme, und zwei Blaetter zeigen das besser.
+   */
+  const gruppen = [];
+  for (const card of state.hand) {
+    const gruppe = card.angriffAuf && gruppen.find(g => g.karten[0].id === card.id);
+    if (gruppe) { gruppe.karten.push(card); continue; }
+    gruppen.push({ karten: [card] });
+  }
+  gruppen.forEach((gruppe, i) => {
+    // Die angewaehlte Karte fuehrt ihren Stapel an, sonst bliebe der Rahmen weg.
+    const gewaehlt = state.pendingCard &&
+      gruppe.karten.find(c => c.uid === state.pendingCard.uid);
+    const card = gewaehlt || gruppe.karten[0];
     const el = cardElement(card, {
-      disabled,
-      selected: Boolean(state.pendingCard && state.pendingCard.uid === card.uid),
+      disabled: !spielbar(card),
+      selected: Boolean(gewaehlt),
+      anzahl: gruppe.karten.length,
       onClick: () => { state.selectedTower = null; klang('karte'); playCard(card); },
     });
     el.style.animationDelay = (i * 55) + 'ms';
